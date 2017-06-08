@@ -1,0 +1,1877 @@
+{
+  "program" : "mtag/mtag-edge.p4",
+  "__meta__" : null,
+  "header_types" : [
+    {
+      "name" : "scalars",
+      "id" : 0,
+      "fields" : [
+        ["tmp", 32, false],
+        ["tmp_1", 32, false],
+        ["tmp_0", 1, false],
+        ["_padding_0", 7, false]
+      ]
+    },
+    {
+      "name" : "ipv4_t_1",
+      "id" : 1,
+      "fields" : [
+        ["version", 4, false],
+        ["ihl", 4, false],
+        ["diffserv", 8, false],
+        ["totalLen", 16, false],
+        ["identification", 16, false],
+        ["flags", 3, false],
+        ["fragOffset", 13, false],
+        ["ttl", 8, false],
+        ["protocol", 8, false],
+        ["hdrChecksum", 16, false],
+        ["srcAddr", 32, false],
+        ["dstAddr", 32, false]
+      ]
+    },
+    {
+      "name" : "ipv4_t_2",
+      "id" : 2,
+      "fields" : [
+        ["options", 320]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 3,
+      "fields" : [
+        ["dst_addr", 48, false],
+        ["src_addr", 48, false],
+        ["ethertype", 16, false]
+      ]
+    },
+    {
+      "name" : "ipv4_t",
+      "id" : 4,
+      "fields" : [
+        ["version", 4, false],
+        ["ihl", 4, false],
+        ["diffserv", 8, false],
+        ["totalLen", 16, false],
+        ["identification", 16, false],
+        ["flags", 3, false],
+        ["fragOffset", 13, false],
+        ["ttl", 8, false],
+        ["protocol", 8, false],
+        ["hdrChecksum", 16, false],
+        ["srcAddr", 32, false],
+        ["dstAddr", 32, false],
+        ["options", 320]
+      ]
+    },
+    {
+      "name" : "mTag_t",
+      "id" : 5,
+      "fields" : [
+        ["up1", 8, false],
+        ["up2", 8, false],
+        ["down1", 8, false],
+        ["down2", 8, false],
+        ["ethertype", 16, false]
+      ]
+    },
+    {
+      "name" : "vlan_t",
+      "id" : 6,
+      "fields" : [
+        ["pcp", 3, false],
+        ["cfi", 1, false],
+        ["vid", 12, false],
+        ["ethertype", 16, false]
+      ]
+    },
+    {
+      "name" : "local_metadata_t",
+      "id" : 7,
+      "fields" : [
+        ["cpu_code", 16, false],
+        ["port_type", 4, false],
+        ["ingress_error", 1, false],
+        ["was_mtagged", 1, false],
+        ["copy_to_cpu", 1, false],
+        ["bad_packet", 1, false],
+        ["color", 8, false]
+      ]
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 8,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 1, false],
+        ["egress_rid", 16, false],
+        ["_padding", 5, false]
+      ]
+    }
+  ],
+  "headers" : [
+    {
+      "name" : "tmp_hdr",
+      "id" : 0,
+      "header_type" : "ipv4_t_1",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "tmp_hdr_0",
+      "id" : 1,
+      "header_type" : "ipv4_t_2",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "scalars",
+      "id" : 2,
+      "header_type" : "scalars",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 3,
+      "header_type" : "standard_metadata",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ethernet",
+      "id" : 4,
+      "header_type" : "ethernet_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ipv4",
+      "id" : 5,
+      "header_type" : "ipv4_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "mtag",
+      "id" : 6,
+      "header_type" : "mTag_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "vlan",
+      "id" : 7,
+      "header_type" : "vlan_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "local_metadata",
+      "id" : 8,
+      "header_type" : "local_metadata_t",
+      "metadata" : true,
+      "pi_omit" : true
+    }
+  ],
+  "header_stacks" : [],
+  "field_lists" : [],
+  "errors" : [
+    ["ParserTimeout", 5],
+    ["HeaderTooShort", 4],
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3]
+  ],
+  "enums" : [],
+  "parsers" : [
+    {
+      "name" : "parser",
+      "id" : 0,
+      "init_state" : "start",
+      "parse_states" : [
+        {
+          "name" : "ethernet",
+          "id" : 0,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "ethernet"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "0x8100",
+              "mask" : null,
+              "next_state" : "vlan"
+            },
+            {
+              "value" : "0x0800",
+              "mask" : null,
+              "next_state" : "ipv4"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "ethertype"]
+            }
+          ]
+        },
+        {
+          "name" : "ipv4",
+          "id" : 1,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "tmp_hdr"
+                }
+              ],
+              "op" : "extract"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "tmp"]
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "&",
+                      "left" : {
+                        "type" : "expression",
+                        "value" : {
+                          "op" : "&",
+                          "left" : {
+                            "type" : "expression",
+                            "value" : {
+                              "op" : "<<",
+                              "left" : {
+                                "type" : "field",
+                                "value" : ["tmp_hdr", "ihl"]
+                              },
+                              "right" : {
+                                "type" : "hexstr",
+                                "value" : "0x2"
+                              }
+                            }
+                          },
+                          "right" : {
+                            "type" : "hexstr",
+                            "value" : "0x0f"
+                          }
+                        }
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0xffffffff"
+                      }
+                    }
+                  }
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "tmp_hdr_0"
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "field",
+                    "value" : ["scalars", "tmp"]
+                  }
+                }
+              ],
+              "op" : "extract_VL"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "$valid$"]
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "b2d",
+                      "left" : null,
+                      "right" : {
+                        "type" : "bool",
+                        "value" : true
+                      }
+                    }
+                  }
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "version"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "version"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "ihl"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "ihl"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "diffserv"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "diffserv"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "totalLen"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "totalLen"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "identification"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "identification"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "flags"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "flags"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "fragOffset"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "fragOffset"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "ttl"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "ttl"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "protocol"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "protocol"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "hdrChecksum"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "hdrChecksum"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "srcAddr"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "srcAddr"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "dstAddr"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr", "dstAddr"]
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["ipv4", "options"]
+                },
+                {
+                  "type" : "field",
+                  "value" : ["tmp_hdr_0", "options"]
+                }
+              ],
+              "op" : "set"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "mtag",
+          "id" : 2,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "mtag"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "0x0800",
+              "mask" : null,
+              "next_state" : "ipv4"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["mtag", "ethertype"]
+            }
+          ]
+        },
+        {
+          "name" : "start",
+          "id" : 3,
+          "parser_ops" : [],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : "ethernet"
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "vlan",
+          "id" : 4,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "vlan"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "0xaaaa",
+              "mask" : null,
+              "next_state" : "mtag"
+            },
+            {
+              "value" : "0x0800",
+              "mask" : null,
+              "next_state" : "ipv4"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["vlan", "ethertype"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "deparsers" : [
+    {
+      "name" : "deparser",
+      "id" : 0,
+      "order" : ["ethernet", "vlan", "mtag", "ipv4"]
+    }
+  ],
+  "meter_arrays" : [
+    {
+      "name" : "per_dest_by_source",
+      "id" : 0,
+      "is_direct" : false,
+      "size" : 4096,
+      "rate_count" : 2,
+      "type" : "bytes"
+    }
+  ],
+  "counter_arrays" : [],
+  "register_arrays" : [],
+  "calculations" : [],
+  "learn_lists" : [],
+  "actions" : [
+    {
+      "name" : "act_0",
+      "id" : 0,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name" : "act",
+      "id" : 1,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : true
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name" : "meter_pkt",
+      "id" : 2,
+      "runtime_data" : [
+        {
+          "name" : "meter_idx",
+          "bitwidth" : 12
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_1"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "local",
+                    "value" : 0
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xffffffff"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op" : "execute_meter",
+          "parameters" : [
+            {
+              "type" : "meter_array",
+              "value" : "per_dest_by_source"
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_1"]
+            },
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "color"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 170,
+            "column" : 4,
+            "source_fragment" : "execute_meter(per_dest_by_source, meter_idx, local_metadata.color)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_no_op",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_drop",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 45,
+            "column" : 4,
+            "source_fragment" : "drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_no_op",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 6,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "common_drop_pkt",
+      "id" : 7,
+      "runtime_data" : [
+        {
+          "name" : "do_copy",
+          "bitwidth" : 1
+        },
+        {
+          "name" : "cpu_code",
+          "bitwidth" : 16
+        },
+        {
+          "name" : "bad_packet",
+          "bitwidth" : 1
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "copy_to_cpu"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 22,
+            "column" : 23,
+            "source_fragment" : "do_copy, cpu_code, bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "cpu_code"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 22,
+            "column" : 32,
+            "source_fragment" : "cpu_code, bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "bad_packet"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 2
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 22,
+            "column" : 42,
+            "source_fragment" : "bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 26,
+            "column" : 4,
+            "source_fragment" : "drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "NoAction",
+      "id" : 8,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 9,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 10,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "common_copy_pkt_to_cpu",
+      "id" : 11,
+      "runtime_data" : [
+        {
+          "name" : "cpu_code",
+          "bitwidth" : 16
+        },
+        {
+          "name" : "bad_packet",
+          "bitwidth" : 1
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "copy_to_cpu"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 16,
+            "column" : 4,
+            "source_fragment" : "modify_field(local_metadata.copy_to_cpu, 1)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "cpu_code"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 15,
+            "column" : 30,
+            "source_fragment" : "cpu_code, bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "bad_packet"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 15,
+            "column" : 40,
+            "source_fragment" : "bad_packet) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "add_mTag",
+      "id" : 12,
+      "runtime_data" : [
+        {
+          "name" : "up1",
+          "bitwidth" : 9
+        },
+        {
+          "name" : "up2",
+          "bitwidth" : 8
+        },
+        {
+          "name" : "down1",
+          "bitwidth" : 8
+        },
+        {
+          "name" : "down2",
+          "bitwidth" : 8
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "add_header",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "mtag"
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 103,
+            "column" : 4,
+            "source_fragment" : "add_header(mtag)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["mtag", "ethertype"]
+            },
+            {
+              "type" : "field",
+              "value" : ["vlan", "ethertype"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 105,
+            "column" : 4,
+            "source_fragment" : "modify_field(mtag.ethertype, vlan.ethertype)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["vlan", "ethertype"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0xaaaa"
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 108,
+            "column" : 4,
+            "source_fragment" : "modify_field(vlan.ethertype, 0xaaaa)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["mtag", "up1"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "local",
+                    "value" : 0
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 102,
+            "column" : 16,
+            "source_fragment" : "up1, up2, down1, down2) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["mtag", "up2"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 102,
+            "column" : 21,
+            "source_fragment" : "up2, down1, down2) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["mtag", "down1"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 2
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 102,
+            "column" : 26,
+            "source_fragment" : "down1, down2) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["mtag", "down2"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 3
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 102,
+            "column" : 33,
+            "source_fragment" : "down2) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 102,
+            "column" : 16,
+            "source_fragment" : "up1, up2, down1, down2) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_strip_mtag",
+      "id" : 13,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "remove_header",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "mtag"
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 31,
+            "column" : 4,
+            "source_fragment" : "remove_header(mtag)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "was_mtagged"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 33,
+            "column" : 4,
+            "source_fragment" : "modify_field(local_metadata.was_mtagged, 1)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "set_egress_spec",
+      "id" : 14,
+      "runtime_data" : [
+        {
+          "name" : "espec",
+          "bitwidth" : 9
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 85,
+            "column" : 23,
+            "source_fragment" : "espec) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_no_op",
+      "id" : 15,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 16,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 17,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "common_drop_pkt",
+      "id" : 18,
+      "runtime_data" : [
+        {
+          "name" : "do_copy",
+          "bitwidth" : 1
+        },
+        {
+          "name" : "cpu_code",
+          "bitwidth" : 16
+        },
+        {
+          "name" : "bad_packet",
+          "bitwidth" : 1
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "copy_to_cpu"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 22,
+            "column" : 23,
+            "source_fragment" : "do_copy, cpu_code, bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "cpu_code"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 22,
+            "column" : 32,
+            "source_fragment" : "cpu_code, bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "bad_packet"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 2
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 22,
+            "column" : 42,
+            "source_fragment" : "bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 26,
+            "column" : 4,
+            "source_fragment" : "drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "common_set_port_type",
+      "id" : 19,
+      "runtime_data" : [
+        {
+          "name" : "port_type",
+          "bitwidth" : 4
+        },
+        {
+          "name" : "ingress_error",
+          "bitwidth" : 1
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "port_type"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 31,
+            "column" : 28,
+            "source_fragment" : "port_type, ingress_error) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "ingress_error"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "mtag/actions.p4",
+            "line" : 31,
+            "column" : 39,
+            "source_fragment" : "ingress_error) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "NoAction",
+      "id" : 20,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 21,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 22,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 23,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 24,
+      "runtime_data" : [],
+      "primitives" : []
+    }
+  ],
+  "pipelines" : [
+    {
+      "name" : "ingress",
+      "id" : 0,
+      "init_table" : "strip_mtag",
+      "tables" : [
+        {
+          "name" : "strip_mtag",
+          "id" : 0,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 52,
+            "column" : 0,
+            "source_fragment" : "table strip_mtag { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "valid",
+              "target" : "mtag",
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [13, 15, 20],
+          "actions" : ["_strip_mtag", "_no_op", "NoAction"],
+          "base_default_next" : "identify_port",
+          "next_tables" : {
+            "_strip_mtag" : "identify_port",
+            "_no_op" : "identify_port",
+            "NoAction" : "identify_port"
+          },
+          "default_entry" : {
+            "action_id" : 20,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "identify_port",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 65,
+            "column" : 0,
+            "source_fragment" : "table identify_port { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [19, 18, 17, 23],
+          "actions" : ["common_set_port_type", "common_drop_pkt", "_no_op", "NoAction"],
+          "base_default_next" : "node_4",
+          "next_tables" : {
+            "common_set_port_type" : "node_4",
+            "common_drop_pkt" : "node_4",
+            "_no_op" : "node_4",
+            "NoAction" : "node_4"
+          },
+          "default_entry" : {
+            "action_id" : 23,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "local_switching",
+          "id" : 2,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 89,
+            "column" : 0,
+            "source_fragment" : "table local_switching { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["vlan", "vid"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [14, 16, 22],
+          "actions" : ["set_egress_spec", "_no_op", "NoAction"],
+          "base_default_next" : "node_6",
+          "next_tables" : {
+            "set_egress_spec" : "node_6",
+            "_no_op" : "node_6",
+            "NoAction" : "node_6"
+          },
+          "default_entry" : {
+            "action_id" : 22,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "mTag_table",
+          "id" : 3,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 132,
+            "column" : 0,
+            "source_fragment" : "table mTag_table { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["ethernet", "dst_addr"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "target" : ["vlan", "vid"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [12, 11, 24, 21],
+          "actions" : ["add_mTag", "common_copy_pkt_to_cpu", "_no_op", "NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "add_mTag" : null,
+            "common_copy_pkt_to_cpu" : null,
+            "_no_op" : null,
+            "NoAction" : null
+          },
+          "default_entry" : {
+            "action_id" : 21,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        }
+      ],
+      "action_profiles" : [],
+      "conditionals" : [
+        {
+          "name" : "node_4",
+          "id" : 0,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 233,
+            "column" : 37,
+            "source_fragment" : "=="
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "==",
+              "left" : {
+                "type" : "field",
+                "value" : ["local_metadata", "ingress_error"]
+              },
+              "right" : {
+                "type" : "hexstr",
+                "value" : "0x00"
+              }
+            }
+          },
+          "false_next" : null,
+          "true_next" : "local_switching"
+        },
+        {
+          "name" : "node_6",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 238,
+            "column" : 42,
+            "source_fragment" : "=="
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "==",
+              "left" : {
+                "type" : "field",
+                "value" : ["standard_metadata", "egress_spec"]
+              },
+              "right" : {
+                "type" : "hexstr",
+                "value" : "0x0000"
+              }
+            }
+          },
+          "false_next" : null,
+          "true_next" : "mTag_table"
+        }
+      ]
+    },
+    {
+      "name" : "egress",
+      "id" : 1,
+      "init_table" : "egress_check",
+      "tables" : [
+        {
+          "name" : "egress_check",
+          "id" : 4,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 147,
+            "column" : 0,
+            "source_fragment" : "table egress_check { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "target" : ["local_metadata", "was_mtagged"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [7, 6, 10],
+          "actions" : ["common_drop_pkt", "_no_op", "NoAction"],
+          "base_default_next" : "egress_meter",
+          "next_tables" : {
+            "common_drop_pkt" : "egress_meter",
+            "_no_op" : "egress_meter",
+            "NoAction" : "egress_meter"
+          },
+          "default_entry" : {
+            "action_id" : 10,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "egress_meter",
+          "id" : 5,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 174,
+            "column" : 0,
+            "source_fragment" : "table egress_meter { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "target" : ["mtag", "up1"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 4096,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [2, 5, 9],
+          "actions" : ["meter_pkt", "_no_op", "NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "__HIT__" : "tbl_act",
+            "__MISS__" : "tbl_act_0"
+          },
+          "default_entry" : {
+            "action_id" : 9,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "tbl_act",
+          "id" : 6,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [1],
+          "actions" : ["act"],
+          "base_default_next" : "node_14",
+          "next_tables" : {
+            "act" : "node_14"
+          },
+          "default_entry" : {
+            "action_id" : 1,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_0",
+          "id" : 7,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [0],
+          "actions" : ["act_0"],
+          "base_default_next" : "node_14",
+          "next_tables" : {
+            "act_0" : "node_14"
+          },
+          "default_entry" : {
+            "action_id" : 0,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "meter_policy",
+          "id" : 8,
+          "source_info" : {
+            "filename" : "mtag/mtag-edge.p4",
+            "line" : 192,
+            "column" : 0,
+            "source_fragment" : "table meter_policy { ..."
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["standard_metadata", "ingress_port"],
+              "mask" : null
+            },
+            {
+              "match_type" : "exact",
+              "target" : ["local_metadata", "color"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 256,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [4, 3, 8],
+          "actions" : ["_drop", "_no_op", "NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "_drop" : null,
+            "_no_op" : null,
+            "NoAction" : null
+          },
+          "default_entry" : {
+            "action_id" : 8,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        }
+      ],
+      "action_profiles" : [],
+      "conditionals" : [
+        {
+          "name" : "node_14",
+          "id" : 2,
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["scalars", "tmp_0"]
+              }
+            }
+          },
+          "false_next" : null,
+          "true_next" : "meter_policy"
+        }
+      ]
+    }
+  ],
+  "checksums" : [],
+  "force_arith" : [],
+  "extern_instances" : [],
+  "field_aliases" : [
+    [
+      "queueing_metadata.enq_timestamp",
+      ["standard_metadata", "enq_timestamp"]
+    ],
+    [
+      "queueing_metadata.enq_qdepth",
+      ["standard_metadata", "enq_qdepth"]
+    ],
+    [
+      "queueing_metadata.deq_timedelta",
+      ["standard_metadata", "deq_timedelta"]
+    ],
+    [
+      "queueing_metadata.deq_qdepth",
+      ["standard_metadata", "deq_qdepth"]
+    ],
+    [
+      "intrinsic_metadata.ingress_global_timestamp",
+      ["standard_metadata", "ingress_global_timestamp"]
+    ],
+    [
+      "intrinsic_metadata.lf_field_list",
+      ["standard_metadata", "lf_field_list"]
+    ],
+    [
+      "intrinsic_metadata.mcast_grp",
+      ["standard_metadata", "mcast_grp"]
+    ],
+    [
+      "intrinsic_metadata.resubmit_flag",
+      ["standard_metadata", "resubmit_flag"]
+    ],
+    [
+      "intrinsic_metadata.egress_rid",
+      ["standard_metadata", "egress_rid"]
+    ]
+  ]
+}

@@ -1,0 +1,499 @@
+#!/Users/cburgin/Development/P4/ccmp4_16/venv_2.7_ccmnp4_16/bin/python2.7
+
+###
+### $Release: 1.1.1 $
+### $Copyright: copyright(c) 2007-2012 kuwata-lab.com all rights reserved. $
+###
+
+#libdir = '/home/yourname/tenjin-X.X.X/lib'
+#import sys
+#sys.path.append(libdir)
+
+import sys, re, os, marshal
+import tenjin
+#from tenjin.helpers import escape, to_str
+from tenjin.helpers import *
+from tenjin.escaped import *
+from tenjin.html import *
+from tenjin import TemplateSyntaxError
+
+python2 = sys.version_info[0] == 2
+python3 = sys.version_info[0] == 3
+
+
+class NoTextTemplate(tenjin.Template):
+
+    def __init__(self, *args, **kwargs):
+        self.noexpr = kwargs.pop('noexpr', None)
+        tenjin.Template.__init__(self, *args, **kwargs)
+
+    def start_text_part(self, buf):
+        pass
+
+    def stop_text_part(self, buf):
+        pass
+
+    def add_text(self, buf, text, encode_newline=False):
+        if not text:
+            return;
+        n = text.count("\n")
+        if encode_newline and text.endswith("\n"):
+            n -= 1
+        buf.append("\n" * n)
+        if not self.noexpr and text[-1] != "\n":
+            i = text.rfind("\n") + 1
+            s = re.sub(r'[^\t]', ' ', text[i:])
+            buf.append(s)
+
+    def add_expr(self, buf, code, *flags):
+        if not code or code.isspace(): return
+        flag_escape, flag_tostr = flags
+        if self.noexpr:
+            n = code.count("\n")
+            if n:
+                buf.append("\n" * n)
+            return
+        if not self.tostrfunc:  flag_tostr  = False
+        if not self.escapefunc: flag_escape = False
+        if flag_tostr and flag_escape: s1, s2 = "_escape(_to_str(", ")); "
+        elif flag_tostr:               s1, s2 = "_to_str(", "); "
+        elif flag_escape:              s1, s2 = "_escape(", "); "
+        else:                          s1, s2 = "(", "); "
+        buf.extend((s1, code, s2, ))
+
+    def parse_exprs(self, buf, input, is_bol=False):
+        if not input:
+            return
+        tenjin.Template.parse_exprs(self, buf, input, is_bol)
+
+    def _arrange_indent(self, buf):
+        buf2 = []
+        for x in buf:
+            buf2.extend(x.splitlines(True))
+        block = self.parse_lines(buf2)
+        buf[:] = []
+        self._join_block(block, buf, 0)
+
+
+class CommandOptionError(Exception):
+    pass
+
+
+class Main(object):
+
+    def __init__(self, argv=None):
+        if argv == None:
+            argv = sys.argv
+        self.argv = argv
+
+
+    def main(argv=None):
+        try:
+            output = Main(argv).execute()
+            if output:
+                sys.stdout.write(output)
+            sys.exit(0)
+        except CommandOptionError:
+            ex = sys.exc_info()[1]
+            sys.stderr.write(str(ex) + "\n")
+            sys.exit(1)
+        except TemplateSyntaxError:
+            ex = sys.exc_info()[1]
+            #sys.stderr.write(str(ex) + "\n")
+            sys.stderr.write(ex.build_error_message())
+            sys.exit(1)
+    main = staticmethod(main)
+
+
+    def execute(self):
+        ## parse options
+        noargopts = 'hvsSNXCUbxzqwTPdD'
+        argopts   = 'fcikra'
+        argopts2  = ''
+        command   = os.path.basename(self.argv[0])
+        args      = self.argv[1:]
+        options, properties, filenames = self.parse_args(args, noargopts, argopts, argopts2)
+
+        ## help or version
+        if options.get('h') or properties.get('help'):
+            return self.usage(command)
+        if options.get('v') or properties.get('version'):
+            return self.version() + "\n"
+
+        ## check options
+        if 'i' in options and not re.match(r'\d+', options['i']):
+            raise self.error("-i: integer value required.")
+        if 'indent' in properties and not re.match(r'\d+', properties['indent']):
+            raise self.error("--indent: integer value required.")
+        if 'f' in options and not os.path.isfile(options['f']):
+            raise self.error("-f %s: file not found." % options['f'])
+        pp_classes = []
+        if 'pp' in properties:
+            for x in properties['pp'].split(','):
+                klass = getattr(tenjin, '%sPreprocessor' % x, None)
+                if not klass:
+                    raise self.error("--pp=%s: 'tenjin.%sPreprocessor' not found." % (x, x))
+                pp_classes.append(klass)
+
+        ## set action
+        action = options.get('a')
+        actions = ('render', 'convert', 'cache', 'retrieve', 'statements', 'syntax', 'dump', 'preprocess')
+        if action:
+            if action not in actions:
+                raise self.error("-a %s: unknown action." % action)
+        else:
+            action = options.get('s') and 'convert'    or \
+                     options.get('X') and 'statements' or \
+                     options.get('S') and 'retrieve'   or \
+                     options.get('z') and 'syntax'     or \
+                     options.get('P') and 'preprocess' or \
+                     True             and 'render'
+
+        ## encoding
+        if 'k' in options:
+            _encoding = options['k']
+            tostrfunc = properties.get('tostrfunc', 'to_str')
+            if python2:
+                tenjin.set_template_encoding(encode=_encoding)
+            elif python3:
+                tenjin.set_template_encoding(decode=_encoding)
+            globals()['to_str'] = tenjin.helpers.to_str
+        encoding = properties.get('encoding')
+        if encoding:
+            tenjin.set_template_encoding(decode=encoding)
+            globals()['to_str'] = tenjin.helpers.to_str
+
+        ## add '.' to sys.path
+        sys.path.append('.')
+
+        ## modules
+        if 'r' in options:
+            global_dict = globals()
+            try:
+                for module_name in options['r'].split(','):
+                    module_name = module_name.strip()
+                    global_dict[module_name] = __import__(module_name)
+            except ImportError:
+                raise self.error("-r %s: module not found." % module_name)
+
+        ## context data file
+        context = {}
+        if 'f' in options:
+            datafile = options['f']
+            read_file = tenjin._read_template_file
+            content = read_file(datafile)
+            if datafile.endswith('.yaml') or datafile.endswith('.yml'):
+                if not options.get('T'):
+                    content = content.expandtabs()
+                context = self._load_yaml(content, datafile)
+            elif datafile.endswith('.py'):
+                exec(content, globals(), context)
+            else:
+                raise self.error("-f %s: unknown file type ('*.yaml' or '*.py' expected)." % datafile)
+
+        ## context data
+        if 'c' in options:
+            s = options['c']
+            if len(s) > 0:
+                if s[0] == '{':         ## yaml string
+                    yamlstr = s
+                    context2 = self._load_yaml(yamlstr, '-c')
+                else:
+                    python_code = s     ## python code
+                    context2 = {}
+                    exec(python_code, globals(), context2)
+                context.update(context2)
+
+        ## set properties for tenjin.Template
+        if 'b' in options:
+            properties['preamble'] = properties['postamble'] = False
+        elif action == 'convert' or action == 'retrieve' or action == 'statements':
+            properties.setdefault('preamble', True)
+            properties.setdefault('postamble', True)
+        if 'i' in options:
+            properties['indent'] = int(options['i'])
+        if 'pp' in properties:
+            properties['pp'] = [ klass() for klass in pp_classes ]
+
+        ## set properties for tenjin.Engine
+        properties.setdefault('cache', action == 'cache');
+        path = None
+        if 'path' in properties:
+            path = []
+            for dir in properties['path'].split(','):
+                if not os.path.exists(dir):
+                    raise self.error("%s: directory not found." % dir)
+                if not os.path.isdir(dir):
+                    raise self.error('%s: not a directory.' % dir)
+                path.append(dir)
+            properties['path'] = path
+        if action == 'preprocess' or options.get('P'):
+            properties['templateclass'] = tenjin.Preprocessor
+            properties['preprocess'] = False
+        elif action == 'retrieve':
+            properties['templateclass'] = NoTextTemplate
+        elif action == 'statements':
+            properties['templateclass'] = NoTextTemplate
+            properties['noexpr'] = True
+
+        ## '--safe' option
+        if properties.get('safe') == True:
+            properties.pop('safe')
+            tenjin.Engine.templateclass = tenjin.SafeTemplate
+            #if action == 'preprocess' or options.get('P'):
+            if properties.get('templateclass') == tenjin.Preprocessor:
+                properties['templateclass'] = tenjin.SafePreprocessor
+
+        ## create engine
+        engine = tenjin.Engine(**properties)
+
+        ## execute
+        output_buf = []
+        template_names = filenames
+        if not template_names:
+            template_names = [None]
+        for template_name in template_names:
+            if template_name is None:
+                input = sys.stdin.read()
+                template = tenjin.Template(None, **properties)
+                template.convert(input)
+                engine.register_template('-', template)
+            if action == 'convert' or action == 'retrieve' or action == 'statements':
+                template = engine.get_template(template_name)
+                if not template.script:
+                    template.convert_file(template.filename)
+                output = template.script
+            elif action == 'cache':
+                template = engine.get_template(template_name)
+                #if not template.script:
+                #    template.convert_file(template.filename)
+                output = ''
+            elif action == 'syntax':
+                try:
+                    template = engine.get_template(template_name)
+                    output = self.check_syntax(template.script, template.filename)
+                except TemplateSyntaxError:
+                    ex = sys.exc_info()[1]
+                    output = ex.build_error_message()
+                if output is None:
+                    output = not options.get('q') and "%s - ok.\n" % template.filename or ''
+            elif action == 'dump':
+                cache_filename = template_name
+                dct = marshal.load(open(cache_filename, 'rb'))
+                output = dct['script']
+                if dct['args'] is not None:
+                    output += '#@ARGS ' + ', '.join(dct['args']) + "\n"
+            elif action == 'render' or action == 'preprocess':
+                output = engine.render(template_name, context)
+            else:
+                assert False
+            if python2:
+                if encoding and isinstance(output, unicode):
+                    output = output.encode(encoding)       ## unicode to binary(=str)
+            output = self.manipulate_output(output, options)
+            output_buf.append(output)
+
+        ## return output
+        return ''.join(output_buf)
+
+
+    def _load_yaml(self, yamlstr, errstr):
+        try:
+            import yaml
+        except ImportError:
+            raise self.error("PyYAML is required to parse YAML file or string.")
+        context = yaml.load(yamlstr)
+        if not isinstance(context, dict):
+            raise self.error("%s: not a mapping (dictionary)." % errstr)
+        return context
+
+
+    def check_syntax(self, script, filename):
+        try:
+            compile(script, filename, 'exec')
+            return None
+        except SyntaxError:
+            ex = sys.exc_info()[1]
+            if ex.msg == 'unindent does not match any outer indentation level':
+                lines = script.splitlines(True)
+                i = ex.lineno - 1 - 1
+                while i >= 0 and lines[i].strip() == '':
+                    i -= 1
+                assert i >= 0
+                line = lines[i]
+                indent = len(line) - len(line.lstrip())
+                if line[indent] == '#':
+                    ex.text = line
+                    ex.lineno = i + 1
+                else:
+                    line = lines[ex.lineno - 1]
+                    indent = len(line) - len(line.lstrip())
+                ex.offset = indent + 1
+            spaces =  ' ' * (len("  %d: " % ex.lineno) + ex.offset - 1)
+            output =  "%s:%d:%d: %s\n" % (ex.filename, ex.lineno, ex.offset, ex.msg)
+            output += "  %d: %s%s" % (ex.lineno, ex.text, ex.text[-1] != "\n" and "\n" or "")
+            output += "%s^\n" % spaces
+            return output
+
+
+    def manipulate_output(self, output, options):
+        flag_linenum  = options.get('N')   # add line numbers
+        flag_compact  = options.get('C')   # remove empty lines
+        flag_uniq     = options.get('U')   # compress empty lines into a line
+        if (flag_linenum):
+            #def gen():
+            #    n = 0
+            #    while True:
+            #        n += 1
+            #        yield "%5d:  " % n
+            #g = gen()
+            #f = lambda m: g.next()
+            n = [0,]
+            def f(m):
+                n[0] += 1
+                return "%5d:  " % n[0]
+            pat = re.compile(r'^', re.M)
+            output = pat.sub(f, output)
+            output = re.sub(r'\n +\d+:  $', "\n", output)
+            if flag_compact:
+                pat2 = re.compile(r'^\s*\d+:\s+?\n', re.M)
+                output = pat2.sub('', output)
+            if flag_uniq:
+                pat3 = re.compile(r'^(\s*\d+:\s+?\n)+', re.M)
+                output = pat3.sub("\n", output)
+        else:
+            if flag_compact:
+                pat2 = re.compile(r'^\s*?\n', re.M)
+                output = pat2.sub('', output)
+            if flag_uniq:
+                pat3 = re.compile(r'^(\s*?\n)+', re.M)
+                output = pat3.sub("\n", output)
+        return output
+
+
+    def usage(self, command):
+        s = r"""
+%(command)s - fast and full-featured template engine
+Usage: %(command)s [..options..] [file1 [file2...]]
+  -h, --help          :  help
+  -v, --version       :  version
+  -a action           :  action (default 'render')
+     -a render        :  render template
+     -a convert       :  convert template into script
+     -a cache         :  convert template into cache file
+     -a retrieve      :  retrieve statements and expressions
+     -a statements    :  retrieve only statements
+     -a syntax        :  syntax check of template
+     -a dump          :  show scripts in cache file
+     -a preprocess    :  show preprocessed template
+  -s                  :  alias of '-a convert'
+  -S                  :  alias of '-a retrieve'
+  -X                  :  alias of '-a statements'
+  -z                  :  alias of '-a syntax'
+  -d                  :  alias of '-a dump'
+  -P                  :  alias of '-a preprocess'
+  -N                  :  add line number
+  -C                  :  compact: remove empty lines
+  -U                  :  uniq: compress empty lines into a line
+  -b                  :  remove "_buf=[];" and "''.join(_buf)"
+  -q                  :  quet mode (for '-a syntax')
+# -w                  :  use strict package
+  -c string           :  context data string (yaml or python)
+  -f file             :  context data file (*.yaml or *.py)
+  -T                  :  unexpand tab chars in datafile
+  -r mod1,mod2,..     :  import modules
+# -i N, --indent=N    :  indent width (default 4)
+  -k encoding         :  encoding name, without cnverting into unicode
+  --indent=N          :  indent width (default 4)
+  --encoding=encoding :  encoding name, with converting into unicode
+  --escapefunc=name   :  'escape' function name
+  --tostrfunc=name    :  'to_str' function name
+  --preamble=text     :  preamble which is insreted into python script
+  --postamble=text    :  postamble which is insreted into python script
+  --smarttrim         :  trim "\n#{expr}\n" into "\n#{expr}".
+  --prefix=str        :  prefix string for template shortname
+  --postfix=str       :  postfix string for template shortname
+  --layout=filename   :  layout template name
+  --path=dir1,dir2,.. :  template lookup path
+  --preprocess        :  activate preprocessing
+  --pp=name1,name2,.. :  preprocessor class (Trim,JavaScript,PrefixedLine)
+  --templateclass=name:  template class (default: tenjin.Template)
+  --safe              :  use SafeTemplate class instead of Template
+Examples:
+ ex1. render template
+   $ %(command)s file.pyhtml
+ ex2. convert template into python script
+   $ %(command)s -s file.pyhtml                  # or '-a convert' instead of '-s'
+   $ %(command)s -s --pp=Trim,JavaScript file.pyhtml  # convert with preprocessing
+   $ %(command)s -a retrieve -UN file.pyhtml     # for debug
+ ex3. create cache file (*.cache) from template
+   $ %(command)s -a cache *.pyhtml
+ ex4. render with context data file (*.yaml or *.py)
+   $ %(command)s -f datafile.yaml file.pyhtml
+ ex5. render with context data string
+   $ %(command)s -c '{title: tenjin example, items: [1, 2, 3]}' file.pyhtml # yaml
+   $ %(command)s -c 'title="tenjin example"; items=[1,2,3]' file.pyhtml   # python
+ ex6. syntax check
+   $ %(command)s -a syntax *.pyhtml   # or '-z'
+""" % { 'command': command }
+        return re.compile(r'^#.*?\n', re.M).sub('', s[1:])
+
+
+    def version(self):
+        return tenjin.__version__
+
+
+    def parse_args(self, args, noargopts, argopts, argopts2):
+        options = {}
+        properties = {}
+        while args and args[0][0] == '-':
+            optstr = args.pop(0)
+            if optstr == '-':
+                break
+            m = re.match(r'^--([-\w]+)(=(.*))?', optstr)
+            if m:
+                name = m.group(1)
+                value = not m.group(2) and True or self.to_value(m.group(3))
+                properties[name] = value
+                continue
+            optstr = optstr[1:]
+            while optstr:
+                ch = optstr[0]
+                optstr = optstr[1:]
+                if ch in noargopts:
+                    options[ch] = True
+                elif ch in argopts:
+                    if optstr:  options[ch] = optstr;  optstr = ''
+                    elif args:  options[ch] = args.pop(0)
+                    else:       raise self.error("-%s: argument required." % ch)
+                elif ch in argopts2:
+                    if optstr:  options[ch] = optstr;  optstr = ''
+                    else:       options[ch] = True
+                else:
+                    raise self.error("-%s: unknown option." % ch)
+            #
+        filenames = args
+        return options, properties, filenames
+
+
+    def to_value(self, s):
+        if s == 'true' or s == 'yes' or s == 'True':
+            return True
+        elif s == 'false' or s == 'no' or s == 'False':
+            return False
+        elif s == 'null' or s == 'None':
+            return None
+        elif re.match(r'\d+', s):
+            return int(s)
+        elif re.match(r'\d+\.\d+', s):
+            return float(s)
+        else:
+            return s
+
+
+    def error(self, message):
+        return CommandOptionError(message)
+
+
+if __name__ == '__main__':
+    Main.main()

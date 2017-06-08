@@ -1,0 +1,767 @@
+{
+    "__meta__": {
+        "version": [
+            2,
+            5
+        ],
+        "compiler": "https://github.com/p4lang/p4c-bm"
+    },
+    "header_types": [
+        {
+            "name": "standard_metadata_t",
+            "id": 0,
+            "fields": [
+                [
+                    "ingress_port",
+                    9
+                ],
+                [
+                    "packet_length",
+                    32
+                ],
+                [
+                    "egress_spec",
+                    9
+                ],
+                [
+                    "egress_port",
+                    9
+                ],
+                [
+                    "egress_instance",
+                    32
+                ],
+                [
+                    "instance_type",
+                    32
+                ],
+                [
+                    "clone_spec",
+                    32
+                ],
+                [
+                    "_padding",
+                    5
+                ]
+            ],
+            "length_exp": null,
+            "max_length": null
+        },
+        {
+            "name": "one_hdr_t",
+            "id": 1,
+            "fields": [
+                [
+                    "f48",
+                    48
+                ],
+                [
+                    "f32",
+                    32
+                ],
+                [
+                    "f16",
+                    16
+                ]
+            ],
+            "length_exp": null,
+            "max_length": null
+        }
+    ],
+    "headers": [
+        {
+            "name": "standard_metadata",
+            "id": 0,
+            "header_type": "standard_metadata_t",
+            "metadata": true
+        },
+        {
+            "name": "one_hdr",
+            "id": 1,
+            "header_type": "one_hdr_t",
+            "metadata": false
+        },
+        {
+            "name": "one_meta",
+            "id": 2,
+            "header_type": "one_hdr_t",
+            "metadata": true
+        }
+    ],
+    "header_stacks": [],
+    "parsers": [
+        {
+            "name": "parser",
+            "id": 0,
+            "init_state": "start",
+            "parse_states": [
+                {
+                    "name": "start",
+                    "id": 0,
+                    "parser_ops": [
+                        {
+                            "op": "extract",
+                            "parameters": [
+                                {
+                                    "type": "regular",
+                                    "value": "one_hdr"
+                                }
+                            ]
+                        },
+                        {
+                            "op": "set",
+                            "parameters": [
+                                {
+                                    "type": "field",
+                                    "value": [
+                                        "one_meta",
+                                        "f48"
+                                    ]
+                                },
+                                {
+                                    "type": "expression",
+                                    "value": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "-",
+                                            "left": {
+                                                "type": "expression",
+                                                "value": {
+                                                    "op": "+",
+                                                    "left": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "one_hdr",
+                                                            "f32"
+                                                        ]
+                                                    },
+                                                    "right": {
+                                                        "type": "field",
+                                                        "value": [
+                                                            "one_hdr",
+                                                            "f16"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xab"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "transition_key": [],
+                    "transitions": [
+                        {
+                            "type": "default",
+                            "value": null,
+                            "mask": null,
+                            "next_state": null
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "parse_vsets": [],
+    "deparsers": [
+        {
+            "name": "deparser",
+            "id": 0,
+            "order": [
+                "one_hdr"
+            ]
+        }
+    ],
+    "meter_arrays": [],
+    "actions": [
+        {
+            "name": "another_action",
+            "id": 0,
+            "runtime_data": [
+                {
+                    "name": "param_3",
+                    "bitwidth": 16
+                }
+            ],
+            "primitives": [
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "&",
+                                    "left": {
+                                        "type": "field",
+                                        "value": [
+                                            "one_hdr",
+                                            "f32"
+                                        ]
+                                    },
+                                    "right": {
+                                        "type": "hexstr",
+                                        "value": "0xffff"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "|",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f16"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xf0f0"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f32"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xf0f"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "|",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f16"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "expression",
+                                                "value": {
+                                                    "op": "~",
+                                                    "left": null,
+                                                    "right": {
+                                                        "type": "hexstr",
+                                                        "value": "0xf0f"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f32"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xf0f"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "*",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "+",
+                                            "left": {
+                                                "type": "local",
+                                                "value": 0
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x1"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "hexstr",
+                                        "value": "0x2"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "add",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f48"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "+",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "^",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f32"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_meta",
+                                                    "f16"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "field",
+                                        "value": [
+                                            "one_hdr",
+                                            "f32"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "type": "hexstr",
+                            "value": "0x12"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "one_action",
+            "id": 1,
+            "runtime_data": [
+                {
+                    "name": "param_1",
+                    "bitwidth": 16
+                },
+                {
+                    "name": "param_2",
+                    "bitwidth": 48
+                }
+            ],
+            "primitives": [
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "&",
+                                    "left": {
+                                        "type": "field",
+                                        "value": [
+                                            "one_hdr",
+                                            "f32"
+                                        ]
+                                    },
+                                    "right": {
+                                        "type": "hexstr",
+                                        "value": "0xffff"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "|",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f16"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xf0f0"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f32"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xf0f"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "|",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f16"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "expression",
+                                                "value": {
+                                                    "op": "~",
+                                                    "left": null,
+                                                    "right": {
+                                                        "type": "hexstr",
+                                                        "value": "0xf0f"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "&",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f32"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0xf0f"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "modify_field",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f16"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "*",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "+",
+                                            "left": {
+                                                "type": "local",
+                                                "value": 0
+                                            },
+                                            "right": {
+                                                "type": "hexstr",
+                                                "value": "0x1"
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "hexstr",
+                                        "value": "0x2"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "op": "add",
+                    "parameters": [
+                        {
+                            "type": "field",
+                            "value": [
+                                "one_hdr",
+                                "f48"
+                            ]
+                        },
+                        {
+                            "type": "expression",
+                            "value": {
+                                "type": "expression",
+                                "value": {
+                                    "op": "+",
+                                    "left": {
+                                        "type": "expression",
+                                        "value": {
+                                            "op": "^",
+                                            "left": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_hdr",
+                                                    "f32"
+                                                ]
+                                            },
+                                            "right": {
+                                                "type": "field",
+                                                "value": [
+                                                    "one_meta",
+                                                    "f16"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "right": {
+                                        "type": "local",
+                                        "value": 1
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "type": "hexstr",
+                            "value": "0x12"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "pipelines": [
+        {
+            "name": "ingress",
+            "id": 0,
+            "init_table": "one_table",
+            "tables": [
+                {
+                    "name": "one_table",
+                    "id": 0,
+                    "match_type": "exact",
+                    "type": "simple",
+                    "max_size": 16384,
+                    "with_counters": false,
+                    "direct_meters": null,
+                    "support_timeout": false,
+                    "key": [],
+                    "actions": [
+                        "one_action",
+                        "another_action"
+                    ],
+                    "next_tables": {
+                        "one_action": null,
+                        "another_action": null
+                    },
+                    "base_default_next": null
+                }
+            ],
+            "action_profiles": [],
+            "conditionals": []
+        },
+        {
+            "name": "egress",
+            "id": 1,
+            "init_table": null,
+            "tables": [],
+            "action_profiles": [],
+            "conditionals": []
+        }
+    ],
+    "calculations": [],
+    "checksums": [],
+    "learn_lists": [],
+    "field_lists": [],
+    "counter_arrays": [],
+    "register_arrays": [],
+    "force_arith": [
+        [
+            "standard_metadata",
+            "ingress_port"
+        ],
+        [
+            "standard_metadata",
+            "packet_length"
+        ],
+        [
+            "standard_metadata",
+            "egress_spec"
+        ],
+        [
+            "standard_metadata",
+            "egress_port"
+        ],
+        [
+            "standard_metadata",
+            "egress_instance"
+        ],
+        [
+            "standard_metadata",
+            "instance_type"
+        ],
+        [
+            "standard_metadata",
+            "clone_spec"
+        ],
+        [
+            "standard_metadata",
+            "_padding"
+        ]
+    ]
+}

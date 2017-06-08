@@ -1,0 +1,65 @@
+{
+    "shift_left" :
+    {
+        "num_args" : 3,
+        "args" : ["field", "value1", "value2"],
+        "properties" : {
+                "field" : {
+                    "type" : "int",
+                    "access" : "write"
+                },
+                "value1" : {
+                    "type" : "int",
+                    "access" : "read"
+                },
+                "value2" : {
+                    "type" : "int",
+                    "access" : "read"
+                }
+        }
+    },
+    "shift_right" :
+    {
+        "num_args" : 3,
+        "args" : ["field", "value1", "value2"],
+        "properties" : {
+                "field" : {
+                    "type" : "int",
+                    "access" : "write"
+                },
+                "value1" : {
+                    "type" : "int",
+                    "access" : "read"
+                },
+                "value2" : {
+                    "type" : "int",
+                    "access" : "read"
+                }
+        }
+    },
+    "exit" :
+    {
+        "num_args" : 0,
+        "args" : [],
+        "properties" : { }
+    },
+    "modify_field_rng_uniform" :
+    {
+        "num_args" : 3,
+        "args" : ["dst", "begin", "end"],
+        "properties" : {
+            "dst" : {
+                "type" : "int",
+                "access" : "write"
+            },
+            "begin" : {
+                "type" : "int",
+                "access" : "read"
+            },
+            "end" : {
+                "type" : "int",
+                "access" : "read"
+            }
+        }
+    }
+}
