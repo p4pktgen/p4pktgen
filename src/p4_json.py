@@ -115,7 +115,7 @@ class P4_JSON():
             elif attr == 'header_types':
                 temp = OrderedDict()
                 for items in data[attr]:
-                    length_exp = None if 'length_exp' not in items else items['legnth_exp']
+                    length_exp = None if 'length_exp' not in items else items['length_exp']
                     max_length = None if 'max_length' not in items else items['max_length']
                     temp.update({items['name'] : OrderedDict([('name', items['name']),
                                                 ('id', items['id']),
