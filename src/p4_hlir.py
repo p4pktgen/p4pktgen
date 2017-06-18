@@ -1,22 +1,38 @@
+# Added support
+from __future__ import print_function
+
+"""p4_hlir.py class for operating on the HLIR"""
+
+__author__ = "Jehandad Khan, Colin Burgin"
+__copyright__ = "Copyright 2017, Virginia Tech"
+__credits__ = [""]
+__license__ = "MIT"
+__version__ = "1.0"
+__maintainer__ = ""
+__email__ = "jehandad@vt.edu, cburgin@vt.edu"
+__status__ = "in progress"
+
+# Standard Python Libraries
+import json
+from pprint import pprint
 from collections import OrderedDict
-from OrderedGraph import OrderedGraph
-from OrderedGraph import OrderedDiGraph
 
-from p4_json import P4_JSON
-from p4_enums import p4_parser_ops_enum
+# Installed Packages/Libraries
 
-class p4_obj(object):
-    """
-    Base class for all things P4
-    """
-    pass
+# P4 Specfic Libraries
 
-class p4_hlir(p4_obj):
+# Local API Libraries
+from p4_obj import P4_Obj
+from p4_utils import OrderedGraph
+from p4_utils import OrderedDiGraph
+from p4_utils import p4_parser_ops_enum
+
+class P4_HLIR(P4_Obj):
     """
-    Top level p4_hlir object
+    Top level P4_HLIR object
     Aggregates all the elements of a parsed P4 program
     """
-    class p4_field(p4_obj):
+    class p4_field(P4_Obj):
         """
         Class to represent a P4 field which is part of a P4 Header Type
         """
@@ -34,7 +50,7 @@ class p4_hlir(p4_obj):
         def __str__(self):
             return __repr__(self)
 
-    class p4_hdr_type(p4_obj):
+    class p4_hdr_type(P4_Obj):
         """
         Class to represent a P4 Header Type
         """
@@ -46,13 +62,13 @@ class p4_hlir(p4_obj):
                 # sign is a header field is optional
                 assert(len(f) >= 2)
                 if len(f) == 3:
-                    fd = p4_hlir.p4_field(f[0] , int(f[1]), f[2])
+                    fd = P4_HLIR.p4_field(f[0] , int(f[1]), f[2])
                 else:
-                    fd = p4_hlir.p4_field(f[0] , int(f[1]), False)
+                    fd = P4_HLIR.p4_field(f[0] , int(f[1]), False)
                 fd.hdr_type = self
                 self.fields[fd.name] = fd
 
-    class p4_header(p4_obj):
+    class p4_header(P4_Obj):
         """
         Class to represent a header instance
         """
@@ -66,9 +82,9 @@ class p4_hlir(p4_obj):
             self.fields = OrderedDict()
             # TODO: Special or hidden fields are not declared in the json but 
             # are assumed to exist
-            self.fields['$valid$'] = p4_hlir.p4_field('$valid$', 1, False)
+            self.fields['$valid$'] = P4_HLIR.p4_field('$valid$', 1, False)
 
-    class p4_parser_transition(p4_obj):
+    class p4_parser_transition(P4_Obj):
         """
         Class representing the P4 parser transitions
         """
@@ -79,7 +95,7 @@ class p4_hlir(p4_obj):
             self.mask = json_obj['mask'] # TODO Convert to int ? 
             self.value = None if json_obj['value'] == 'default' else int(json_obj['value'], 16)
 
-    class p4_parser_ops(p4_obj):
+    class p4_parser_ops(P4_Obj):
         """
         Class representing the operations in a parse state
         """
@@ -90,7 +106,7 @@ class p4_hlir(p4_obj):
                 self.op = p4_parser_ops_enum.extract
                 # for param in json_op['parameters']:
                 #     if param['type'] == 'regular':
-                #         self.value = p4_hlir.parse_p4_value(param) # hdrs[param['value']]
+                #         self.value = P4_HLIR.parse_p4_value(param) # hdrs[param['value']]
                 #     elif param['type'] == 'stack':
                 #         self.value = self.hdr_stacks[json_op['parameters']['value']]
                 #     elif param['type'] == 'union_stack':
@@ -107,7 +123,7 @@ class p4_hlir(p4_obj):
             elif json_op['op'] == 'primitive':
                 self.op = p4_parser_ops_enum.primitive
             
-    class p4_parse_state(p4_obj):
+    class p4_parse_state(P4_Obj):
         """
         Class representing parser states
         """
@@ -122,7 +138,7 @@ class p4_hlir(p4_obj):
             self.transition_key = []
 
 
-    class p4_parser(p4_obj):
+    class p4_parser(P4_Obj):
         """
         Class representing the p4 parser
         """
@@ -150,7 +166,7 @@ class p4_hlir(p4_obj):
                     else:
                         self.graph.add_edge(ps_name, 'sink', transition=tns)
 
-    class p4_expression(p4_obj):
+    class p4_expression(P4_Obj):
         """
         Class representing the parsed p4 expression
         """
@@ -159,30 +175,31 @@ class p4_hlir(p4_obj):
 
         def parse_expression(self, json_obj):
             self.op = json_obj['op']
-            # self.left = super(p4_hlir.p4_expression, self).parse_p4_value(json_obj['left'])
-            # self.right = super(p4_hlir.p4_expression, self).parse_p4_value(json_obj['right'])
+            # self.left = super(P4_HLIR.p4_expression, self).parse_p4_value(json_obj['left'])
+            # self.right = super(P4_HLIR.p4_expression, self).parse_p4_value(json_obj['right'])
 
-    def __init__(self, json_obj):
+    def __init__(self, debug, json_obj):
         """
         The order in which these objects are intialized is not arbitrary
         There is a dependence between these objects and therefore order 
         must be preserved
         """
+        self.debug = debug
         self.meta = None
         self.meta = json_obj['__meta__']
         self.hdr_types = OrderedDict()
         for hdr_type in json_obj['header_types']:
-            ht = p4_hlir.p4_hdr_type(hdr_type)
+            ht = P4_HLIR.p4_hdr_type(hdr_type)
             self.hdr_types[ht.name] = ht
         
         self.hdrs = OrderedDict()
         for hdr in json_obj['headers']:
-            ho = p4_hlir.p4_header(hdr)
+            ho = P4_HLIR.p4_header(hdr)
             ho.hdr_type = self.hdr_types[ho.hdr_type_name]
             fds_dict = self.hdr_types[ho.hdr_type_name].fields
             for k, fd in self.hdr_types[ho.hdr_type_name].fields.items():
                 # make a copy for this header instance
-                new_fd = p4_hlir.p4_field(fd.name, fd.size, fd.signed)
+                new_fd = P4_HLIR.p4_field(fd.name, fd.size, fd.signed)
                 new_fd.hdr_type = fd.hdr_type
                 new_fd.hdr = ho
                 ho.fields[fd.name] = new_fd
@@ -197,17 +214,17 @@ class p4_hlir(p4_obj):
         self.enums = None
         self.parsers = OrderedDict()
         for p in json_obj['parsers']:
-            parser = p4_hlir.p4_parser(p)
+            parser = P4_HLIR.p4_parser(p)
             for parse_state in p['parse_states']:
-                p4ps = p4_hlir.p4_parse_state(parse_state)
+                p4ps = P4_HLIR.p4_parse_state(parse_state)
                 for k in parse_state['parser_ops']:
-                    po = p4_hlir.p4_parser_ops(k)
+                    po = P4_HLIR.p4_parser_ops(k)
                     po.value = []
                     for pair in k['parameters']:
                         po.value.append(self.parse_p4_value(pair))
                     p4ps.parser_ops.append(po)
                 for k in parse_state['transitions']:
-                    tns = p4_hlir.p4_parser_transition(k)
+                    tns = P4_HLIR.p4_parser_transition(k)
                     p4ps.transitions[tns.value] = tns
                 for k in parse_state['transition_key']:
                     p4ps.transition_key.append(self.parse_p4_value(k))
@@ -247,7 +264,7 @@ class p4_hlir(p4_obj):
         elif json_obj['type'] == 'expression':
             if 'type' in json_obj['value']:
                 return self.parse_p4_value(json_obj['value'])
-            exp = p4_hlir.p4_expression(json_obj['value'])
+            exp = P4_HLIR.p4_expression(json_obj['value'])
             # Unary ops
             if json_obj['value']['left']:
                 exp.left = self.parse_p4_value(json_obj['value']['left'])
