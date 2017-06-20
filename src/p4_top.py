@@ -24,6 +24,8 @@ from collections import OrderedDict
 
 # Local API Libraries
 from p4_hlir import P4_HLIR
+from p4_graphs import P4_Graphs
+from p4_utils import dict_or_OrdDict_to_formatted_str
 
 class P4_Top():
     """Top-level for P4_16 API. Takes input P4 device and generates JSON"""
@@ -44,9 +46,17 @@ class P4_Top():
             self.json_file = self.compile_p4(self.input_file, self.flags)
 
         # Generate JSON IR
-        self.p4_IR_obj = self.load_json(self.json_file)
+        self.p4_json_obj = self.load_json(self.json_file)
+        if self.debug:
+            print(json.dumps(self.p4_json_obj, indent=4))
 
-        hlir = P4_HLIR(self.debug, self.p4_IR_obj)
+        # Create HLIR
+        self.hlir = P4_HLIR(self.debug, self.p4_json_obj)
+
+        # Build parser graph
+        self.graphs = P4_Graphs(self.debug, self.hlir)
+        self.graphs.get_parser()
+
 
     # Compile p4 device and save JSON, return JSON file name
     # **NEED TO ADD SUPPORT FOR COMPILER FLAGS**

@@ -33,9 +33,6 @@ class OrderedDiGraph(nx.DiGraph):
     node_dict_factory = OrderedDict
     adjlist_dit_factory = OrderedDict
 
-class P4_JSON():
-	"""Class for json specfic functions"""
-
 # Pretty print Dict or ODict
 # Copied from http://stackoverflow.com/questions/4301069/any-way-to-properly-pretty-print-ordered-dictionaries-in-python
 # Example: print(self.dict_or_OrdDict_to_formatted_str(self.ir, mode='OD'))
