@@ -1,0 +1,6 @@
+I am not sure how to create issue with BitBucket and this is easy enough.
+
+- Add more debug information
+- Update the compiler to the latest version.  You cannot compile a *.p4 file and get the graphs currently.
+- In P4_HLIR, need to add checks for if fields exist or not
+- In P4_Graphs, need to add a function that prints graphs for visualization / debug
