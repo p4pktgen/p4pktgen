@@ -22,6 +22,7 @@ import networkx as nx
 # Local API Libraries
 from p4_hlir import P4_HLIR
 from p4_utils import OrderedDiGraph
+from p4_constraints import generate_constraints
 
 class P4_Graphs():
     """P4_Graphs: returns graph objects"""
@@ -33,9 +34,10 @@ class P4_Graphs():
 
     # Returns the Network X Graph
     def get_parser(self):
-    	paths = nx.all_simple_paths(self.build_parser_graph(),
+        paths = nx.all_simple_paths(self.build_parser_graph(),
     								source=self.IR.parsers['parser'].init_state, target='sink')
-    	print(*list(paths),sep='\n')
+        for path in paths:
+            generate_constraints(self.IR, path)
 
     # # Prints the ROBDD graph using GraphViz
     # def print_graph(self, name):
