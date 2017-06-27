@@ -16,11 +16,14 @@ __status__ = "in progress"
 import argparse
 
 # Installed Packages/Libraries
+import networkx as nx
+import matplotlib.pyplot as plt
 
 # P4 Specfic Libraries
 
 # Local API Libraries
 from p4_top import P4_Top
+from p4_hlir import P4_HLIR
 
 def main():
     #Parse the command line arguments provided at run time.
@@ -38,13 +41,21 @@ def main():
     # Parse the input arguments
     args = parser.parse_args()
 
-    parse = P4_Top(args.debug)
+    top = P4_Top(args.debug)
 
     # Build the IR
     if args.p4_file != None:
-        parse.build_from_p4(args.p4_file, args.flags)
+        top.build_from_p4(args.p4_file, args.flags)
     else:
-        parse.build_from_json(args.json_file)
+        top.build_from_json(args.json_file)
+
+    # Get the parser graph
+    hlir = P4_HLIR(args.debug, top.json_obj)
+    parser_graph = hlir.get_parser_graph()
+
+    paths = nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink')
+    print(*list(paths),sep='\n')
+
 
 if __name__ =='__main__':
     main()

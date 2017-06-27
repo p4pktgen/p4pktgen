@@ -141,6 +141,7 @@ class P4_HLIR(P4_Obj):
 
         # Init for parser class
         def __init__(self, json_obj):
+            # JSON Attributes
             self.name = str(json_obj['name'])
             self.id = int(json_obj['id'])
             self.init_state = str(json_obj['init_state'])
@@ -221,6 +222,26 @@ class P4_HLIR(P4_Obj):
         self.enums = None
 
         self.parse_vsets = None
+
+    # Creates an Ordered Networkx graph to represent the parser
+    def get_parser_graph(self):
+        
+        graph = OrderedDiGraph()
+        # Add all the parse states as nodes
+        for ps_name, ps in self.parsers["parser"].parse_states.items():
+            graph.add_node(ps_name, parse_state=ps)
+        graph.add_node('sink')
+
+        # Add all the transitions as edges to the graph
+        for ps_name, ps in self.parsers["parser"].parse_states.items():
+            for tns_name, tns in ps.transitions.items():
+                if tns.next_state:
+                    graph.add_edge(ps_name, tns.next_state.name, 
+                        transition=tns)
+                else:
+                    graph.add_edge(ps_name, 'sink', transition=tns)
+
+        return graph
 
     # parses the p4/json type/value combo to the appropriate object
     def parse_p4_value(self, json_obj):

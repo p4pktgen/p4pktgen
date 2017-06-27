@@ -31,28 +31,6 @@ class P4_Graphs():
     	self.debug = debug
     	self.IR = IR
 
-    # Builds the NetworkX graph for the parser and returns it
-    def build_parser_graph(self):
-        """
-        Creates an Ordered Networkx graph to represent the parser
-        """
-        graph = OrderedDiGraph()
-        # Add all the parse states as nodes
-        for ps_name, ps in self.IR.parsers['parser'].parse_states.items():
-            graph.add_node(ps_name, parse_state=ps)
-        graph.add_node('sink')
-
-        # Add all the transitions as edges to the graph
-        for ps_name, ps in self.IR.parsers['parser'].parse_states.items():
-            for tns_name, tns in ps.transitions.items():
-                if tns.next_state:
-                    graph.add_edge(ps_name, tns.next_state.name, 
-                        transition=tns)
-                else:
-                    graph.add_edge(ps_name, 'sink', transition=tns)
-
-        return graph
-
     # Returns the Network X Graph
     def get_parser(self):
     	paths = nx.all_simple_paths(self.build_parser_graph(),

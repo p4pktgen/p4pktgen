@@ -23,7 +23,6 @@ from collections import OrderedDict
 # P4 Specfic Libraries
 
 # Local API Libraries
-from p4_hlir import P4_HLIR
 from p4_graphs import P4_Graphs
 from p4_utils import dict_or_OrdDict_to_formatted_str
 
@@ -36,14 +35,7 @@ class P4_Top():
         # Set class variables
         self.debug = debug
         self.json_file = None
-
-        # # Generate JSON IR
-        # self.p4_json_obj = self.load_json(self.json_file)
-        # if self.debug:
-        #     print(json.dumps(self.p4_json_obj, indent=4))
-
-        # # Create HLIR
-        # self.hlir = P4_HLIR(self.debug, self.p4_json_obj)
+        self.json_obj = None
 
         # # Build parser graph
         # self.graphs = P4_Graphs(self.debug, self.hlir)
