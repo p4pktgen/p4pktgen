@@ -26,9 +26,9 @@ def main():
     #Parse the command line arguments provided at run time.
     parser = argparse.ArgumentParser(description='P4 device input file')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-p', '--input_p4', dest='input_file',
+    group.add_argument('-p', '--input_p4', dest='p4_file',
                         type=str, help='Provide the path to the P4 device file')
-    group.add_argument('-j', '--input_json', dest='input_file',
+    group.add_argument('-j', '--input_json', dest='json_file',
                         type=str, help='Provide the path to the compiled JSON')
     parser.add_argument('-f', '--flags', dest='flags',
                         type=str, help='Optional compiler flags')
@@ -38,10 +38,13 @@ def main():
     # Parse the input arguments
     args = parser.parse_args()
 
-    if args.debug:
-        print("\nUse -h to see a list of options.", args.input_file)
+    parse = P4_Top(args.debug)
 
-    parse = P4_Top(args.debug, args.input_file, args.flags)
+    # Build the IR
+    if args.p4_file != None:
+        parse.build_from_p4(args.p4_file, args.flags)
+    else:
+        parse.build_from_json(args.json_file)
 
 if __name__ =='__main__':
     main()

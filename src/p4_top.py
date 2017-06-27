@@ -31,51 +31,60 @@ class P4_Top():
     """Top-level for P4_16 API. Takes input P4 device and generates JSON"""
 
     # Standard Init stuff
-    def __init__(self, debug, input_file, flags):
+    def __init__(self, debug):
 
         # Set class variables
         self.debug = debug
-        self.input_file = input_file
-        self.flags = flags
+        self.json_file = None
 
-        # If the input file is already a JSON then no need to compile from source
-        if self.input_file.lower().endswith('.json'):
-            self.json_file = self.input_file
-        else:
-            # Complie P4 device and return JSON file name/location
-            self.json_file = self.compile_p4(self.input_file, self.flags)
+        # # Generate JSON IR
+        # self.p4_json_obj = self.load_json(self.json_file)
+        # if self.debug:
+        #     print(json.dumps(self.p4_json_obj, indent=4))
 
-        # Generate JSON IR
-        self.p4_json_obj = self.load_json(self.json_file)
-        if self.debug:
-            print(json.dumps(self.p4_json_obj, indent=4))
+        # # Create HLIR
+        # self.hlir = P4_HLIR(self.debug, self.p4_json_obj)
 
-        # Create HLIR
-        self.hlir = P4_HLIR(self.debug, self.p4_json_obj)
+        # # Build parser graph
+        # self.graphs = P4_Graphs(self.debug, self.hlir)
+        # self.graphs.get_parser()
 
-        # Build parser graph
-        self.graphs = P4_Graphs(self.debug, self.hlir)
-        self.graphs.get_parser()
-
-
-    # Compile p4 device and save JSON, return JSON file name
-    # **NEED TO ADD SUPPORT FOR COMPILER FLAGS**
-    def compile_p4(self, input_file, flags):
-        # Get input filename
-        [name, extension] = input_file.split(".")
+    # Build P4 Top object from input .p4 device file
+    ## Still needs improvement ##
+    def build_from_p4(self, input_file, flags):
+        # Parse input_file
+        [name, version, extension] = input_file.split(".")
         name = name.split("/")
-        name = "compiled_p4_programs/" + name[-1] + ".json"
+        outfile_name = "compiled_p4_programs/" + name[-1] + "." + version + ".json"
+
+        call_list = ["-o", outfile_name, input_file]
+        
+        # Parse Flags
+        if flags != None:
+            flags = flags.split(" ")
+            call_list = flags + call_list
+
+        # Add compiler call
+        call_list.insert(0, "p4c-bm2-ss")
 
         if self.debug:
-            print("Compiling input P4 device and generating JSON")
+            print("The compiler call was: " + str(call_list))
 
-        # Compile the inputfile and generate JSON.  Currently assuming not v1.1
-        # NEEDS TO BE UPDATED TO NEW COMPILER
-        subprocess.call(["p4c-bmv2", "--json", name, input_file])
+        # Make the command line call
+        subprocess.call(call_list)
 
-        return name
+        # Output file destination
+        self.json_file = outfile_name
+        self.json_obj = self.load_json(self.json_file)
+
+
+    # Build P4 Top object from input .json file
+    def build_from_json(self, input_file):
+        # Output file destination
+        self.json_file = input_file
+        self.json_obj = self.load_json(self.json_file)
 
     # Converts the JSON file to the OD we use as our IR
-    def load_json(self, json_file):
-        data = json.load(open(json_file), object_pairs_hook=OrderedDict)
+    def load_json(self, input_file):
+        data = json.load(open(input_file), object_pairs_hook=OrderedDict)
         return data
