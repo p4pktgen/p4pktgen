@@ -14,6 +14,7 @@ __status__ = "in progress"
 
 # Standard Python Libraries
 import argparse
+import logging
 
 # Installed Packages/Libraries
 import networkx as nx
@@ -24,6 +25,7 @@ import matplotlib.pyplot as plt
 # Local API Libraries
 from p4_top import P4_Top
 from p4_hlir import P4_HLIR
+from config import Config
 
 def main():
     #Parse the command line arguments provided at run time.
@@ -37,9 +39,16 @@ def main():
                         type=str, help='Optional compiler flags')
     parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                         default=False, help='Print debug information')
+    parser.add_argument('-i', '--interface', dest='interface', type=str,
+                        default='veth2', help='Interface to send the packets to')
 
     # Parse the input arguments
     args = parser.parse_args()
+    Config().load_args(args)
+
+    if args.debug:
+        print("\nUse -h to see a list of options.", args.input_file)
+        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     top = P4_Top(args.debug)
 

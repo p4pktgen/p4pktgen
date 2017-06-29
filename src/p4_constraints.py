@@ -1,6 +1,11 @@
 from z3 import *
 from p4_hlir import *
 from scapy.all import *
+from config import Config
+import logging
+import subprocess
+
+# XXX: Position is a 32-bit integer right now. Smaller/larger?
 
 
 class Context:
@@ -16,6 +21,35 @@ class Context:
 
     def get(self, field):
         return self.sym_vars[self.field_to_var(field)]
+
+
+class Packet:
+    def __init__(self):
+        # XXX: dynamic packet size
+        self.max_packet_size = 4096
+        self.sym_packet = BitVec('packet', self.max_packet_size)
+        self.packet_size = BitVecVal(0, 32)
+        self.packet_size_var = BitVec('packet_size', 32)
+
+    def extract(self, start, size):
+        end = start + BitVecVal(size, 32)
+        self.packet_size = simplify(
+            If(self.packet_size > end, self.packet_size, end))
+        return Extract(size - 1, 0, LShR(self.sym_packet, ZeroExt(
+            self.max_packet_size - start.size(), self.max_packet_size - start - size)))
+
+    def add_length_constraint(self, constraints):
+        constraints.append(self.packet_size_var == self.packet_size)
+
+    def get_payload_from_model(self, model):
+        # XXX: find a better way to do this
+        size = model[self.packet_size_var].as_long()
+        hex_str = '{0:x}'.format(model[self.sym_packet].as_long())
+        logging.info(self.max_packet_size / 4)
+        hex_str = hex_str.zfill(self.max_packet_size // 4)
+        n_bytes = (size + 7) // 8 * 8
+        hex_str = hex_str[:n_bytes * 2]
+        return bytearray.fromhex(hex_str)
 
 
 def equalize_bv_size(bvs):
@@ -52,6 +86,7 @@ def p4_expr_to_sym(context, expr):
         size = int(math.log2(expr))
         return BitVecVal(expr, size)
     else:
+        # XXX: implement other operators
         print('expr', expr.__class__)
 
 
@@ -66,28 +101,9 @@ def p4_value_to_bv(value, size):
                 value.__class__))
 
 
-class Packet:
-    def __init__(self):
-        # XXX: dynamic packet size
-        self.max_packet_size = 4096
-        self.sym_packet = BitVec('packet', self.max_packet_size)
-        self.packet_size = 0
+def generate_constraints(hlir, path, json_file):
+    assert path[-1] == 'sink'
 
-    def extract(self, start, end):
-        self.packet_size = max(self.packet_size, end)
-        return Extract(self.max_packet_size - start - 1, self.max_packet_size - end, self.sym_packet)
-
-    def get_payload_from_model(self, model):
-        # XXX: find a better way to do this
-        hex_str = '{0:x}'.format(model[self.sym_packet].as_long())
-        print(self.max_packet_size / 4)
-        hex_str = hex_str.zfill(self.max_packet_size // 4)
-        n_bytes = (self.packet_size + 7) // 8 * 8
-        hex_str = hex_str[:n_bytes * 2]
-        return bytearray.fromhex(hex_str)
-
-
-def generate_constraints(hlir, path):
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
@@ -95,11 +111,10 @@ def generate_constraints(hlir, path):
 
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
-    pos = 0
-    print('\npath = {}'.format(' -> '.join(path)))
-    print('path length = {}'.format(len(path)))
+    pos = BitVecVal(0, 32)
+    logging.info('path = {}'.format(' -> '.join(path)))
     for node, next_node in zip(path, path[1:]):
-        print('{} -> {}\tpos = {}'.format(node, next_node, pos))
+        logging.info('{} -> {}\tpos = {}'.format(node, next_node, pos))
         new_pos = pos
         parse_state = parser.parse_states[node]
 
@@ -123,15 +138,14 @@ def generate_constraints(hlir, path):
 
                     # Map bits from packet to context
                     extract_header = parser_op.value[0]
-                    extract_offset = 0
+                    extract_offset = BitVecVal(0, 32)
                     for name, field in extract_header.fields.items():
                         # XXX: deal with valid flags
                         if field.name != '$valid$':
                             context.insert(field, sym_packet.extract(
                                 pos + extract_offset,
-                                pos + extract_offset +
                                 field.size))
-                            extract_offset += field.size
+                            extract_offset += BitVecVal(field.size, 32)
 
                     new_pos += extract_offset
                 elif op == p4_parser_ops_enum.set:
@@ -153,9 +167,8 @@ def generate_constraints(hlir, path):
                         if field.name != '$valid$':
                             context.insert(field, sym_packet.extract(
                                 pos + extract_offset,
-                                pos + extract_offset +
                                 field.size))
-                            extract_offset += field.size
+                            extract_offset += BitVecVal(field.size, 32)
 
                     new_pos += extract_offset
                 else:
@@ -192,15 +205,82 @@ def generate_constraints(hlir, path):
                 constraints.append(
                     Not(Or([(sym_transition_key == bv_value) for bv_value in other_bv_values])))
 
-            print(sym_transition_key)
-        pos = new_pos
+            logging.info(sym_transition_key)
+        pos = simplify(new_pos)
+
+    sym_packet.add_length_constraint(constraints)
 
     # Construct packet
-    print(And(constraints))
+    logging.info(And(constraints))
     s = Solver()
     s.add(And(constraints))
-    s.check()
-    payload = sym_packet.get_payload_from_model(s.model())
-    print(payload)
+    result = s.check()
+    model = s.model()
+    payload = sym_packet.get_payload_from_model(model)
     packet = Ether(bytes(payload))
-    sendp(packet, iface='veth2')
+    logging.info(packet.summary())
+    extracted_path = test_packet(packet, json_file)
+
+    if path[:-1] != extracted_path:
+        logging.error(
+            'Expected ({}) and actual ({}) path differ'.format(
+                ' -> '.join(path),
+                ' -> '.join(extracted_path)))
+    else:
+        logging.info('Test successful')
+
+
+def test_packet(packet, json_file):
+    """This function starts simple_switch, sends a packet to the switch and
+    returns the parser states that the packet traverses based on the output of
+    simple_switch."""
+
+    # Launching simple_switch and sendp() require root
+    if os.geteuid() != 0:
+        raise Exception('Need root privileges to send packets.')
+
+    config = Config()
+
+    # XXX: are 8 ports always a good choice?
+    n_ports = 8
+    eth_args = []
+    for i in range(n_ports):
+        eth_args.append('-i')
+        eth_args.append('{}@veth{}'.format(i, (i + 1) * 2))
+
+    # Start simple_switch
+    proc = subprocess.Popen(['simple_switch',
+                             '--log-console'] + eth_args + [json_file],
+                            stdout=subprocess.PIPE)
+
+    # Wait for simple_switch to finish initializing
+    init_done = False
+    last_port_msg = 'Adding interface veth{} as port {}'.format(
+        n_ports * 2, n_ports - 1)
+    for line in iter(proc.stdout.readline, ''):
+        if last_port_msg in str(line):
+            init_done = True
+            break
+
+    if not init_done:
+        raise Exception('Initializing simple_switch failed')
+
+    interface = config.get_interface()
+    logging.info('Sending packet to {}'.format(interface))
+
+    # Send packet to switch
+    wrpcap('test.pcap', packet, append=True)
+    sendp(packet, iface=interface)
+
+    # Extract the parse states from the simple_switch output
+    extracted_path = []
+    for b_line in iter(proc.stdout.readline, b''):
+        line = str(b_line)
+        m = re.search(r'Parser state \'(.*)\'', line)
+        if m is not None:
+            extracted_path.append(m.group(1))
+        if 'Parser \'parser\': end' in line:
+            break
+
+    proc.kill()
+    return extracted_path
