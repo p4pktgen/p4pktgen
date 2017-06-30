@@ -32,25 +32,65 @@ class P4_HLIR(P4_Obj):
     Top level P4_HLIR object
     Aggregates all the elements of a parsed P4 program
     """
-    class P4_Header_Types(P4_Obj):
-        """
-        Class to represent a P4 Header Type
-        """
+    class HLIR_Meta(P4_Obj):
+        """Class to represent a P4 meta field"""
         def __init__(self, json_obj):
-            self.name = str(json_obj['name'])
-            self.num_id = int(json_obj['id'])
-            self.fields = OrderedDict()
-            for f in json_obj['fields']:
-                # sign is a header field is optional
-                assert(len(f) >= 2)
-                if len(f) == 3:
-                    fd = P4_HLIR.P4_Field(f[0] , int(f[1]), f[2])
-                else:
-                    fd = P4_HLIR.P4_Field(f[0] , int(f[1]), False)
-                fd.header_type = self
-                self.fields[fd.name] = fd
+            # Set version, it should exist
+            if json_obj.has_key('version') and json_obj['version'] != None:
+                self.version = str(json_obj['version'])
+            else:
+                raise ValueError('Missing __meta__ version value')
 
-    class P4_Field(P4_Obj):
+            # Set compiler, it is optional
+            if json_obj.has_key('compiler') and json_obj['compiler'] != None:
+                self.compiler = str(json_obj['compiler'])
+            else:
+                self.compiler = None
+
+    class HLIR_Header_Types(P4_Obj):
+        """Class to represent a P4 Header Type"""
+        def __init__(self, json_obj):
+            # Set name, it should exist
+            if json_obj.has_key('name') and json_obj['name'] != None:
+                self.name = str(json_obj['name'])
+            else:
+                raise ValueError('Missing Header_Type name value')
+
+            # Set id, it should exist
+            if json_obj.has_key('id') and json_obj['id'] != None:
+                self.id = int(json_obj['id'])
+            else:
+                raise ValueError('Missing Header_Type id value')
+
+            # Set fields, it should exist
+            self.fields = OrderedDict()
+            if json_obj.has_key('fields') and json_obj['fields'] != None:
+                for f in json_obj['fields']:
+                    # sign is a header field is optional
+                    assert(len(f) >= 2)
+                    if len(f) == 3:
+                        fd = P4_HLIR.HLIR_Field(f[0] , int(f[1]), f[2])
+                    else:
+                        fd = P4_HLIR.HLIR_Field(f[0] , int(f[1]), False)
+                    fd.header_type = self
+                    self.fields[fd.name] = fd
+            else:
+                raise ValueError('Missing Header_Type fields value')
+
+            # Set length_exp, it is optional
+            if json_obj.has_key('length_exp') and json_obj['length_exp'] != None:
+                self.length_exp = int(json_obj['length_exp'])
+            else:
+                self.length_exp = None
+
+            # Set max_length, it is optional
+            if json_obj.has_key('max_length') and json_obj['max_length'] != None:
+                self.max_length = int(json_obj['max_length'])
+            else:
+                self.max_length = None
+            
+
+    class HLIR_Field(P4_Obj):
         """
         Class to represent a P4 field which is part of a P4 Header Type
         """
@@ -62,38 +102,62 @@ class P4_HLIR(P4_Obj):
             self.header = None
 
         def __repr__(self):
-            return 'P4_Field({}, {}, {})'.format(self.name, self.size, 
+            return 'HLIR_Field({}, {}, {})'.format(self.name, self.size, 
                     'True' if self.signed else 'False')
 
         def __str__(self):
             return __repr__(self)
 
-    class P4_Headers(P4_Obj):
-        """
-        Class to represent a header instance
-        """
+    class HLIR_Headers(P4_Obj):
+        """Class to represent a header instance"""
         def __init__(self, json_obj):
-            self.name = str(json_obj['name'])
-            self.id = int(json_obj['id'])
-            self.header_type_name = str(json_obj['header_type'])
+            # Set name, it should exist
+            if json_obj.has_key('name') and json_obj['name'] != None:
+                self.name = str(json_obj['name'])
+            else:
+                raise ValueError('Missing Headers name value')
+
+            # Set id, it should exist
+            if json_obj.has_key('id') and json_obj['id'] != None:
+                self.id = int(json_obj['id'])
+            else:
+                raise ValueError('Missing Headers id value')
+
+            # Set initial header_type, it should exist
+            if json_obj.has_key('header_type') and json_obj['header_type'] != None:
+                self.header_type_name = str(json_obj['header_type'])
+            else:
+                raise ValueError('Missing Headers header_type value')
+
+            # Final Header_type var
             self.header_type = None
-            self.metadata = bool(json_obj['metadata'])
-            self.pi_omit = None if 'pi_omit' not in json_obj else bool(json_obj['pi_omit'])
+
+            # Set metadata, it should exist
+            if json_obj.has_key('metadata') and json_obj['metadata'] != None:
+                self.metadata = bool(json_obj['metadata'])
+            else:
+                raise ValueError('Missing Headers metadata value')
+
+            # Set pi_omit, it should exist
+            if json_obj.has_key('pi_omit') and json_obj['pi_omit'] != None:
+                self.pi_omit = bool(json_obj['pi_omit'])
+            else:
+                raise ValueError('Missing Headers pi_omit value')
 
             # TODO: Special or hidden fields are not declared in the json but 
             # are assumed to exist
             self.fields = OrderedDict()
-            self.fields['$valid$'] = P4_HLIR.P4_Field('$valid$', 1, False)
+            self.fields['$valid$'] = P4_HLIR.HLIR_Field('$valid$', 1, False)
 
-    class P4_Parser(P4_Obj):
+    class HLIR_Parser(P4_Obj):
         """
         Class representing the p4 parser
         """
-        class P4_Parse_States(P4_Obj):
+        class HLIR_Parse_States(P4_Obj):
             """
             Class representing the parser parse_states
             """
-            class P4_Parser_Ops(P4_Obj):
+            class HLIR_Parser_Ops(P4_Obj):
                 """
                 Class representing the operations in a parse state
                 """
@@ -101,13 +165,6 @@ class P4_HLIR(P4_Obj):
                     # I wish there was a neater way to do the following mapping
                     if json_op['op'] == 'extract':
                         self.op = p4_parser_ops_enum.extract
-                        # for param in json_op['parameters']:
-                        #     if param['type'] == 'regular':
-                        #         self.value = P4_HLIR.parse_p4_value(param) # hdrs[param['value']]
-                        #     elif param['type'] == 'stack':
-                        #         self.value = self.hdr_stacks[json_op['parameters']['value']]
-                        #     elif param['type'] == 'union_stack':
-                        #         self.value = self.union_stacks[json_op['parameters']['value']]
                     elif json_op['op'] == 'extract_VL':
                         self.op = p4_parser_ops_enum.extract_VL
                         # TODO: Needs the expression class
@@ -120,7 +177,7 @@ class P4_HLIR(P4_Obj):
                     elif json_op['op'] == 'primitive':
                         self.op = p4_parser_ops_enum.primitive
 
-            class P4_Parser_Transition(P4_Obj):
+            class HLIR_Parser_Transition(P4_Obj):
                 """
                 Class representing the P4 parser transitions
                 """
@@ -133,18 +190,42 @@ class P4_HLIR(P4_Obj):
 
             # Init for parse states class
             def __init__(self, json_obj):
-                self.name = str(json_obj['name'])
-                self.id = int(json_obj['id'])
+                # Set name, it should exist
+                if json_obj.has_key('name') and json_obj['name'] != None:
+                    self.name = str(json_obj['name'])
+                else:
+                    raise ValueError('Missing Parser_States name value')
+
+                # Set id, it should exist
+                if json_obj.has_key('id') and json_obj['id'] != None:
+                    self.id = int(json_obj['id'])
+                else:
+                    raise ValueError('Missing Parser_States id value')
                 self.parser_ops = []
                 self.transitions = OrderedDict()
                 self.transition_key = []
 
         # Init for parser class
         def __init__(self, json_obj):
-            # JSON Attributes
-            self.name = str(json_obj['name'])
-            self.id = int(json_obj['id'])
-            self.init_state = str(json_obj['init_state'])
+            # Set name, it should exist
+            if json_obj.has_key('name') and json_obj['name'] != None:
+                self.name = str(json_obj['name'])
+            else:
+                raise ValueError('Missing Parser name value')
+
+            # Set id, it should exist
+            if json_obj.has_key('id') and json_obj['id'] != None:
+                self.id = int(json_obj['id'])
+            else:
+                raise ValueError('Missing Parser id value')
+
+            # Set name, it should exist
+            if json_obj.has_key('init_state') and json_obj['init_state'] != None:
+                self.init_state = str(json_obj['name'])
+            else:
+                raise ValueError('Missing Parser init_state value')
+
+            # Create parse_states dict
             self.parse_states = OrderedDict()
 
     class P4_Expression(P4_Obj):
@@ -169,21 +250,29 @@ class P4_HLIR(P4_Obj):
         self.json_obj = json_obj
 
         # Build the IR objects as class members variables.
+        # Get the program field
+        if json_obj.has_key('program') and json_obj['program'] != None:
+            self.program = str(json_obj['program'])
+        else:
+            raise ValueError('Missing program attribute value')
 
-        #self.program = json_obj['program']
-        self.meta = json_obj['__meta__']
+        # Get the meta field
+        self.meta = P4_HLIR.HLIR_Meta(json_obj['__meta__'])
+
+        # Get the header_types
         self.header_types = OrderedDict()
         for header_type in json_obj['header_types']:
-            curr_hdr_type = P4_HLIR.P4_Header_Types(header_type)
+            curr_hdr_type = P4_HLIR.HLIR_Header_Types(header_type)
             self.header_types[curr_hdr_type.name] = curr_hdr_type
         
+        # Get the headers
         self.headers = OrderedDict()
         for header in json_obj['headers']:
-            curr_hdr = P4_HLIR.P4_Headers(header)
+            curr_hdr = P4_HLIR.HLIR_Headers(header)
             curr_hdr.header_type = self.header_types[curr_hdr.header_type_name]
             for k, fd in self.header_types[curr_hdr.header_type_name].fields.items():
                 # make a copy for this header instance
-                new_field = P4_HLIR.P4_Field(fd.name, fd.size, fd.signed)
+                new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed)
                 new_field.header_type = fd.header_type
                 new_field.hdr = curr_hdr
                 curr_hdr.fields[fd.name] = new_field
@@ -192,17 +281,17 @@ class P4_HLIR(P4_Obj):
 
         self.parsers = OrderedDict()
         for p in json_obj['parsers']:
-            parser = P4_HLIR.P4_Parser(p)
+            parser = P4_HLIR.HLIR_Parser(p)
             for parse_state in p['parse_states']:
-                p4ps = P4_HLIR.P4_Parser.P4_Parse_States(parse_state)
+                p4ps = P4_HLIR.HLIR_Parser.HLIR_Parse_States(parse_state)
                 for k in parse_state['parser_ops']:
-                    parser_op = P4_HLIR.P4_Parser.P4_Parse_States.P4_Parser_Ops(k)
+                    parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(k)
                     parser_op.value = []
                     for pair in k['parameters']:
                         parser_op.value.append(self.parse_p4_value(pair))
                     p4ps.parser_ops.append(parser_op)
                 for k in parse_state['transitions']:
-                    transition = P4_HLIR.P4_Parser.P4_Parse_States.P4_Parser_Transition(k)
+                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition(k)
                     p4ps.transitions[transition.value] = transition
                 for k in parse_state['transition_key']:
                     p4ps.transition_key.append(self.parse_p4_value(k))
