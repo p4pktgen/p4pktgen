@@ -1,16 +1,15 @@
 {
-  "program" : "mtag/mtag-edge.p4",
+  "program" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
   "__meta__" : {
-      "version" : [2, 7],
-      "compiler" : "https://github.com/p4lang/p4c"
-    },
+    "version" : [2, 7],
+    "compiler" : "https://github.com/p4lang/p4c"
+  },
   "header_types" : [
     {
-      "name" : "scalars",
+      "name" : "scalars_0",
       "id" : 0,
       "fields" : [
         ["tmp", 32, false],
-        ["tmp_1", 32, false],
         ["tmp_0", 1, false],
         ["_padding_0", 7, false]
       ]
@@ -37,8 +36,9 @@
       "name" : "ipv4_t_2",
       "id" : 2,
       "fields" : [
-        ["options", 320]
-      ]
+        ["options", "*"]
+      ],
+      "max_length" : 320
     },
     {
       "name" : "ethernet_t",
@@ -65,8 +65,9 @@
         ["hdrChecksum", 16, false],
         ["srcAddr", 32, false],
         ["dstAddr", 32, false],
-        ["options", 320]
-      ]
+        ["options", "*"]
+      ],
+      "max_length" : 480
     },
     {
       "name" : "mTag_t",
@@ -132,20 +133,20 @@
       "name" : "tmp_hdr",
       "id" : 0,
       "header_type" : "ipv4_t_1",
-      "metadata" : true,
+      "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tmp_hdr_0",
       "id" : 1,
       "header_type" : "ipv4_t_2",
-      "metadata" : true,
+      "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "scalars",
       "id" : 2,
-      "header_type" : "scalars",
+      "header_type" : "scalars_0",
       "metadata" : true,
       "pi_omit" : true
     },
@@ -193,14 +194,17 @@
     }
   ],
   "header_stacks" : [],
+  "header_union_types" : [],
+  "header_unions" : [],
+  "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["ParserTimeout", 5],
-    ["HeaderTooShort", 4],
-    ["NoError", 0],
-    ["PacketTooShort", 1],
-    ["NoMatch", 2],
-    ["StackOutOfBounds", 3]
+    ["NoError", 1],
+    ["PacketTooShort", 2],
+    ["NoMatch", 3],
+    ["StackOutOfBounds", 4],
+    ["HeaderTooShort", 5],
+    ["ParserTimeout", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -628,170 +632,45 @@
       "type" : "bytes"
     }
   ],
-  "counter_arrays" : [],
+  "counter_arrays" : [
+    {
+      "name" : "bytes_by_dest",
+      "id" : 0,
+      "is_direct" : true,
+      "binding" : "mTag_table"
+    },
+    {
+      "name" : "per_color_drops",
+      "id" : 1,
+      "is_direct" : true,
+      "binding" : "meter_policy"
+    }
+  ],
   "register_arrays" : [],
   "calculations" : [],
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "act_0",
+      "name" : "NoAction",
       "id" : 0,
       "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_0"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : false
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
+      "primitives" : []
     },
     {
-      "name" : "act",
+      "name" : "NoAction",
       "id" : 1,
       "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_0"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : true
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
+      "primitives" : []
     },
     {
-      "name" : "meter_pkt",
+      "name" : "NoAction",
       "id" : 2,
-      "runtime_data" : [
-        {
-          "name" : "meter_idx",
-          "bitwidth" : 12
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_1"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "&",
-                  "left" : {
-                    "type" : "local",
-                    "value" : 0
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0xffffffff"
-                  }
-                }
-              }
-            }
-          ]
-        },
-        {
-          "op" : "execute_meter",
-          "parameters" : [
-            {
-              "type" : "meter_array",
-              "value" : "per_dest_by_source"
-            },
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_1"]
-            },
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "color"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
-            "line" : 170,
-            "column" : 4,
-            "source_fragment" : "execute_meter(per_dest_by_source, meter_idx, local_metadata.color)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "_no_op",
-      "id" : 3,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "_drop",
-      "id" : 4,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
-            "line" : 45,
-            "column" : 4,
-            "source_fragment" : "drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "_no_op",
-      "id" : 5,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "_no_op",
-      "id" : 6,
       "runtime_data" : [],
       "primitives" : []
     },
     {
       "name" : "common_drop_pkt",
-      "id" : 7,
+      "id" : 3,
       "runtime_data" : [
         {
           "name" : "do_copy",
@@ -820,7 +699,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
             "line" : 22,
             "column" : 23,
             "source_fragment" : "do_copy, cpu_code, bad_packet) { ..."
@@ -839,7 +718,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
             "line" : 22,
             "column" : 32,
             "source_fragment" : "cpu_code, bad_packet) { ..."
@@ -858,7 +737,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
             "line" : 22,
             "column" : 42,
             "source_fragment" : "bad_packet) { ..."
@@ -868,7 +747,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
             "line" : 26,
             "column" : 4,
             "source_fragment" : "drop()"
@@ -877,27 +756,221 @@
       ]
     },
     {
-      "name" : "NoAction",
+      "name" : "_no_op",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "meter_pkt",
+      "id" : 6,
+      "runtime_data" : [
+        {
+          "name" : "meter_idx",
+          "bitwidth" : 32
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "execute_meter",
+          "parameters" : [
+            {
+              "type" : "meter_array",
+              "value" : "per_dest_by_source"
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            },
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "color"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
+            "line" : 170,
+            "column" : 4,
+            "source_fragment" : "execute_meter(per_dest_by_source, meter_idx, local_metadata.color)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_drop",
+      "id" : 7,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
+            "line" : 45,
+            "column" : 4,
+            "source_fragment" : "drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_no_op",
       "id" : 8,
       "runtime_data" : [],
       "primitives" : []
     },
     {
-      "name" : "NoAction",
+      "name" : "act",
       "id" : 9,
       "runtime_data" : [],
-      "primitives" : []
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : true
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name" : "act_0",
+      "id" : 10,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
     },
     {
       "name" : "NoAction",
-      "id" : 10,
+      "id" : 11,
       "runtime_data" : [],
       "primitives" : []
     },
     {
-      "name" : "common_copy_pkt_to_cpu",
-      "id" : 11,
+      "name" : "NoAction",
+      "id" : 12,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 13,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "NoAction",
+      "id" : 14,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "common_set_port_type",
+      "id" : 15,
       "runtime_data" : [
+        {
+          "name" : "port_type",
+          "bitwidth" : 4
+        },
+        {
+          "name" : "ingress_error",
+          "bitwidth" : 1
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "port_type"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 31,
+            "column" : 28,
+            "source_fragment" : "port_type, ingress_error) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "ingress_error"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 31,
+            "column" : 39,
+            "source_fragment" : "ingress_error) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "common_drop_pkt",
+      "id" : 16,
+      "runtime_data" : [
+        {
+          "name" : "do_copy",
+          "bitwidth" : 1
+        },
         {
           "name" : "cpu_code",
           "bitwidth" : 16
@@ -916,15 +989,15 @@
               "value" : ["local_metadata", "copy_to_cpu"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x01"
+              "type" : "runtime_data",
+              "value" : 0
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 16,
-            "column" : 4,
-            "source_fragment" : "modify_field(local_metadata.copy_to_cpu, 1)"
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 22,
+            "column" : 23,
+            "source_fragment" : "do_copy, cpu_code, bad_packet) { ..."
           }
         },
         {
@@ -936,13 +1009,13 @@
             },
             {
               "type" : "runtime_data",
-              "value" : 0
+              "value" : 1
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 15,
-            "column" : 30,
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 22,
+            "column" : 32,
             "source_fragment" : "cpu_code, bad_packet) { ..."
           }
         },
@@ -955,21 +1028,121 @@
             },
             {
               "type" : "runtime_data",
-              "value" : 1
+              "value" : 2
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 15,
-            "column" : 40,
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 22,
+            "column" : 42,
             "source_fragment" : "bad_packet) { ..."
+          }
+        },
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 26,
+            "column" : 4,
+            "source_fragment" : "drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_no_op",
+      "id" : 17,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 18,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "_no_op",
+      "id" : 19,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "set_egress_spec",
+      "id" : 20,
+      "runtime_data" : [
+        {
+          "name" : "espec",
+          "bitwidth" : 9
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
+            "line" : 85,
+            "column" : 23,
+            "source_fragment" : "espec) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "_strip_mtag",
+      "id" : 21,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "remove_header",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "mtag"
+            }
+          ],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
+            "line" : 31,
+            "column" : 4,
+            "source_fragment" : "remove_header(mtag)"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "was_mtagged"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
+            "line" : 33,
+            "column" : 4,
+            "source_fragment" : "modify_field(local_metadata.was_mtagged, 1)"
           }
         }
       ]
     },
     {
       "name" : "add_mTag",
-      "id" : 12,
+      "id" : 22,
       "runtime_data" : [
         {
           "name" : "up1",
@@ -998,7 +1171,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 103,
             "column" : 4,
             "source_fragment" : "add_header(mtag)"
@@ -1017,7 +1190,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 105,
             "column" : 4,
             "source_fragment" : "modify_field(mtag.ethertype, vlan.ethertype)"
@@ -1036,7 +1209,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 108,
             "column" : 4,
             "source_fragment" : "modify_field(vlan.ethertype, 0xaaaa)"
@@ -1068,7 +1241,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 102,
             "column" : 16,
             "source_fragment" : "up1, up2, down1, down2) { ..."
@@ -1087,7 +1260,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 102,
             "column" : 21,
             "source_fragment" : "up2, down1, down2) { ..."
@@ -1106,7 +1279,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 102,
             "column" : 26,
             "source_fragment" : "down1, down2) { ..."
@@ -1125,7 +1298,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 102,
             "column" : 33,
             "source_fragment" : "down2) { ..."
@@ -1144,7 +1317,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 102,
             "column" : 16,
             "source_fragment" : "up1, up2, down1, down2) { ..."
@@ -1153,103 +1326,9 @@
       ]
     },
     {
-      "name" : "_strip_mtag",
-      "id" : 13,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "remove_header",
-          "parameters" : [
-            {
-              "type" : "header",
-              "value" : "mtag"
-            }
-          ],
-          "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
-            "line" : 31,
-            "column" : 4,
-            "source_fragment" : "remove_header(mtag)"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "was_mtagged"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x01"
-            }
-          ],
-          "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
-            "line" : 33,
-            "column" : 4,
-            "source_fragment" : "modify_field(local_metadata.was_mtagged, 1)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "set_egress_spec",
-      "id" : 14,
+      "name" : "common_copy_pkt_to_cpu",
+      "id" : 23,
       "runtime_data" : [
-        {
-          "name" : "espec",
-          "bitwidth" : 9
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "egress_spec"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
-            "line" : 85,
-            "column" : 23,
-            "source_fragment" : "espec) { ..."
-          }
-        }
-      ]
-    },
-    {
-      "name" : "_no_op",
-      "id" : 15,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "_no_op",
-      "id" : 16,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "_no_op",
-      "id" : 17,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "common_drop_pkt",
-      "id" : 18,
-      "runtime_data" : [
-        {
-          "name" : "do_copy",
-          "bitwidth" : 1
-        },
         {
           "name" : "cpu_code",
           "bitwidth" : 16
@@ -1268,15 +1347,15 @@
               "value" : ["local_metadata", "copy_to_cpu"]
             },
             {
-              "type" : "runtime_data",
-              "value" : 0
+              "type" : "hexstr",
+              "value" : "0x01"
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 22,
-            "column" : 23,
-            "source_fragment" : "do_copy, cpu_code, bad_packet) { ..."
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 16,
+            "column" : 4,
+            "source_fragment" : "modify_field(local_metadata.copy_to_cpu, 1)"
           }
         },
         {
@@ -1288,13 +1367,13 @@
             },
             {
               "type" : "runtime_data",
-              "value" : 1
+              "value" : 0
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 22,
-            "column" : 32,
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 15,
+            "column" : 30,
             "source_fragment" : "cpu_code, bad_packet) { ..."
           }
         },
@@ -1307,105 +1386,17 @@
             },
             {
               "type" : "runtime_data",
-              "value" : 2
-            }
-          ],
-          "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 22,
-            "column" : 42,
-            "source_fragment" : "bad_packet) { ..."
-          }
-        },
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 26,
-            "column" : 4,
-            "source_fragment" : "drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "common_set_port_type",
-      "id" : 19,
-      "runtime_data" : [
-        {
-          "name" : "port_type",
-          "bitwidth" : 4
-        },
-        {
-          "name" : "ingress_error",
-          "bitwidth" : 1
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "port_type"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 31,
-            "column" : 28,
-            "source_fragment" : "port_type, ingress_error) { ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "ingress_error"]
-            },
-            {
-              "type" : "runtime_data",
               "value" : 1
             }
           ],
           "source_info" : {
-            "filename" : "mtag/actions.p4",
-            "line" : 31,
-            "column" : 39,
-            "source_fragment" : "ingress_error) { ..."
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/actions.p4",
+            "line" : 15,
+            "column" : 40,
+            "source_fragment" : "bad_packet) { ..."
           }
         }
       ]
-    },
-    {
-      "name" : "NoAction",
-      "id" : 20,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "NoAction",
-      "id" : 21,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "NoAction",
-      "id" : 22,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "NoAction",
-      "id" : 23,
-      "runtime_data" : [],
-      "primitives" : []
     },
     {
       "name" : "_no_op",
@@ -1424,15 +1415,15 @@
           "name" : "strip_mtag",
           "id" : 0,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 52,
             "column" : 0,
             "source_fragment" : "table strip_mtag { ..."
           },
           "key" : [
             {
-              "match_type" : "valid",
-              "target" : "mtag",
+              "match_type" : "exact",
+              "target" : ["mtag", "$valid$"],
               "mask" : null
             }
           ],
@@ -1442,7 +1433,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [13, 15, 20],
+          "action_ids" : [21, 19, 14],
           "actions" : ["_strip_mtag", "_no_op", "NoAction"],
           "base_default_next" : "identify_port",
           "next_tables" : {
@@ -1451,7 +1442,7 @@
             "NoAction" : "identify_port"
           },
           "default_entry" : {
-            "action_id" : 20,
+            "action_id" : 14,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1461,7 +1452,7 @@
           "name" : "identify_port",
           "id" : 1,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 65,
             "column" : 0,
             "source_fragment" : "table identify_port { ..."
@@ -1479,7 +1470,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [19, 18, 17, 23],
+          "action_ids" : [15, 16, 17, 11],
           "actions" : ["common_set_port_type", "common_drop_pkt", "_no_op", "NoAction"],
           "base_default_next" : "node_4",
           "next_tables" : {
@@ -1489,7 +1480,7 @@
             "NoAction" : "node_4"
           },
           "default_entry" : {
-            "action_id" : 23,
+            "action_id" : 11,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1499,7 +1490,7 @@
           "name" : "local_switching",
           "id" : 2,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 89,
             "column" : 0,
             "source_fragment" : "table local_switching { ..."
@@ -1522,7 +1513,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [14, 16, 22],
+          "action_ids" : [20, 18, 12],
           "actions" : ["set_egress_spec", "_no_op", "NoAction"],
           "base_default_next" : "node_6",
           "next_tables" : {
@@ -1531,7 +1522,7 @@
             "NoAction" : "node_6"
           },
           "default_entry" : {
-            "action_id" : 22,
+            "action_id" : 12,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1541,7 +1532,7 @@
           "name" : "mTag_table",
           "id" : 3,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 132,
             "column" : 0,
             "source_fragment" : "table mTag_table { ..."
@@ -1561,10 +1552,10 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : false,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [12, 11, 24, 21],
+          "action_ids" : [22, 23, 24, 13],
           "actions" : ["add_mTag", "common_copy_pkt_to_cpu", "_no_op", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -1574,7 +1565,7 @@
             "NoAction" : null
           },
           "default_entry" : {
-            "action_id" : 21,
+            "action_id" : 13,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1587,7 +1578,7 @@
           "name" : "node_4",
           "id" : 0,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 233,
             "column" : 37,
             "source_fragment" : "=="
@@ -1613,7 +1604,7 @@
           "name" : "node_6",
           "id" : 1,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 238,
             "column" : 42,
             "source_fragment" : "=="
@@ -1646,7 +1637,7 @@
           "name" : "egress_check",
           "id" : 4,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 147,
             "column" : 0,
             "source_fragment" : "table egress_check { ..."
@@ -1669,7 +1660,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7, 6, 10],
+          "action_ids" : [3, 4, 0],
           "actions" : ["common_drop_pkt", "_no_op", "NoAction"],
           "base_default_next" : "egress_meter",
           "next_tables" : {
@@ -1678,7 +1669,7 @@
             "NoAction" : "egress_meter"
           },
           "default_entry" : {
-            "action_id" : 10,
+            "action_id" : 0,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1688,7 +1679,7 @@
           "name" : "egress_meter",
           "id" : 5,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 174,
             "column" : 0,
             "source_fragment" : "table egress_meter { ..."
@@ -1711,7 +1702,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2, 5, 9],
+          "action_ids" : [6, 5, 1],
           "actions" : ["meter_pkt", "_no_op", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -1719,7 +1710,7 @@
             "__MISS__" : "tbl_act_0"
           },
           "default_entry" : {
-            "action_id" : 9,
+            "action_id" : 1,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1735,14 +1726,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [1],
+          "action_ids" : [9],
           "actions" : ["act"],
           "base_default_next" : "node_14",
           "next_tables" : {
             "act" : "node_14"
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 9,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1758,14 +1749,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [0],
+          "action_ids" : [10],
           "actions" : ["act_0"],
           "base_default_next" : "node_14",
           "next_tables" : {
             "act_0" : "node_14"
           },
           "default_entry" : {
-            "action_id" : 0,
+            "action_id" : 10,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1775,7 +1766,7 @@
           "name" : "meter_policy",
           "id" : 8,
           "source_info" : {
-            "filename" : "mtag/mtag-edge.p4",
+            "filename" : "../../p4lang-tests/v1.0.3/mtag/mtag-edge.p4",
             "line" : 192,
             "column" : 0,
             "source_fragment" : "table meter_policy { ..."
@@ -1795,10 +1786,10 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 256,
-          "with_counters" : false,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4, 3, 8],
+          "action_ids" : [7, 8, 2],
           "actions" : ["_drop", "_no_op", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -1807,7 +1798,7 @@
             "NoAction" : null
           },
           "default_entry" : {
-            "action_id" : 8,
+            "action_id" : 2,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
