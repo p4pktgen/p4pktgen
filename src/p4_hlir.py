@@ -14,6 +14,7 @@ __status__ = "in progress"
 
 # Standard Python Libraries
 import json
+import logging
 from pprint import pprint
 from collections import OrderedDict
 
@@ -257,7 +258,12 @@ class P4_HLIR(P4_Obj):
             raise ValueError('Missing program attribute value')
 
         # Get the meta field
-        self.meta = P4_HLIR.HLIR_Meta(json_obj['__meta__'])
+        json_meta = json_obj['__meta__']
+        if json_meta is not None:
+            self.meta = P4_HLIR.HLIR_Meta(json_obj['__meta__'])
+        else:
+            self.meta = None
+            logging.warning('__meta__ field is empty')
 
         # Get the header_types
         self.header_types = OrderedDict()
