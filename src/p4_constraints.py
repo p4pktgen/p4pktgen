@@ -2,7 +2,9 @@ from z3 import *
 from p4_hlir import *
 from scapy.all import *
 from config import Config
+
 import logging
+import math
 import subprocess
 
 # XXX: Position is a 32-bit integer right now. Smaller/larger?
@@ -83,7 +85,7 @@ def p4_expr_to_sym(context, expr):
     elif isinstance(expr, bool):
         return expr
     elif isinstance(expr, int):
-        size = int(math.log2(expr))
+        size = int(math.log(expr, 2))
         return BitVecVal(expr, size)
     else:
         # XXX: implement other operators
@@ -93,7 +95,7 @@ def p4_expr_to_sym(context, expr):
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
-        assert int(math.log2(value)) <= size
+        assert int(math.log(value, 2)) <= size
         return BitVecVal(value, size)
     else:
         raise Exception(
@@ -250,6 +252,7 @@ def test_packet(packet, json_file):
 
     # Start simple_switch
     proc = subprocess.Popen(['simple_switch',
+                             '--thrift-port', '9091',
                              '--log-console'] + eth_args + [json_file],
                             stdout=subprocess.PIPE)
 
