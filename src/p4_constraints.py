@@ -136,7 +136,7 @@ def generate_constraints(hlir, path, json_file):
                 if op == p4_parser_ops_enum.extract:
                     # Extract expects one parameter
                     assert len(parser_op.value) == 1
-                    assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
+                    assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Headers)
 
                     # Map bits from packet to context
                     extract_header = parser_op.value[0]
@@ -152,7 +152,7 @@ def generate_constraints(hlir, path, json_file):
                     new_pos += extract_offset
                 elif op == p4_parser_ops_enum.set:
                     assert len(parser_op.value) == 2
-                    assert isinstance(parser_op.value[0], P4_HLIR.P4_Field)
+                    assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
                     context.insert(
                         parser_op.value[0], p4_expr_to_sym(
                             context, parser_op.value[1]))
@@ -178,7 +178,7 @@ def generate_constraints(hlir, path, json_file):
 
             sym_transition_key = []
             for transition_key_elem in parse_state.transition_key:
-                if isinstance(transition_key_elem, P4_HLIR.P4_Field):
+                if isinstance(transition_key_elem, P4_HLIR.HLIR_Field):
                     sym_transition_key.append(context.get(transition_key_elem))
                 else:
                     raise Exception(

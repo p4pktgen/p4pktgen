@@ -148,7 +148,7 @@ class P4_HLIR(P4_Obj):
             # TODO: Special or hidden fields are not declared in the json but 
             # are assumed to exist
             self.fields = OrderedDict()
-            valid_field = P4_HLIR.P4_Field('$valid$', 1, False)
+            valid_field = P4_HLIR.HLIR_Field('$valid$', 1, False)
             valid_field.header = self
             self.fields['$valid$'] = valid_field
 
@@ -224,7 +224,7 @@ class P4_HLIR(P4_Obj):
 
             # Set name, it should exist
             if json_obj.has_key('init_state') and json_obj['init_state'] != None:
-                self.init_state = str(json_obj['name'])
+                self.init_state = str(json_obj['init_state'])
             else:
                 raise ValueError('Missing Parser init_state value')
 
@@ -281,7 +281,6 @@ class P4_HLIR(P4_Obj):
             for k, fd in self.header_types[curr_hdr.header_type_name].fields.items():
                 # make a copy for this header instance
                 new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed)
-                new_field = P4_HLIR.P4_Field(fd.name, fd.size, fd.signed)
                 new_field.header = curr_hdr
                 new_field.header_type = fd.header_type
                 new_field.hdr = curr_hdr

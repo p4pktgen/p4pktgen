@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
+from p4_constraints import generate_constraints
 
 def main():
     #Parse the command line arguments provided at run time.
@@ -62,8 +63,10 @@ def main():
     hlir = P4_HLIR(args.debug, top.json_obj)
     parser_graph = hlir.get_parser_graph()
 
-    paths = nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink')
-    print(*list(paths),sep='\n')
+    paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink'))
+
+    for path in paths:
+        generate_constraints(hlir, path, args.json_file)
 
 
 if __name__ =='__main__':
