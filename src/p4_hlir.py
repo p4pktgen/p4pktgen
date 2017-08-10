@@ -28,6 +28,7 @@ from p4_utils import OrderedGraph
 from p4_utils import OrderedDiGraph
 from p4_utils import p4_parser_ops_enum
 
+
 class P4_HLIR(P4_Obj):
     PACKET_TOO_SHORT = 'PacketTooShort'
 
@@ -66,15 +67,22 @@ class P4_HLIR(P4_Obj):
                 raise ValueError('Missing Header_Type id value')
 
             # Set fields, it should exist
+            fixed_length = 0
             self.fields = OrderedDict()
             if json_obj.has_key('fields') and json_obj['fields'] != None:
                 for f in json_obj['fields']:
                     # sign is a header field is optional
                     assert(len(f) >= 2)
+
+                    # XXX: not very clean, improve code
                     if len(f) == 3:
-                        fd = P4_HLIR.HLIR_Field(f[0] , int(f[1]), f[2])
+                        fd = P4_HLIR.HLIR_Field(f[0], int(f[1]), f[2])
+                        fixed_length += fd.size 
+                    elif f[1] == '*':
+                        fd = P4_HLIR.HLIR_Field(f[0], None, False, var_length=True)
                     else:
-                        fd = P4_HLIR.HLIR_Field(f[0] , int(f[1]), False)
+                        fd = P4_HLIR.HLIR_Field(f[0], int(f[1]), False)
+                        fixed_length += fd.size
                     fd.header_type = self
                     self.fields[fd.name] = fd
             else:
@@ -89,6 +97,10 @@ class P4_HLIR(P4_Obj):
             # Set max_length, it is optional
             if json_obj.has_key('max_length') and json_obj['max_length'] != None:
                 self.max_length = int(json_obj['max_length'])
+
+                for field_name, field in self.fields.iteritems():
+                    if field.var_length:
+                        field.length = self.max_length - fixed_length
             else:
                 self.max_length = None
             
@@ -97,15 +109,17 @@ class P4_HLIR(P4_Obj):
         """
         Class to represent a P4 field which is part of a P4 Header Type
         """
-        def __init__(self, name, size, signed):
+        def __init__(self, name, size, signed, var_length=False):
             self.name = str(name)
-            self.size = int(size)
+            self.size = size
             self.signed = bool(signed)
             self.header_type = None
             self.header = None
+            self.var_length = var_length
 
         def __repr__(self):
-            return 'HLIR_Field({}, {}, {})'.format(self.name, self.size, 
+            return 'HLIR_Field({}, {} {}, {})'.format(self.name, self.size, 
+                    '(max)' if self.var_length else '',
                     'True' if self.signed else 'False')
 
         def __str__(self):
@@ -346,31 +360,41 @@ class P4_HLIR(P4_Obj):
 
     # parses the p4/json type/value combo to the appropriate object
     def parse_p4_value(self, json_obj):
-        if json_obj['type'] == 'field':
-            # TODO: handle hidden fields !
-            ll = list(json_obj['value']) # a 2-tuple with the header and field
-            return self.headers[ll[0]].fields[ll[1]]
-        elif json_obj['type'] == 'hexstr':
-            return int(json_obj['value'], 16)
-        elif json_obj['type'] == 'bool':
-            return json_obj['value']
-        elif json_obj['type'] == 'string':
-            return str(json_obj['value'])
-        elif json_obj['type'] == 'regular':
-            return self.headers[json_obj['value']]
-        elif json_obj['type'] == 'stack':
-            assert(False) # TODO
-        elif json_obj['type'] == 'union_stack':
-            assert(False) # TODO
-        elif json_obj['type'] == 'expression':
-            if 'type' in json_obj['value']:
-                return self.parse_p4_value(json_obj['value'])
-            exp = P4_HLIR.P4_Expression(json_obj['value'])
-            # Unary ops
-            if json_obj['value']['left']:
-                exp.left = self.parse_p4_value(json_obj['value']['left'])
-            else:
-                exp.left = None
-            exp.right = self.parse_p4_value(json_obj['value']['right'])
-            return exp
-
+        if 'type' in json_obj:
+            if json_obj['type'] == 'field':
+                # TODO: handle hidden fields !
+                ll = list(json_obj['value']) # a 2-tuple with the header and field
+                return self.headers[ll[0]].fields[ll[1]]
+            elif json_obj['type'] == 'hexstr':
+                return int(json_obj['value'], 16)
+            elif json_obj['type'] == 'bool':
+                return json_obj['value']
+            elif json_obj['type'] == 'string':
+                return str(json_obj['value'])
+            elif json_obj['type'] == 'regular':
+                return self.headers[json_obj['value']]
+            elif json_obj['type'] == 'stack':
+                # XXX: do this properly
+                return str(json_obj['value'])
+            elif json_obj['type'] == 'union_stack':
+                assert(False) # TODO
+            elif json_obj['type'] == 'expression':
+                if 'type' in json_obj['value']:
+                    return self.parse_p4_value(json_obj['value'])
+                exp = P4_HLIR.P4_Expression(json_obj['value'])
+                # Unary ops
+                if json_obj['value']['left']:
+                    exp.left = self.parse_p4_value(json_obj['value']['left'])
+                else:
+                    exp.left = None
+                exp.right = self.parse_p4_value(json_obj['value']['right'])
+                return exp
+        elif 'op' in json_obj:
+            # XXX: What should be done about this?
+            parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(json_obj)
+            parser_op.value = []
+            for pair in json_obj['parameters']:
+                parser_op.value.append(self.parse_p4_value(pair))
+            return parser_op
+        else:
+            assert False

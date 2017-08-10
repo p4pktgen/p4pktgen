@@ -237,7 +237,7 @@ def generate_constraints(hlir, path, json_file):
     model = s.model()
     payload = sym_packet.get_payload_from_model(model)
 
-    # XXX: Is 20 the correct number here? Is it possible to construct
+    # XXX: Is 14 the correct number here? Is it possible to construct
     # shorter, invalid packets?
     if len(payload) >= 14:
         packet = Ether(bytes(payload))
