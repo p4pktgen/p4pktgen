@@ -48,7 +48,6 @@ def main():
     Config().load_args(args)
 
     if args.debug:
-        print("\nUse -h to see a list of options.", args.input_file)
         logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
 
     top = P4_Top(args.debug)
@@ -64,7 +63,10 @@ def main():
     parser_graph = hlir.get_parser_graph()
 
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink'))
+    for path in paths:
+        generate_constraints(hlir, path, args.json_file)
 
+    paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:
         generate_constraints(hlir, path, args.json_file)
 

@@ -29,6 +29,8 @@ from p4_utils import OrderedDiGraph
 from p4_utils import p4_parser_ops_enum
 
 class P4_HLIR(P4_Obj):
+    PACKET_TOO_SHORT = 'PacketTooShort'
+
     """
     Top level P4_HLIR object
     Aggregates all the elements of a parsed P4 program
@@ -323,12 +325,12 @@ class P4_HLIR(P4_Obj):
 
     # Creates an Ordered Networkx graph to represent the parser
     def get_parser_graph(self):
-        
         graph = OrderedDiGraph()
         # Add all the parse states as nodes
         for ps_name, ps in self.parsers["parser"].parse_states.items():
             graph.add_node(ps_name, parse_state=ps)
         graph.add_node('sink')
+        graph.add_node(P4_HLIR.PACKET_TOO_SHORT)
 
         # Add all the transitions as edges to the graph
         for ps_name, ps in self.parsers["parser"].parse_states.items():
@@ -338,6 +340,7 @@ class P4_HLIR(P4_Obj):
                         transition=tns)
                 else:
                     graph.add_edge(ps_name, 'sink', transition=tns)
+            graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
 
         return graph
 

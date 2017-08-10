@@ -1,3 +1,8 @@
+# TODO:
+#
+# - Position is a 32-bit integer right now. Smaller/larger?
+# - Move to smt-switch
+
 from z3 import *
 from p4_hlir import *
 from scapy.all import *
@@ -6,9 +11,6 @@ from config import Config
 import logging
 import math
 import subprocess
-
-# XXX: Position is a 32-bit integer right now. Smaller/larger?
-
 
 class Context:
     def __init__(self):
@@ -32,6 +34,7 @@ class Packet:
         self.sym_packet = BitVec('packet', self.max_packet_size)
         self.packet_size = BitVecVal(0, 32)
         self.packet_size_var = BitVec('packet_size', 32)
+        self.max_length = None
 
     def extract(self, start, size):
         end = start + BitVecVal(size, 32)
@@ -40,16 +43,27 @@ class Packet:
         return Extract(size - 1, 0, LShR(self.sym_packet, ZeroExt(
             self.max_packet_size - start.size(), self.max_packet_size - start - size)))
 
-    def add_length_constraint(self, constraints):
-        constraints.append(self.packet_size_var == self.packet_size)
+    def get_length_constraint(self):
+        if self.max_length is None:
+            return self.packet_size_var == self.packet_size
+        else:
+            return self.packet_size_var < self.max_length
+
+    def set_max_length(self, max_length):
+        self.max_length = max_length
 
     def get_payload_from_model(self, model):
         # XXX: find a better way to do this
         size = model[self.packet_size_var].as_long()
-        hex_str = '{0:x}'.format(model[self.sym_packet].as_long())
+
+        if model[self.sym_packet] is not None:
+            hex_str = '{0:x}'.format(model[self.sym_packet].as_long())
+        else:
+            hex_str = ''
+
         logging.info(self.max_packet_size / 4)
         hex_str = hex_str.zfill(self.max_packet_size // 4)
-        n_bytes = (size + 7) // 8 * 8
+        n_bytes = (size + 7) // 8
         hex_str = hex_str[:n_bytes * 2]
         return bytearray.fromhex(hex_str)
 
@@ -104,8 +118,6 @@ def p4_value_to_bv(value, size):
 
 
 def generate_constraints(hlir, path, json_file):
-    assert path[-1] == 'sink'
-
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
@@ -125,92 +137,97 @@ def generate_constraints(hlir, path, json_file):
         transition = None
         for _, current_transition in parse_state.transitions.items():
             if current_transition.next_state_name == next_node or (
-                    current_transition.next_state_name is None and next_node == 'sink'):
+                    current_transition.next_state_name is None and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
                 transition = current_transition
 
         assert transition is not None
 
-        if transition is not None:
-            for parser_op in parse_state.parser_ops:
-                op = parser_op.op
-                if op == p4_parser_ops_enum.extract:
-                    # Extract expects one parameter
-                    assert len(parser_op.value) == 1
-                    assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Headers)
+        for parser_op in parse_state.parser_ops:
+            op = parser_op.op
+            if op == p4_parser_ops_enum.extract:
+                # Extract expects one parameter
+                assert len(parser_op.value) == 1
+                assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Headers)
 
-                    # Map bits from packet to context
-                    extract_header = parser_op.value[0]
-                    extract_offset = BitVecVal(0, 32)
-                    for name, field in extract_header.fields.items():
-                        # XXX: deal with valid flags
-                        if field.name != '$valid$':
-                            context.insert(field, sym_packet.extract(
-                                pos + extract_offset,
-                                field.size))
-                            extract_offset += BitVecVal(field.size, 32)
+                # Map bits from packet to context
+                extract_header = parser_op.value[0]
+                extract_offset = BitVecVal(0, 32)
+                for name, field in extract_header.fields.items():
+                    # XXX: deal with valid flags
+                    if field.name != '$valid$':
+                        context.insert(field, sym_packet.extract(
+                            pos + extract_offset,
+                            field.size))
+                        extract_offset += BitVecVal(field.size, 32)
 
-                    new_pos += extract_offset
-                elif op == p4_parser_ops_enum.set:
-                    assert len(parser_op.value) == 2
-                    assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
-                    context.insert(
-                        parser_op.value[0], p4_expr_to_sym(
-                            context, parser_op.value[1]))
-                elif op == p4_parser_ops_enum.extract_VL:
-                    assert len(parser_op.value) == 2
-                    assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
+                new_pos += extract_offset
+            elif op == p4_parser_ops_enum.set:
+                assert len(parser_op.value) == 2
+                assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
+                context.insert(
+                    parser_op.value[0], p4_expr_to_sym(
+                        context, parser_op.value[1]))
+            elif op == p4_parser_ops_enum.extract_VL:
+                assert len(parser_op.value) == 2
+                assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
 
-                    # XXX: Take sym_size into account
-                    sym_size = p4_expr_to_sym(context, parser_op.value[1])
-                    extract_header = parser_op.value[0]
-                    extract_offset = 0
-                    for name, field in extract_header.fields.items():
-                        # XXX: deal with valid flags
-                        if field.name != '$valid$':
-                            context.insert(field, sym_packet.extract(
-                                pos + extract_offset,
-                                field.size))
-                            extract_offset += BitVecVal(field.size, 32)
+                # XXX: Take sym_size into account
+                sym_size = p4_expr_to_sym(context, parser_op.value[1])
+                extract_header = parser_op.value[0]
+                extract_offset = 0
+                for name, field in extract_header.fields.items():
+                    # XXX: deal with valid flags
+                    if field.name != '$valid$':
+                        context.insert(field, sym_packet.extract(
+                            pos + extract_offset,
+                            field.size))
+                        extract_offset += BitVecVal(field.size, 32)
 
-                    new_pos += extract_offset
-                else:
-                    raise Exception('Parser op not supported: {}'.format(op))
+                new_pos += extract_offset
+            else:
+                raise Exception('Parser op not supported: {}'.format(op))
 
-            sym_transition_key = []
-            for transition_key_elem in parse_state.transition_key:
-                if isinstance(transition_key_elem, P4_HLIR.HLIR_Field):
-                    sym_transition_key.append(context.get(transition_key_elem))
-                else:
-                    raise Exception(
-                        'Transition key type not supported: {}'.format(
-                            transition_key_elem.__class__))
+        if next_node == P4_HLIR.PACKET_TOO_SHORT:
+            # Packet needs to be at least one byte too short
+            sym_packet.set_max_length(simplify(new_pos - 8))
+            break
 
-            # XXX: support key types other than hexstr
-            if transition.value is not None:
-                sym_transition_key = sym_transition_key[0]
-                bv_value = p4_value_to_bv(
-                    transition.value, sym_transition_key.size())
-                constraints.append(sym_transition_key == bv_value)
-            elif len(sym_transition_key) > 0:
-                sym_transition_key = sym_transition_key[0]
+        sym_transition_key = []
+        for transition_key_elem in parse_state.transition_key:
+            if isinstance(transition_key_elem, P4_HLIR.HLIR_Field):
+                sym_transition_key.append(context.get(transition_key_elem))
+            else:
+                raise Exception(
+                    'Transition key type not supported: {}'.format(
+                        transition_key_elem.__class__))
 
-                # XXX: check that default is last option
-                other_values = []
-                for _, current_transition in parse_state.transitions.items():
-                    if current_transition.value is not None:
-                        other_values.append(current_transition.value)
+        # XXX: support key types other than hexstr
+        if transition.value is not None:
+            sym_transition_key = sym_transition_key[0]
+            bv_value = p4_value_to_bv(
+                transition.value, sym_transition_key.size())
+            constraints.append(sym_transition_key == bv_value)
+        elif len(sym_transition_key) > 0:
+            sym_transition_key = sym_transition_key[0]
 
-                other_bv_values = [
-                    p4_value_to_bv(
-                        value,
-                        sym_transition_key.size()) for value in other_values]
-                constraints.append(
-                    Not(Or([(sym_transition_key == bv_value) for bv_value in other_bv_values])))
+            # XXX: check that default is last option
+            other_values = []
+            for _, current_transition in parse_state.transitions.items():
+                if current_transition.value is not None:
+                    other_values.append(current_transition.value)
 
-            logging.info(sym_transition_key)
+            other_bv_values = [
+                p4_value_to_bv(
+                    value,
+                    sym_transition_key.size()) for value in other_values]
+            constraints.append(
+                Not(Or([(sym_transition_key == bv_value) for bv_value in other_bv_values])))
+
+        logging.info(sym_transition_key)
         pos = simplify(new_pos)
 
-    sym_packet.add_length_constraint(constraints)
+    # XXX: workaround
+    constraints.append(sym_packet.get_length_constraint())
 
     # Construct packet
     logging.info(And(constraints))
@@ -219,17 +236,34 @@ def generate_constraints(hlir, path, json_file):
     result = s.check()
     model = s.model()
     payload = sym_packet.get_payload_from_model(model)
-    packet = Ether(bytes(payload))
-    logging.info(packet.summary())
-    extracted_path = test_packet(packet, json_file)
 
-    if path[:-1] != extracted_path:
-        logging.error(
-            'Expected ({}) and actual ({}) path differ'.format(
-                ' -> '.join(path),
-                ' -> '.join(extracted_path)))
+    # XXX: Is 20 the correct number here? Is it possible to construct
+    # shorter, invalid packets?
+    if len(payload) >= 14:
+        packet = Ether(bytes(payload))
+        logging.info(packet.summary())
+        extracted_path = test_packet(packet, json_file)
+
+        if path[-1] == P4_HLIR.PACKET_TOO_SHORT:
+            if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT or path[:-2] != extracted_path[:-1]):
+                # XXX: This is a workaround for simple_switch printing
+                # the state only when the packet leaves a state.
+                logging.error(
+                    'Expected ({}) and actual ({}) path differ'.format(
+                        ' -> '.join(path),
+                        ' -> '.join(extracted_path)))
+            else:
+                logging.info('Test successful ({})'.format(' -> '.join(extracted_path)))
+        elif path[:-1] != extracted_path:
+            logging.error(
+                'Expected ({}) and actual ({}) path differ'.format(
+                    ' -> '.join(path),
+                    ' -> '.join(extracted_path)))
+    
+        else:
+            logging.info('Test successful')
     else:
-        logging.info('Test successful')
+        logging.warning('Packet not sent (too short)')
 
 
 def test_packet(packet, json_file):
@@ -279,9 +313,13 @@ def test_packet(packet, json_file):
     extracted_path = []
     for b_line in iter(proc.stdout.readline, b''):
         line = str(b_line)
+        logging.info(line.strip())
         m = re.search(r'Parser state \'(.*)\'', line)
         if m is not None:
             extracted_path.append(m.group(1))
+        m = re.search(r'Exception while parsing: PacketTooShort', line)
+        if m is not None:
+            extracted_path.append(P4_HLIR.PACKET_TOO_SHORT)
         if 'Parser \'parser\': end' in line:
             break
 
