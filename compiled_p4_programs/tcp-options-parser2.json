@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/tcp-options-parser2.p4",
+  "program" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -567,255 +567,156 @@
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[0]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[0]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[1]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[1]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[2]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[2]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[3]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[3]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[4]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[4]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[5]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[5]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[6]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[6]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[7]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[7]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[8]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[8]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["vec[9]", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "vec[9]"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
                 {
-                  "type" : "field",
-                  "value" : ["padding_1", "$valid$"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "bool",
-                        "value" : false
-                      }
+                  "parameters" : [
+                    {
+                      "type" : "header",
+                      "value" : "padding_1"
                     }
-                  }
+                  ],
+                  "op" : "remove_header"
                 }
               ],
-              "op" : "set"
+              "op" : "primitive"
             },
             {
               "parameters" : [
@@ -2205,7 +2106,7 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
         "line" : 318,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -2221,7 +2122,7 @@
       "name" : "calc",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
         "line" : 355,
         "column" : 16,
         "source_fragment" : "ipv4_checksum.get({ hdr.ipv4.version, ..."
@@ -2286,7 +2187,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 251,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
@@ -2303,7 +2204,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 251,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
@@ -2334,7 +2235,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 259,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
@@ -2385,7 +2286,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 273,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
@@ -2404,7 +2305,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 274,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
@@ -2423,7 +2324,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 275,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
@@ -2465,7 +2366,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 276,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
@@ -2482,7 +2383,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 251,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
@@ -2513,7 +2414,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 300,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
@@ -2527,7 +2428,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
         "line" : 254,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -2538,7 +2439,7 @@
           "name" : "ipv4_da_lpm",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 261,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
@@ -2574,7 +2475,7 @@
           "name" : "mac_da",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 278,
             "column" : 10,
             "source_fragment" : "mac_da"
@@ -2614,7 +2515,7 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
         "line" : 295,
         "column" : 8,
         "source_fragment" : "egress"
@@ -2625,7 +2526,7 @@
           "name" : "send_frame",
           "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
             "line" : 302,
             "column" : 10,
             "source_fragment" : "send_frame"

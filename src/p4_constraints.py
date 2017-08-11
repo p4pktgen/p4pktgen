@@ -92,9 +92,13 @@ def p4_expr_to_sym(context, expr):
             assert lhs is not None and rhs is not None
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs << rhs
+        elif expr.op == '+':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs + rhs
         else:
             print('operation', expr.op)
-    elif isinstance(expr, P4_HLIR.P4_Field):
+    elif isinstance(expr, P4_HLIR.HLIR_Field):
         return p4_field_to_sym(context, expr)
     elif isinstance(expr, bool):
         return expr
@@ -103,13 +107,14 @@ def p4_expr_to_sym(context, expr):
         return BitVecVal(expr, size)
     else:
         # XXX: implement other operators
+        logging.error(expr.__class__)
         print('expr', expr.__class__)
 
 
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
-        assert int(math.log(value, 2)) <= size
+        assert value == 0 or int(math.log(value, 2)) <= size
         return BitVecVal(value, size)
     else:
         raise Exception(
@@ -184,6 +189,12 @@ def generate_constraints(hlir, path, json_file):
                         extract_offset += BitVecVal(field.size, 32)
 
                 new_pos += extract_offset
+            elif op == p4_parser_ops_enum.verify:
+                logging.warn('Verify not supported')
+                pass
+            elif op == p4_parser_ops_enum.primitive:
+                logging.warn('Primitive not supported')
+                pass
             else:
                 raise Exception('Parser op not supported: {}'.format(op))
 
