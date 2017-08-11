@@ -331,8 +331,13 @@ class P4_HLIR(P4_Obj):
 
         # Get the actions
         self.actions = []
-        for action in json_obj['actions']:
-            self.actions.append(Action(action))
+        for action_json in json_obj['actions']:
+            self.actions.append(Action(action_json))
+
+        # Get the pipelines
+        self.pipelines = []
+        for pipeline_json in json_obj['pipelines']:
+            self.pipelines.append(Pipeline(pipeline_json))
 
         self.hdr_stacks = None
         self.hdr_union_types = None
@@ -507,3 +512,70 @@ class Action:
         self.primitives = []
         for primitive in json_obj['primitives']:
             self.primitives.append(PrimitiveCall(primitive))
+
+class TableEntry:
+    def __init__(self, json_obj):
+        self.action_id = json_obj['action_id']
+        self.action_const = json_obj['action_const']
+
+        self.action_data = []
+        # XXX: implement
+
+        self.action_entry_const = json_obj['action_entry_const']
+
+class Table:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+
+        self.key = []
+        # XXX: implement
+
+        # XXX: Make enum?
+        self.match_type = json_obj['match_type']
+        self.max_size = int(json_obj['max_size'])
+        self.with_counters = json_obj['with_counters']
+        self.support_timeout = json_obj['support_timeout']
+        self.direct_meters = json_obj['direct_meters']
+
+        self.action_ids = []
+        for action_id in json_obj['action_ids']:
+            self.action_ids.append(int(action_id))
+
+        self.action_names = []
+        for action_name in json_obj['actions']:
+            self.action_names.append(action_name)
+
+        self.base_default_next_name = json_obj['base_default_next']
+
+        self.next_tables = {}
+        for action_name, next_table_name in json_obj['next_tables'].iter_items():
+            print(action_name, next_table_name)
+
+        self.default_entry = TableEntry(json_obj['table_entry'])
+
+class Conditional:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+        self.expression = parse_type_value(json_obj['expression'])
+        self.true_next_name = json_obj['true_next']
+        self.false_next_name = json_obj['false_next']
+
+    def __repr__(self):
+        return 'if {} then {} else {}'.format(self.expression, self.true_next_name, self.false_next_name)
+
+class Pipeline:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+        self.init_table_name = json_obj['init_table']
+        self.init_table = None
+
+        self.tables = []
+        for table_json in json_obj['tables']:
+            print(table_json)
+
+        self.conditionals = []
+        for conditional_json in json_obj['conditionals']:
+            print(Conditional(conditional_json))
