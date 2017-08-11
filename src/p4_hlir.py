@@ -329,6 +329,11 @@ class P4_HLIR(P4_Obj):
                         tns.next_state = parser.parse_states[tns.next_state_name]
             self.parsers[parser.name] = parser
 
+        # Get the actions
+        self.actions = []
+        for action in json_obj['actions']:
+            self.actions.append(Action(action))
+
         self.hdr_stacks = None
         self.hdr_union_types = None
         self.hdr_unions = None
@@ -399,3 +404,106 @@ class P4_HLIR(P4_Obj):
             return parser_op
         else:
             assert False
+
+class TypeValue:
+    def __init__(self):
+        pass
+
+class TypeValueExpression(TypeValue):
+    def __init__(self, json_obj):
+        self.op = json_obj['op']
+        if json_obj['left'] is None:
+            self.left = None
+        else:
+            self.left = parse_type_value(json_obj['left'])
+        self.right = parse_type_value(json_obj['right'])
+
+    def __repr__(self):
+        if self.left is None:
+            return '{}({})'.format(self.op, self.right)
+        else:
+            return '({} {} {})'.format(self.left, self.op, self.right)
+
+class TypeValueField(TypeValue):
+    def __init__(self, json_obj):
+        self.header_name = json_obj[0]
+        self.header_field = json_obj[1]
+
+    def __repr__(self):
+        return '{}.{}'.format(self.header_name, self.header_field)
+
+class TypeValueHexstr(TypeValue):
+    def __init__(self, json_obj):
+        self.value = int(json_obj, 16)
+
+    def __repr__(self):
+        return str(self.value)
+
+class TypeValueHeader(TypeValue):
+    def __init__(self, json_obj):
+        self.header_name = json_obj
+
+    def __repr__(self):
+        return self.header_name
+
+class TypeValueBool(TypeValue):
+    def __init__(self, json_obj):
+        self.value = json_obj
+
+    def __repr__(self):
+        return str(self.value)
+
+class TypeValueRuntimeData(TypeValue):
+    def __init__(self, json_obj):
+        self.index = int(json_obj)
+
+    def __repr__(self):
+        return 'runtime_data[{}]'.format(self.index)
+
+def parse_type_value(json_obj):
+    p4_type_str = json_obj['type']
+    value = json_obj['value']
+    if p4_type_str == 'expression':
+        # XXX: this is a hack for expressions wrapped in expressions
+        if 'type' in value:
+            return parse_type_value(value)
+        return TypeValueExpression(value)
+    elif p4_type_str == 'field':
+        return TypeValueField(value)
+    elif p4_type_str == 'hexstr':
+        return TypeValueHexstr(value)
+    elif p4_type_str == 'header':
+        return TypeValueHeader(value)
+    elif p4_type_str == 'bool':
+        return TypeValueBool(value)
+    elif p4_type_str == 'runtime_data':
+        return TypeValueRuntimeData(value)
+    else:
+        raise Exception('{} not supported'.format(p4_type_str))
+
+class PrimitiveCall:
+    def __init__(self, json_obj):
+        self.op = json_obj['op']
+
+        self.parameters = []
+        for parameter in json_obj['parameters']:
+            self.parameters.append(parse_type_value(parameter))
+        print(self.op, self.parameters)
+
+class ActionParameter:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.bitwidth = json_obj['bitwidth']
+
+class Action:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+
+        self.runtime_data = []
+        for runtime_data_elem in json_obj['runtime_data']:
+            self.runtime_data.append(ActionParameter(runtime_data_elem))
+
+        self.primitives = []
+        for primitive in json_obj['primitives']:
+            self.primitives.append(PrimitiveCall(primitive))
