@@ -214,10 +214,13 @@ def generate_constraints(hlir, path, json_file):
 
         # XXX: support key types other than hexstr
         if transition.value is not None:
-            sym_transition_key = sym_transition_key[0]
+            if len(sym_transition_key) > 1:
+                sym_transition_key_complete = Concat(sym_transition_key)
+            else:
+                sym_transition_key_complete = sym_transition_key[0]
             bv_value = p4_value_to_bv(
-                transition.value, sym_transition_key.size())
-            constraints.append(sym_transition_key == bv_value)
+                transition.value, sym_transition_key_complete.size())
+            constraints.append(sym_transition_key_complete == bv_value)
         elif len(sym_transition_key) > 0:
             sym_transition_key = sym_transition_key[0]
 

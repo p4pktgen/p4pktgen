@@ -66,9 +66,11 @@ def main():
     for path in paths:
         generate_constraints(hlir, path, args.json_file)
 
+    """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:
         generate_constraints(hlir, path, args.json_file)
+    """
 
 
 if __name__ =='__main__':

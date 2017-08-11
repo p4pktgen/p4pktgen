@@ -159,7 +159,8 @@ class P4_HLIR(P4_Obj):
             if json_obj.has_key('pi_omit') and json_obj['pi_omit'] != None:
                 self.pi_omit = bool(json_obj['pi_omit'])
             else:
-                raise ValueError('Missing Headers pi_omit value')
+                self.pi_omit = False
+                logging.warning('pi_omit missing from header')
 
             # TODO: Special or hidden fields are not declared in the json but 
             # are assumed to exist
