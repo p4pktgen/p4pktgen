@@ -338,6 +338,7 @@ class P4_HLIR(P4_Obj):
         self.pipelines = []
         for pipeline_json in json_obj['pipelines']:
             self.pipelines.append(Pipeline(pipeline_json))
+            print(self.pipelines[-1].generate_CFG())
 
         self.hdr_stacks = None
         self.hdr_union_types = None
@@ -549,10 +550,13 @@ class Table:
         self.base_default_next_name = json_obj['base_default_next']
 
         self.next_tables = {}
-        for action_name, next_table_name in json_obj['next_tables'].iter_items():
-            print(action_name, next_table_name)
+        for action_name, next_table_name in json_obj['next_tables'].items():
+            self.next_tables[action_name] = next_table_name
 
-        self.default_entry = TableEntry(json_obj['table_entry'])
+        self.default_entry = TableEntry(json_obj['default_entry'])
+
+    def __repr__(self):
+        return 'Table {}'.format(self.name)
 
 class Conditional:
     def __init__(self, json_obj):
@@ -563,19 +567,49 @@ class Conditional:
         self.false_next_name = json_obj['false_next']
 
     def __repr__(self):
-        return 'if {} then {} else {}'.format(self.expression, self.true_next_name, self.false_next_name)
+        return '{}: if {} then {} else {}'.format(self.name, self.expression, self.true_next_name, self.false_next_name)
 
 class Pipeline:
     def __init__(self, json_obj):
         self.name = json_obj['name']
         self.id = int(json_obj['id'])
         self.init_table_name = json_obj['init_table']
-        self.init_table = None
 
-        self.tables = []
+        self.tables = {}
         for table_json in json_obj['tables']:
-            print(table_json)
+            table = Table(table_json)
+            self.tables[table.name] = table
 
-        self.conditionals = []
+        self.conditionals = {}
         for conditional_json in json_obj['conditionals']:
-            print(Conditional(conditional_json))
+            conditional = Conditional(conditional_json)
+            self.conditionals[conditional.name] = conditional
+
+        print('PIPELINE')
+        print(self.tables)
+        print(self.conditionals)
+        print('/PIPELINE')
+
+    def generate_CFG(self):
+        graph = {}
+        visited = set()
+        queue = [self.init_table_name]
+        while len(queue) != 0:
+            table_name = queue[0]
+            queue = queue[1:]
+            visited.add(table_name)
+
+            if table_name in self.tables:
+                table = self.tables[table_name]
+                next_tables = [v for k, v in table.next_tables.items()]
+            elif table_name in self.conditionals:
+                conditional = self.conditionals[table_name]
+                next_tables = [conditional.true_next_name, conditional.false_next_name]
+
+            graph[table_name] = next_tables
+
+            for next_table in next_tables:
+                if next_table not in visited:
+                    queue.append(next_table)
+
+        return graph
