@@ -19,6 +19,7 @@ import logging
 # Installed Packages/Libraries
 import networkx as nx
 import matplotlib.pyplot as plt
+from graphviz import Digraph
 
 # P4 Specfic Libraries
 
@@ -62,9 +63,34 @@ def main():
     hlir = P4_HLIR(args.debug, top.json_obj)
     parser_graph = hlir.get_parser_graph()
 
+    assert 'ingress' in hlir.pipelines
+    in_pipeline = hlir.pipelines['ingress']
+    graph = in_pipeline.generate_CFG()
+    control_paths = in_pipeline.generate_all_paths(graph)
+
+    i = 0
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink'))
     for path in paths:
-        generate_constraints(hlir, path, args.json_file)
+        for control_path in control_paths:
+            generate_constraints(hlir, in_pipeline, path, control_path, args.json_file)
+
+            # XXX: hack
+            if i > 5:
+                return
+            i += 1
+
+    """
+    Graphviz visualization:
+
+    dot = Digraph(comment=in_pipeline.name)
+    for node, neighbors in graph.items():
+        dot.node(node)
+        for action, neighbor in neighbors:
+            if neighbor is None:
+                neighbor = "null"
+            dot.edge(node, neighbor, action)
+    dot.render('{}_dot.gv'.format(in_pipeline.name), view=True)
+    """
 
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))

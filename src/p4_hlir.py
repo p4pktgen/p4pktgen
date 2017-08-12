@@ -28,7 +28,6 @@ from p4_utils import OrderedGraph
 from p4_utils import OrderedDiGraph
 from p4_utils import p4_parser_ops_enum
 
-
 class P4_HLIR(P4_Obj):
     PACKET_TOO_SHORT = 'PacketTooShort'
 
@@ -335,10 +334,10 @@ class P4_HLIR(P4_Obj):
             self.actions.append(Action(action_json))
 
         # Get the pipelines
-        self.pipelines = []
+        self.pipelines = {}
         for pipeline_json in json_obj['pipelines']:
-            self.pipelines.append(Pipeline(pipeline_json))
-            print(self.pipelines[-1].generate_CFG())
+            pipeline = Pipeline(pipeline_json)
+            self.pipelines[pipeline.name] = pipeline
 
         self.hdr_stacks = None
         self.hdr_union_types = None
@@ -417,6 +416,7 @@ class TypeValue:
 
 class TypeValueExpression(TypeValue):
     def __init__(self, json_obj):
+        # XXX: Make op an enum
         self.op = json_obj['op']
         if json_obj['left'] is None:
             self.left = None
@@ -601,15 +601,42 @@ class Pipeline:
 
             if table_name in self.tables:
                 table = self.tables[table_name]
-                next_tables = [v for k, v in table.next_tables.items()]
+                next_tables = list(table.next_tables.items())
             elif table_name in self.conditionals:
                 conditional = self.conditionals[table_name]
-                next_tables = [conditional.true_next_name, conditional.false_next_name]
+                next_tables = [('true', conditional.true_next_name), ('false', conditional.false_next_name)]
 
             graph[table_name] = next_tables
 
-            for next_table in next_tables:
-                if next_table not in visited:
+            for _, next_table in next_tables:
+                if next_table not in visited and next_table is not None:
                     queue.append(next_table)
 
         return graph
+
+    def generate_all_paths(self, graph):
+        # XXX: does not work with cycles
+        def generate_all_paths_(node):
+            if node is None:
+                return [[]]
+
+            neighbor_paths = []
+            for _, neighbor in graph[node]:
+                neighbor_paths += [[node] + path for path in generate_all_paths_(neighbor)]
+            return neighbor_paths
+
+        return generate_all_paths_(self.init_table_name)
+
+class PathSegment:
+    def __init__(self):
+        pass
+
+class PathSegmentTable(PathSegment):
+    def __init__(self, table_name, action):
+        self.table_name = table_name
+        self.action = action
+
+class PathSegmentConditional(PathSegment):
+    def __init__(self, conditional_name, value):
+        self.conditional_name = conditional_name
+        self.value = value

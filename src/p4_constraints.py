@@ -12,6 +12,7 @@ import logging
 import math
 import subprocess
 
+# XXX: Ugly
 class Context:
     def __init__(self):
         self.sym_vars = {}
@@ -25,6 +26,9 @@ class Context:
 
     def get(self, field):
         return self.sym_vars[self.field_to_var(field)]
+
+    def get_header_field(self, header_name, header_field):
+        return self.sym_vars['{}.{}'.format(header_name, header_field)]
 
 
 class Packet:
@@ -121,8 +125,35 @@ def p4_value_to_bv(value, size):
             'Transition value type not supported: {}'.format(
                 value.__class__))
 
+def type_value_to_smt(context, type_value):
+    if isinstance(type_value, TypeValueHexstr):
+        size = int(math.log(type_value.value, 2))
+        return BitVecVal(type_value.value, size)
+    if isinstance(type_value, TypeValueHeader):
+        # XXX: What should be done here?
+        raise Exception('?')
+    if isinstance(type_value, TypeValueBool):
+        return BoolVal(type_value.value)
+    if isinstance(type_value, TypeValueField):
+        return context.get_header_field(type_value.header_name, type_value.header_field)
+    if isinstance(type_value, TypeValueExpression):
+        if type_value.op == 'not':
+            return Not(type_value_to_smt(context, type_value.right))
+        elif type_value.op == 'd2b':
+            return If(type_value_to_smt(context, type_value.right) == 1, BoolVal(True), BoolVal(False)) 
+        elif type_value.op == '==':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs == rhs
+        else:
+            raise Exception('Type value expression {} not supported'.format(type_value.op))
+    else:
+        # XXX: implement other operators
+        raise Exception('Type value {} not supported'.format(type_value))
 
-def generate_constraints(hlir, path, json_file):
+
+def generate_constraints(hlir, pipeline, path, control_path, json_file):
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
@@ -242,6 +273,22 @@ def generate_constraints(hlir, path, json_file):
 
     # XXX: workaround
     constraints.append(sym_packet.get_length_constraint())
+
+    # XXX: very ugly to split parsing/control like that, need better solution
+    for table, next_table in zip(control_path, control_path[1:]):
+        if table in pipeline.conditionals:
+            print('conditional')
+            conditional = pipeline.conditionals[table]
+            expected_result = BoolVal(True)
+            if conditional.false_next_name == next_table:
+                expected_result = BoolVal(False)
+            sym_expr = type_value_to_smt(context, conditional.expression)
+            print(sym_expr)
+            constraints.append(sym_expr == expected_result)
+        elif table in pipeline.tables:
+            print('tables')
+        else:
+            assert False
 
     # Construct packet
     logging.info(And(constraints))
