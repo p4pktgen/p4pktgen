@@ -24,6 +24,9 @@ class Context:
     def insert(self, field, sym_val):
         self.sym_vars[self.field_to_var(field)] = sym_val
 
+    def set_field_value(self, header_name, header_field, sym_val):
+        self.sym_vars['{}.{}'.format(header_name, header_field)] = sym_val
+
     def get(self, field):
         return self.sym_vars[self.field_to_var(field)]
 
@@ -65,7 +68,7 @@ class Packet:
         else:
             hex_str = ''
 
-        logging.info(self.max_packet_size / 4)
+        logging.info(hex_str)
         hex_str = hex_str.zfill(self.max_packet_size // 4)
         n_bytes = (size + 7) // 8
         hex_str = hex_str[:n_bytes * 2]
@@ -127,7 +130,8 @@ def p4_value_to_bv(value, size):
 
 def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueHexstr):
-        size = int(math.log(type_value.value, 2))
+        size = max(1, int(math.ceil(math.log(type_value.value, 2))))
+        print(type_value.value)
         return BitVecVal(type_value.value, size)
     if isinstance(type_value, TypeValueHeader):
         # XXX: What should be done here?
@@ -135,23 +139,62 @@ def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueBool):
         return BoolVal(type_value.value)
     if isinstance(type_value, TypeValueField):
+        print(context.get_header_field(type_value.header_name, type_value.header_field))
         return context.get_header_field(type_value.header_name, type_value.header_field)
     if isinstance(type_value, TypeValueExpression):
         if type_value.op == 'not':
             return Not(type_value_to_smt(context, type_value.right))
         elif type_value.op == 'd2b':
             return If(type_value_to_smt(context, type_value.right) == 1, BoolVal(True), BoolVal(False)) 
+        elif type_value.op == 'b2d':
+            return If(type_value_to_smt(context, type_value.right), BitVecVal(1, 1), BitVecVal(0, 1)) 
+        elif type_value.op == 'valid':
+            # XXX: Implement me
+            assert isinstance(type_value.right, TypeValueHeader)
+            return BoolVal(True)
         elif type_value.op == '==':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs == rhs
+        elif type_value.op == '!=':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs != rhs
+        elif type_value.op == '&':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs & rhs
+        elif type_value.op == '+':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs + rhs
+        elif type_value.op == '>':
+            # XXX: signed/unsigned?
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs > rhs
         else:
             raise Exception('Type value expression {} not supported'.format(type_value.op))
     else:
         # XXX: implement other operators
         raise Exception('Type value {} not supported'.format(type_value))
 
+def action_to_smt(context, action):
+    for primitive in action.primitives:
+        print(primitive.op)
+        if primitive.op == 'modify_field':
+            value = type_value_to_smt(context, primitive.parameters[1])
+            print(primitive.parameters[1])
+            field = primitive.parameters[0]
+            context.set_field_value(field.header_name, field.header_field, value)
+            print(value)
+        else:
+            raise Exception('Primitive op {} not supported'.format(primitive.op))
 
 def generate_constraints(hlir, pipeline, path, control_path, json_file):
     # Maps variable names to symbolic values
@@ -275,18 +318,32 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
     constraints.append(sym_packet.get_length_constraint())
 
     # XXX: very ugly to split parsing/control like that, need better solution
-    for table, next_table in zip(control_path, control_path[1:]):
-        if table in pipeline.conditionals:
+    logging.info('control_path = {}'.format(' -> '.join(control_path)))
+    for table_name, next_table in zip(control_path, control_path[1:]):
+        if table_name in pipeline.conditionals:
             print('conditional')
-            conditional = pipeline.conditionals[table]
+            conditional = pipeline.conditionals[table_name]
             expected_result = BoolVal(True)
             if conditional.false_next_name == next_table:
                 expected_result = BoolVal(False)
             sym_expr = type_value_to_smt(context, conditional.expression)
             print(sym_expr)
             constraints.append(sym_expr == expected_result)
-        elif table in pipeline.tables:
+        elif table_name in pipeline.tables:
+            # XXX: this assumes that there is only a specific action
+            # that leads to a given next_table, which is not
+            # necessarily true
             print('tables')
+            table = pipeline.tables[table_name]
+            action = None
+            for table_action, table_next_table in table.next_tables.items():
+                if table_next_table == next_table:
+                    assert action is None
+                    action = table_action
+
+            assert action is not None
+
+            action_to_smt(context, hlir.actions[action])
         else:
             assert False
 
@@ -295,36 +352,37 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
     s = Solver()
     s.add(And(constraints))
     result = s.check()
-    model = s.model()
-    payload = sym_packet.get_payload_from_model(model)
+    print(result)
+    if result != unsat:
+        model = s.model()
+        payload = sym_packet.get_payload_from_model(model)
 
-    # XXX: Is 14 the correct number here? Is it possible to construct
-    # shorter, invalid packets?
-    if len(payload) >= 14:
-        packet = Ether(bytes(payload))
-        logging.info(packet.summary())
-        extracted_path = test_packet(packet, json_file)
+        # XXX: Is 14 the correct number here? Is it possible to construct
+        # shorter, invalid packets?
+        if len(payload) >= 14:
+            packet = Ether(bytes(payload))
+            extracted_path = test_packet(packet, json_file)
 
-        if path[-1] == P4_HLIR.PACKET_TOO_SHORT:
-            if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT or path[:-2] != extracted_path[:-1]):
-                # XXX: This is a workaround for simple_switch printing
-                # the state only when the packet leaves a state.
+            if path[-1] == P4_HLIR.PACKET_TOO_SHORT:
+                if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT or path[:-2] != extracted_path[:-1]):
+                    # XXX: This is a workaround for simple_switch printing
+                    # the state only when the packet leaves a state.
+                    logging.error(
+                        'Expected ({}) and actual ({}) path differ'.format(
+                            ' -> '.join(path),
+                            ' -> '.join(extracted_path)))
+                else:
+                    logging.info('Test successful ({})'.format(' -> '.join(extracted_path)))
+            elif path[:-1] != extracted_path:
                 logging.error(
                     'Expected ({}) and actual ({}) path differ'.format(
                         ' -> '.join(path),
                         ' -> '.join(extracted_path)))
+        
             else:
-                logging.info('Test successful ({})'.format(' -> '.join(extracted_path)))
-        elif path[:-1] != extracted_path:
-            logging.error(
-                'Expected ({}) and actual ({}) path differ'.format(
-                    ' -> '.join(path),
-                    ' -> '.join(extracted_path)))
-    
+                logging.info('Test successful')
         else:
-            logging.info('Test successful')
-    else:
-        logging.warning('Packet not sent (too short)')
+            logging.warning('Packet not sent (too short)')
 
 
 def test_packet(packet, json_file):
@@ -381,7 +439,7 @@ def test_packet(packet, json_file):
         m = re.search(r'Exception while parsing: PacketTooShort', line)
         if m is not None:
             extracted_path.append(P4_HLIR.PACKET_TOO_SHORT)
-        if 'Parser \'parser\': end' in line:
+        if 'Transmitting packet' in line:
             break
 
     proc.kill()

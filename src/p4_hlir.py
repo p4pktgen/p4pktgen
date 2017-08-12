@@ -329,9 +329,10 @@ class P4_HLIR(P4_Obj):
             self.parsers[parser.name] = parser
 
         # Get the actions
-        self.actions = []
+        self.actions = {}
         for action_json in json_obj['actions']:
-            self.actions.append(Action(action_json))
+            action = Action(action_json)
+            self.actions[action.name] = action
 
         # Get the pipelines
         self.pipelines = {}
@@ -489,6 +490,7 @@ def parse_type_value(json_obj):
 
 class PrimitiveCall:
     def __init__(self, json_obj):
+        # XXX: Make enum instead of string
         self.op = json_obj['op']
 
         self.parameters = []

@@ -67,6 +67,7 @@ def main():
     in_pipeline = hlir.pipelines['ingress']
     graph = in_pipeline.generate_CFG()
     control_paths = in_pipeline.generate_all_paths(graph)
+    control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
 
     i = 0
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink'))
@@ -75,7 +76,7 @@ def main():
             generate_constraints(hlir, in_pipeline, path, control_path, args.json_file)
 
             # XXX: hack
-            if i > 5:
+            if False: #i > 10:
                 return
             i += 1
 
