@@ -33,6 +33,9 @@ class Context:
     def get_header_field(self, header_name, header_field):
         return self.sym_vars['{}.{}'.format(header_name, header_field)]
 
+    def has_header_field(self, header_name, header_field):
+        return '{}.{}'.format(header_name, header_field) in self.sym_vars
+
 
 class Packet:
     def __init__(self):
@@ -149,9 +152,11 @@ def type_value_to_smt(context, type_value):
         elif type_value.op == 'b2d':
             return If(type_value_to_smt(context, type_value.right), BitVecVal(1, 1), BitVecVal(0, 1)) 
         elif type_value.op == 'valid':
-            # XXX: Implement me
             assert isinstance(type_value.right, TypeValueHeader)
-            return BoolVal(True)
+            if context.has_header_field(type_value.right.header_name, '$valid$'):
+                return BoolVal(True)
+            else:
+                return BoolVal(False)
         elif type_value.op == '==':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
@@ -238,6 +243,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                             pos + extract_offset,
                             field.size))
                         extract_offset += BitVecVal(field.size, 32)
+                    else:
+                        context.insert(field, BoolVal(True))
 
                 new_pos += extract_offset
             elif op == p4_parser_ops_enum.set:
