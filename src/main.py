@@ -89,8 +89,7 @@ def main():
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
     graph = in_pipeline.generate_CFG()
-    control_paths = in_pipeline.generate_all_paths(graph)
-    # control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
+    print(graph)
     """
     # Graphviz visualization
     dot = Digraph(comment=in_pipeline.name)
@@ -100,17 +99,20 @@ def main():
         else:
             node_str = node
         dot.node(node_str)
-        for action, neighbor in neighbors:
+        for neighbor in neighbors:
             if neighbor is None:
                 neighbor_str = "null"
             elif neighbor in in_pipeline.conditionals:
                 neighbor_str = repr(in_pipeline.conditionals[neighbor].expression)
             else:
                 neighbor_str = neighbor
-            dot.edge(node_str, neighbor_str, action)
+            dot.edge(node_str, neighbor_str)
     dot.render('{}_dot.gv'.format(in_pipeline.name), view=True)
     return
     """
+
+    control_paths = in_pipeline.generate_all_paths(graph)
+    # control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
 
     paths = list(
         nx.all_simple_paths(

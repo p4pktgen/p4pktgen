@@ -1,6 +1,5 @@
 # Added support
 from __future__ import print_function
-
 """p4_hlir.py class for operating on the HLIR"""
 
 __author__ = "Jehandad Khan, Colin Burgin"
@@ -28,15 +27,17 @@ from p4_utils import OrderedGraph
 from p4_utils import OrderedDiGraph
 from p4_utils import p4_parser_ops_enum
 
+
 class P4_HLIR(P4_Obj):
     PACKET_TOO_SHORT = 'PacketTooShort'
-
     """
     Top level P4_HLIR object
     Aggregates all the elements of a parsed P4 program
     """
+
     class HLIR_Meta(P4_Obj):
         """Class to represent a P4 meta field"""
+
         def __init__(self, json_obj):
             # Set version, it should exist
             if json_obj.has_key('version') and json_obj['version'] != None:
@@ -52,6 +53,7 @@ class P4_HLIR(P4_Obj):
 
     class HLIR_Header_Types(P4_Obj):
         """Class to represent a P4 Header Type"""
+
         def __init__(self, json_obj):
             # Set name, it should exist
             if json_obj.has_key('name') and json_obj['name'] != None:
@@ -71,14 +73,15 @@ class P4_HLIR(P4_Obj):
             if json_obj.has_key('fields') and json_obj['fields'] != None:
                 for f in json_obj['fields']:
                     # sign is a header field is optional
-                    assert(len(f) >= 2)
+                    assert (len(f) >= 2)
 
                     # XXX: not very clean, improve code
                     if len(f) == 3:
                         fd = P4_HLIR.HLIR_Field(f[0], int(f[1]), f[2])
-                        fixed_length += fd.size 
+                        fixed_length += fd.size
                     elif f[1] == '*':
-                        fd = P4_HLIR.HLIR_Field(f[0], None, False, var_length=True)
+                        fd = P4_HLIR.HLIR_Field(
+                            f[0], None, False, var_length=True)
                     else:
                         fd = P4_HLIR.HLIR_Field(f[0], int(f[1]), False)
                         fixed_length += fd.size
@@ -88,13 +91,15 @@ class P4_HLIR(P4_Obj):
                 raise ValueError('Missing Header_Type fields value')
 
             # Set length_exp, it is optional
-            if json_obj.has_key('length_exp') and json_obj['length_exp'] != None:
+            if json_obj.has_key(
+                    'length_exp') and json_obj['length_exp'] != None:
                 self.length_exp = int(json_obj['length_exp'])
             else:
                 self.length_exp = None
 
             # Set max_length, it is optional
-            if json_obj.has_key('max_length') and json_obj['max_length'] != None:
+            if json_obj.has_key(
+                    'max_length') and json_obj['max_length'] != None:
                 self.max_length = int(json_obj['max_length'])
 
                 for field_name, field in self.fields.iteritems():
@@ -102,12 +107,12 @@ class P4_HLIR(P4_Obj):
                         field.length = self.max_length - fixed_length
             else:
                 self.max_length = None
-            
 
     class HLIR_Field(P4_Obj):
         """
         Class to represent a P4 field which is part of a P4 Header Type
         """
+
         def __init__(self, name, size, signed, var_length=False):
             self.name = str(name)
             self.size = size
@@ -117,15 +122,16 @@ class P4_HLIR(P4_Obj):
             self.var_length = var_length
 
         def __repr__(self):
-            return 'HLIR_Field({}, {} {}, {})'.format(self.name, self.size, 
-                    '(max)' if self.var_length else '',
-                    'True' if self.signed else 'False')
+            return 'HLIR_Field({}, {} {}, {})'.format(
+                self.name, self.size, '(max)'
+                if self.var_length else '', 'True' if self.signed else 'False')
 
         def __str__(self):
             return __repr__(self)
 
     class HLIR_Headers(P4_Obj):
         """Class to represent a header instance"""
+
         def __init__(self, json_obj):
             # Set name, it should exist
             if json_obj.has_key('name') and json_obj['name'] != None:
@@ -140,7 +146,8 @@ class P4_HLIR(P4_Obj):
                 raise ValueError('Missing Headers id value')
 
             # Set initial header_type, it should exist
-            if json_obj.has_key('header_type') and json_obj['header_type'] != None:
+            if json_obj.has_key(
+                    'header_type') and json_obj['header_type'] != None:
                 self.header_type_name = str(json_obj['header_type'])
             else:
                 raise ValueError('Missing Headers header_type value')
@@ -161,7 +168,7 @@ class P4_HLIR(P4_Obj):
                 self.pi_omit = False
                 logging.warning('pi_omit missing from header')
 
-            # TODO: Special or hidden fields are not declared in the json but 
+            # TODO: Special or hidden fields are not declared in the json but
             # are assumed to exist
             self.fields = OrderedDict()
             valid_field = P4_HLIR.HLIR_Field('$valid$', 1, False)
@@ -172,14 +179,17 @@ class P4_HLIR(P4_Obj):
         """
         Class representing the p4 parser
         """
+
         class HLIR_Parse_States(P4_Obj):
             """
             Class representing the parser parse_states
             """
+
             class HLIR_Parser_Ops(P4_Obj):
                 """
                 Class representing the operations in a parse state
                 """
+
                 def __init__(self, json_op):
                     # I wish there was a neater way to do the following mapping
                     if json_op['op'] == 'extract':
@@ -200,12 +210,15 @@ class P4_HLIR(P4_Obj):
                 """
                 Class representing the P4 parser transitions
                 """
+
                 def __init__(self, json_obj):
-                    self.type = None if not 'type' in json_obj else json_obj['type']
+                    self.type = None if not 'type' in json_obj else json_obj[
+                        'type']
                     self.next_state_name = json_obj['next_state']
                     self.next_state = None
-                    self.mask = json_obj['mask'] # TODO Convert to int ? 
-                    self.value = None if json_obj['value'] == 'default' else int(json_obj['value'], 16)
+                    self.mask = json_obj['mask']  # TODO Convert to int ?
+                    self.value = None if json_obj[
+                        'value'] == 'default' else int(json_obj['value'], 16)
 
             # Init for parse states class
             def __init__(self, json_obj):
@@ -239,7 +252,8 @@ class P4_HLIR(P4_Obj):
                 raise ValueError('Missing Parser id value')
 
             # Set name, it should exist
-            if json_obj.has_key('init_state') and json_obj['init_state'] != None:
+            if json_obj.has_key(
+                    'init_state') and json_obj['init_state'] != None:
                 self.init_state = str(json_obj['init_state'])
             else:
                 raise ValueError('Missing Parser init_state value')
@@ -251,6 +265,7 @@ class P4_HLIR(P4_Obj):
         """
         Class representing the parsed p4 expression
         """
+
         def __init__(self, json_obj):
             self.parse_expression(json_obj)
 
@@ -288,13 +303,14 @@ class P4_HLIR(P4_Obj):
         for header_type in json_obj['header_types']:
             curr_hdr_type = P4_HLIR.HLIR_Header_Types(header_type)
             self.header_types[curr_hdr_type.name] = curr_hdr_type
-        
+
         # Get the headers
         self.headers = OrderedDict()
         for header in json_obj['headers']:
             curr_hdr = P4_HLIR.HLIR_Headers(header)
             curr_hdr.header_type = self.header_types[curr_hdr.header_type_name]
-            for k, fd in self.header_types[curr_hdr.header_type_name].fields.items():
+            for k, fd in self.header_types[
+                    curr_hdr.header_type_name].fields.items():
                 # make a copy for this header instance
                 new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed)
                 new_field.header = curr_hdr
@@ -310,22 +326,25 @@ class P4_HLIR(P4_Obj):
             for parse_state in p['parse_states']:
                 p4ps = P4_HLIR.HLIR_Parser.HLIR_Parse_States(parse_state)
                 for k in parse_state['parser_ops']:
-                    parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(k)
+                    parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(
+                        k)
                     parser_op.value = []
                     for pair in k['parameters']:
                         parser_op.value.append(self.parse_p4_value(pair))
                     p4ps.parser_ops.append(parser_op)
                 for k in parse_state['transitions']:
-                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition(k)
+                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition(
+                        k)
                     p4ps.transitions[transition.value] = transition
                 for k in parse_state['transition_key']:
                     p4ps.transition_key.append(self.parse_p4_value(k))
                 parser.parse_states[p4ps.name] = p4ps
-            # Link up the parse state objects 
+            # Link up the parse state objects
             for ps_name, ps in parser.parse_states.items():
                 for tns_name, tns in ps.transitions.items():
                     if tns.next_state_name:
-                        tns.next_state = parser.parse_states[tns.next_state_name]
+                        tns.next_state = parser.parse_states[
+                            tns.next_state_name]
             self.parsers[parser.name] = parser
 
         # Get the actions
@@ -362,8 +381,8 @@ class P4_HLIR(P4_Obj):
         for ps_name, ps in self.parsers["parser"].parse_states.items():
             for tns_name, tns in ps.transitions.items():
                 if tns.next_state:
-                    graph.add_edge(ps_name, tns.next_state.name, 
-                        transition=tns)
+                    graph.add_edge(
+                        ps_name, tns.next_state.name, transition=tns)
                 else:
                     graph.add_edge(ps_name, 'sink', transition=tns)
             graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
@@ -375,7 +394,8 @@ class P4_HLIR(P4_Obj):
         if 'type' in json_obj:
             if json_obj['type'] == 'field':
                 # TODO: handle hidden fields !
-                ll = list(json_obj['value']) # a 2-tuple with the header and field
+                ll = list(
+                    json_obj['value'])  # a 2-tuple with the header and field
                 return self.headers[ll[0]].fields[ll[1]]
             elif json_obj['type'] == 'hexstr':
                 return int(json_obj['value'], 16)
@@ -389,7 +409,7 @@ class P4_HLIR(P4_Obj):
                 # XXX: do this properly
                 return str(json_obj['value'])
             elif json_obj['type'] == 'union_stack':
-                assert(False) # TODO
+                assert (False)  # TODO
             elif json_obj['type'] == 'expression':
                 if 'type' in json_obj['value']:
                     return self.parse_p4_value(json_obj['value'])
@@ -403,7 +423,8 @@ class P4_HLIR(P4_Obj):
                 return exp
         elif 'op' in json_obj:
             # XXX: What should be done about this?
-            parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(json_obj)
+            parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(
+                json_obj)
             parser_op.value = []
             for pair in json_obj['parameters']:
                 parser_op.value.append(self.parse_p4_value(pair))
@@ -411,9 +432,11 @@ class P4_HLIR(P4_Obj):
         else:
             assert False
 
+
 class TypeValue:
     def __init__(self):
         pass
+
 
 class TypeValueExpression(TypeValue):
     def __init__(self, json_obj):
@@ -431,6 +454,7 @@ class TypeValueExpression(TypeValue):
         else:
             return '({} {} {})'.format(self.left, self.op, self.right)
 
+
 class TypeValueField(TypeValue):
     def __init__(self, json_obj):
         self.header_name = json_obj[0]
@@ -439,12 +463,14 @@ class TypeValueField(TypeValue):
     def __repr__(self):
         return '{}.{}'.format(self.header_name, self.header_field)
 
+
 class TypeValueHexstr(TypeValue):
     def __init__(self, json_obj):
         self.value = int(json_obj, 16)
 
     def __repr__(self):
         return str(self.value)
+
 
 class TypeValueHeader(TypeValue):
     def __init__(self, json_obj):
@@ -453,6 +479,7 @@ class TypeValueHeader(TypeValue):
     def __repr__(self):
         return self.header_name
 
+
 class TypeValueBool(TypeValue):
     def __init__(self, json_obj):
         self.value = json_obj
@@ -460,12 +487,14 @@ class TypeValueBool(TypeValue):
     def __repr__(self):
         return str(self.value)
 
+
 class TypeValueRuntimeData(TypeValue):
     def __init__(self, json_obj):
         self.index = int(json_obj)
 
     def __repr__(self):
         return 'runtime_data[{}]'.format(self.index)
+
 
 def parse_type_value(json_obj):
     p4_type_str = json_obj['type']
@@ -488,6 +517,7 @@ def parse_type_value(json_obj):
     else:
         raise Exception('{} not supported'.format(p4_type_str))
 
+
 class PrimitiveCall:
     def __init__(self, json_obj):
         # XXX: Make enum instead of string
@@ -498,10 +528,12 @@ class PrimitiveCall:
             self.parameters.append(parse_type_value(parameter))
         print(self.op, self.parameters)
 
+
 class ActionParameter:
     def __init__(self, json_obj):
         self.name = json_obj['name']
         self.bitwidth = json_obj['bitwidth']
+
 
 class Action:
     def __init__(self, json_obj):
@@ -516,6 +548,7 @@ class Action:
         for primitive in json_obj['primitives']:
             self.primitives.append(PrimitiveCall(primitive))
 
+
 class TableEntry:
     def __init__(self, json_obj):
         self.action_id = json_obj['action_id']
@@ -525,6 +558,7 @@ class TableEntry:
         # XXX: implement
 
         self.action_entry_const = json_obj['action_entry_const']
+
 
 class Table:
     def __init__(self, json_obj):
@@ -560,6 +594,7 @@ class Table:
     def __repr__(self):
         return 'Table {}'.format(self.name)
 
+
 class Conditional:
     def __init__(self, json_obj):
         self.name = json_obj['name']
@@ -569,7 +604,10 @@ class Conditional:
         self.false_next_name = json_obj['false_next']
 
     def __repr__(self):
-        return '{}: if {} then {} else {}'.format(self.name, self.expression, self.true_next_name, self.false_next_name)
+        return '{}: if {} then {} else {}'.format(self.name, self.expression,
+                                                  self.true_next_name,
+                                                  self.false_next_name)
+
 
 class Pipeline:
     def __init__(self, json_obj):
@@ -594,25 +632,36 @@ class Pipeline:
 
     def generate_CFG(self):
         graph = {}
-        visited = set()
         queue = [self.init_table_name]
+        visited = set(self.init_table_name)
         while len(queue) != 0:
             table_name = queue[0]
             queue = queue[1:]
-            visited.add(table_name)
 
             if table_name in self.tables:
                 table = self.tables[table_name]
-                next_tables = list(table.next_tables.items())
-            elif table_name in self.conditionals:
+                next_tables = [
+                    next_table for _, next_table in table.next_tables.items()
+                ]
+                graph[table_name] = table.action_names
+
+                for action_name, next_table in table.next_tables.items():
+                    if action_name not in graph:
+                        graph[action_name] = []
+                    graph[action_name].append(next_table)
+                    print(table_name, action_name, next_table)
+            else:
+                assert table_name in self.conditionals
                 conditional = self.conditionals[table_name]
-                next_tables = [('true', conditional.true_next_name), ('false', conditional.false_next_name)]
+                next_tables = [
+                    conditional.true_next_name, conditional.false_next_name
+                ]
+                graph[table_name] = next_tables
 
-            graph[table_name] = next_tables
-
-            for _, next_table in next_tables:
+            for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
                     queue.append(next_table)
+                    visited.add(next_table)
 
         return graph
 
@@ -623,22 +672,30 @@ class Pipeline:
                 return [[]]
 
             neighbor_paths = []
-            for _, neighbor in graph[node]:
-                neighbor_paths += [[node] + path for path in generate_all_paths_(neighbor)]
+            for neighbor in graph[node]:
+                neighbor_paths += [[node] + path
+                                   for path in generate_all_paths_(neighbor)]
             return neighbor_paths
 
         return generate_all_paths_(self.init_table_name)
+
 
 class PathSegment:
     def __init__(self):
         pass
 
+
 class PathSegmentTable(PathSegment):
-    def __init__(self, table_name, action):
+    def __init__(self, table_name):
         self.table_name = table_name
-        self.action = action
+
 
 class PathSegmentConditional(PathSegment):
     def __init__(self, conditional_name, value):
         self.conditional_name = conditional_name
         self.value = value
+
+
+class PathSegmentAction(PathSegment):
+    def __init__(self, action_name):
+        self.action = action
