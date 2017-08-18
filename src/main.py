@@ -1,6 +1,5 @@
 # Added support
 from __future__ import print_function
-
 """main.py: P4 Packet Gen API"""
 
 __author__ = "Colin Burgin"
@@ -29,27 +28,51 @@ from p4_hlir import P4_HLIR
 from config import Config
 from p4_constraints import generate_constraints
 
+
 def main():
     #Parse the command line arguments provided at run time.
     parser = argparse.ArgumentParser(description='P4 device input file')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-p', '--input_p4', dest='p4_file',
-                        type=str, help='Provide the path to the P4 device file')
-    group.add_argument('-j', '--input_json', dest='json_file',
-                        type=str, help='Provide the path to the compiled JSON')
-    parser.add_argument('-f', '--flags', dest='flags',
-                        type=str, help='Optional compiler flags')
-    parser.add_argument('-d', '--debug', dest='debug', action='store_true',
-                        default=False, help='Print debug information')
-    parser.add_argument('-i', '--interface', dest='interface', type=str,
-                        default='veth2', help='Interface to send the packets to')
+    group.add_argument(
+        '-p',
+        '--input_p4',
+        dest='p4_file',
+        type=str,
+        help='Provide the path to the P4 device file')
+    group.add_argument(
+        '-j',
+        '--input_json',
+        dest='json_file',
+        type=str,
+        help='Provide the path to the compiled JSON')
+    parser.add_argument(
+        '-f',
+        '--flags',
+        dest='flags',
+        type=str,
+        help='Optional compiler flags')
+    parser.add_argument(
+        '-d',
+        '--debug',
+        dest='debug',
+        action='store_true',
+        default=False,
+        help='Print debug information')
+    parser.add_argument(
+        '-i',
+        '--interface',
+        dest='interface',
+        type=str,
+        default='veth2',
+        help='Interface to send the packets to')
 
     # Parse the input arguments
     args = parser.parse_args()
     Config().load_args(args)
 
     if args.debug:
-        logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
+        logging.basicConfig(
+            format='%(levelname)s: %(message)s', level=logging.INFO)
 
     top = P4_Top(args.debug)
 
@@ -68,31 +91,36 @@ def main():
     graph = in_pipeline.generate_CFG()
     control_paths = in_pipeline.generate_all_paths(graph)
     # control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
-
-    i = 0
-    paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target='sink'))
-    for path in paths:
-        for control_path in control_paths:
-            generate_constraints(hlir, in_pipeline, path, control_path, args.json_file)
-
-            # XXX: hack
-            if False: #i > 10:
-                return
-            i += 1
-
     """
-    Graphviz visualization:
-
+    # Graphviz visualization
     dot = Digraph(comment=in_pipeline.name)
     for node, neighbors in graph.items():
-        dot.node(node)
+        if node in in_pipeline.conditionals:
+            node_str = repr(in_pipeline.conditionals[node].expression)
+        else:
+            node_str = node
+        dot.node(node_str)
         for action, neighbor in neighbors:
             if neighbor is None:
-                neighbor = "null"
-            dot.edge(node, neighbor, action)
+                neighbor_str = "null"
+            elif neighbor in in_pipeline.conditionals:
+                neighbor_str = repr(in_pipeline.conditionals[neighbor].expression)
+            else:
+                neighbor_str = neighbor
+            dot.edge(node_str, neighbor_str, action)
     dot.render('{}_dot.gv'.format(in_pipeline.name), view=True)
+    return
     """
 
+    paths = list(
+        nx.all_simple_paths(
+            parser_graph,
+            source=hlir.parsers['parser'].init_state,
+            target='sink'))
+    for path in paths:
+        for control_path in control_paths:
+            generate_constraints(hlir, in_pipeline, path, control_path,
+                                 args.json_file)
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:
@@ -100,5 +128,5 @@ def main():
     """
 
 
-if __name__ =='__main__':
+if __name__ == '__main__':
     main()

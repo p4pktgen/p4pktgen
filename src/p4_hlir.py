@@ -617,7 +617,7 @@ class Pipeline:
         return graph
 
     def generate_all_paths(self, graph):
-        # XXX: does not work with cycles
+        # XXX: does not work with cycles, inefficient in general
         def generate_all_paths_(node):
             if node is None:
                 return [[]]

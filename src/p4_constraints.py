@@ -12,6 +12,7 @@ import logging
 import math
 import subprocess
 
+
 # XXX: Ugly
 class Context:
     def __init__(self):
@@ -36,6 +37,10 @@ class Context:
     def has_header_field(self, header_name, header_field):
         return '{}.{}'.format(header_name, header_field) in self.sym_vars
 
+    def print_values(self, model):
+        for k, v in self.sym_vars.items():
+            print('{}: {}'.format(k, model[v]))
+
 
 class Packet:
     def __init__(self):
@@ -50,8 +55,10 @@ class Packet:
         end = start + BitVecVal(size, 32)
         self.packet_size = simplify(
             If(self.packet_size > end, self.packet_size, end))
-        return Extract(size - 1, 0, LShR(self.sym_packet, ZeroExt(
-            self.max_packet_size - start.size(), self.max_packet_size - start - size)))
+        return Extract(size - 1, 0,
+                       LShR(self.sym_packet,
+                            ZeroExt(self.max_packet_size - start.size(),
+                                    self.max_packet_size - start - size)))
 
     def get_length_constraint(self):
         if self.max_length is None:
@@ -80,8 +87,10 @@ class Packet:
 
 def equalize_bv_size(bvs):
     target_size = max([bv.size() for bv in bvs])
-    return [ZeroExt(target_size - bv.size(), bv) if bv.size()
-            != target_size else bv for bv in bvs]
+    return [
+        ZeroExt(target_size - bv.size(), bv)
+        if bv.size() != target_size else bv for bv in bvs
+    ]
 
 
 def p4_field_to_sym(context, field):
@@ -90,10 +99,10 @@ def p4_field_to_sym(context, field):
 
 def p4_expr_to_sym(context, expr):
     if isinstance(expr, P4_HLIR.P4_Expression):
-        lhs = p4_expr_to_sym(
-            context, expr.left) if expr.left is not None else None
-        rhs = p4_expr_to_sym(
-            context, expr.right) if expr.right is not None else None
+        lhs = p4_expr_to_sym(context,
+                             expr.left) if expr.left is not None else None
+        rhs = p4_expr_to_sym(context,
+                             expr.right) if expr.right is not None else None
         if expr.op == '&':
             assert lhs is not None and rhs is not None
             lhs, rhs = equalize_bv_size([lhs, rhs])
@@ -128,13 +137,12 @@ def p4_value_to_bv(value, size):
         return BitVecVal(value, size)
     else:
         raise Exception(
-            'Transition value type not supported: {}'.format(
-                value.__class__))
+            'Transition value type not supported: {}'.format(value.__class__))
+
 
 def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueHexstr):
-        size = max(1, int(math.ceil(math.log(type_value.value, 2))))
-        print(type_value.value)
+        size = int(math.ceil(math.log(type_value.value, 2))) + 1
         return BitVecVal(type_value.value, size)
     if isinstance(type_value, TypeValueHeader):
         # XXX: What should be done here?
@@ -142,18 +150,23 @@ def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueBool):
         return BoolVal(type_value.value)
     if isinstance(type_value, TypeValueField):
-        print(context.get_header_field(type_value.header_name, type_value.header_field))
-        return context.get_header_field(type_value.header_name, type_value.header_field)
+        return context.get_header_field(type_value.header_name,
+                                        type_value.header_field)
     if isinstance(type_value, TypeValueExpression):
         if type_value.op == 'not':
             return Not(type_value_to_smt(context, type_value.right))
         elif type_value.op == 'd2b':
-            return If(type_value_to_smt(context, type_value.right) == 1, BoolVal(True), BoolVal(False)) 
+            return If(
+                type_value_to_smt(context, type_value.right) == 1,
+                BoolVal(True), BoolVal(False))
         elif type_value.op == 'b2d':
-            return If(type_value_to_smt(context, type_value.right), BitVecVal(1, 1), BitVecVal(0, 1)) 
+            return If(
+                type_value_to_smt(context, type_value.right),
+                BitVecVal(1, 1), BitVecVal(0, 1))
         elif type_value.op == 'valid':
             assert isinstance(type_value.right, TypeValueHeader)
-            if context.has_header_field(type_value.right.header_name, '$valid$'):
+            if context.has_header_field(type_value.right.header_name,
+                                        '$valid$'):
                 return BoolVal(True)
             else:
                 return BoolVal(False)
@@ -182,24 +195,26 @@ def type_value_to_smt(context, type_value):
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
-            return lhs > rhs
+            return UGT(lhs, rhs)
         else:
-            raise Exception('Type value expression {} not supported'.format(type_value.op))
+            raise Exception(
+                'Type value expression {} not supported'.format(type_value.op))
     else:
         # XXX: implement other operators
         raise Exception('Type value {} not supported'.format(type_value))
 
+
 def action_to_smt(context, action):
     for primitive in action.primitives:
-        print(primitive.op)
         if primitive.op == 'modify_field':
             value = type_value_to_smt(context, primitive.parameters[1])
-            print(primitive.parameters[1])
             field = primitive.parameters[0]
-            context.set_field_value(field.header_name, field.header_field, value)
-            print(value)
+            context.set_field_value(field.header_name, field.header_field,
+                                    value)
         else:
-            raise Exception('Primitive op {} not supported'.format(primitive.op))
+            raise Exception(
+                'Primitive op {} not supported'.format(primitive.op))
+
 
 def generate_constraints(hlir, pipeline, path, control_path, json_file):
     # Maps variable names to symbolic values
@@ -221,7 +236,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
         transition = None
         for _, current_transition in parse_state.transitions.items():
             if current_transition.next_state_name == next_node or (
-                    current_transition.next_state_name is None and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
+                    current_transition.next_state_name is None
+                    and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
                 transition = current_transition
 
         assert transition is not None
@@ -239,9 +255,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                 for name, field in extract_header.fields.items():
                     # XXX: deal with valid flags
                     if field.name != '$valid$':
-                        context.insert(field, sym_packet.extract(
-                            pos + extract_offset,
-                            field.size))
+                        context.insert(field,
+                                       sym_packet.extract(
+                                           pos + extract_offset, field.size))
                         extract_offset += BitVecVal(field.size, 32)
                     else:
                         context.insert(field, BoolVal(True))
@@ -250,9 +266,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
             elif op == p4_parser_ops_enum.set:
                 assert len(parser_op.value) == 2
                 assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
-                context.insert(
-                    parser_op.value[0], p4_expr_to_sym(
-                        context, parser_op.value[1]))
+                context.insert(parser_op.value[0],
+                               p4_expr_to_sym(context, parser_op.value[1]))
             elif op == p4_parser_ops_enum.extract_VL:
                 assert len(parser_op.value) == 2
                 assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
@@ -264,9 +279,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                 for name, field in extract_header.fields.items():
                     # XXX: deal with valid flags
                     if field.name != '$valid$':
-                        context.insert(field, sym_packet.extract(
-                            pos + extract_offset,
-                            field.size))
+                        context.insert(field,
+                                       sym_packet.extract(
+                                           pos + extract_offset, field.size))
                         extract_offset += BitVecVal(field.size, 32)
 
                 new_pos += extract_offset
@@ -289,9 +304,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
             if isinstance(transition_key_elem, P4_HLIR.HLIR_Field):
                 sym_transition_key.append(context.get(transition_key_elem))
             else:
-                raise Exception(
-                    'Transition key type not supported: {}'.format(
-                        transition_key_elem.__class__))
+                raise Exception('Transition key type not supported: {}'.format(
+                    transition_key_elem.__class__))
 
         # XXX: support key types other than hexstr
         if transition.value is not None:
@@ -299,8 +313,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                 sym_transition_key_complete = Concat(sym_transition_key)
             else:
                 sym_transition_key_complete = sym_transition_key[0]
-            bv_value = p4_value_to_bv(
-                transition.value, sym_transition_key_complete.size())
+            bv_value = p4_value_to_bv(transition.value,
+                                      sym_transition_key_complete.size())
             constraints.append(sym_transition_key_complete == bv_value)
         elif len(sym_transition_key) > 0:
             sym_transition_key = sym_transition_key[0]
@@ -312,11 +326,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                     other_values.append(current_transition.value)
 
             other_bv_values = [
-                p4_value_to_bv(
-                    value,
-                    sym_transition_key.size()) for value in other_values]
+                p4_value_to_bv(value, sym_transition_key.size())
+                for value in other_values
+            ]
             constraints.append(
-                Not(Or([(sym_transition_key == bv_value) for bv_value in other_bv_values])))
+                Not(
+                    Or([(sym_transition_key == bv_value)
+                        for bv_value in other_bv_values])))
 
         logging.info(sym_transition_key)
         pos = simplify(new_pos)
@@ -328,19 +344,16 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
     logging.info('control_path = {}'.format(' -> '.join(control_path)))
     for table_name, next_table in zip(control_path, control_path[1:]):
         if table_name in pipeline.conditionals:
-            print('conditional')
             conditional = pipeline.conditionals[table_name]
             expected_result = BoolVal(True)
             if conditional.false_next_name == next_table:
                 expected_result = BoolVal(False)
             sym_expr = type_value_to_smt(context, conditional.expression)
-            print(sym_expr)
             constraints.append(sym_expr == expected_result)
         elif table_name in pipeline.tables:
             # XXX: this assumes that there is only a specific action
             # that leads to a given next_table, which is not
             # necessarily true
-            print('tables')
             table = pipeline.tables[table_name]
             action = None
             for table_action, table_next_table in table.next_tables.items():
@@ -354,12 +367,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
         else:
             assert False
 
+    expected_path = path + control_path
+
     # Construct packet
     logging.info(And(constraints))
     s = Solver()
     s.add(And(constraints))
     result = s.check()
-    print(result)
     if result != unsat:
         model = s.model()
         payload = sym_packet.get_payload_from_model(model)
@@ -370,26 +384,30 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
             packet = Ether(bytes(payload))
             extracted_path = test_packet(packet, json_file)
 
-            if path[-1] == P4_HLIR.PACKET_TOO_SHORT:
-                if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT or path[:-2] != extracted_path[:-1]):
+            if expected_path[-1] == P4_HLIR.PACKET_TOO_SHORT:
+                if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT
+                        or expected_path[:-2] != extracted_path[:-1]):
                     # XXX: This is a workaround for simple_switch printing
                     # the state only when the packet leaves a state.
-                    logging.error(
-                        'Expected ({}) and actual ({}) path differ'.format(
-                            ' -> '.join(path),
-                            ' -> '.join(extracted_path)))
+                    logging.error('Expected ({}) and actual ({}) path differ'.
+                                  format(' -> '.join(expected_path),
+                                         ' -> '.join(extracted_path)))
                 else:
-                    logging.info('Test successful ({})'.format(' -> '.join(extracted_path)))
-            elif path[:-1] != extracted_path:
-                logging.error(
-                    'Expected ({}) and actual ({}) path differ'.format(
-                        ' -> '.join(path),
+                    logging.info('Test successful ({})'.format(
                         ' -> '.join(extracted_path)))
-        
+            elif expected_path != extracted_path:
+                logging.error('Expected ({}) and actual ({}) path differ'.
+                              format(' -> '.join(expected_path), ' -> '.join(
+                                  extracted_path)))
+                assert False
+
             else:
-                logging.info('Test successful')
+                print('Test successful: {}'.format(' -> '.join(expected_path)))
         else:
             logging.warning('Packet not sent (too short)')
+    else:
+        print('Unable to find packet for path: {}'.format(
+            ' -> '.join(expected_path)))
 
 
 def test_packet(packet, json_file):
@@ -411,10 +429,10 @@ def test_packet(packet, json_file):
         eth_args.append('{}@veth{}'.format(i, (i + 1) * 2))
 
     # Start simple_switch
-    proc = subprocess.Popen(['simple_switch',
-                             '--thrift-port', '9091',
-                             '--log-console'] + eth_args + [json_file],
-                            stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        ['simple_switch', '--thrift-port', '9091', '--log-console'] + eth_args
+        + [json_file],
+        stdout=subprocess.PIPE)
 
     # Wait for simple_switch to finish initializing
     init_done = False
@@ -443,10 +461,18 @@ def test_packet(packet, json_file):
         m = re.search(r'Parser state \'(.*)\'', line)
         if m is not None:
             extracted_path.append(m.group(1))
+        m = re.search(r'Applying table \'(.*)\'', line)
+        if m is not None:
+            extracted_path.append(m.group(1))
+        m = re.search(r'Condition "(.*)"', line)
+        if m is not None:
+            extracted_path.append(m.group(1))
         m = re.search(r'Exception while parsing: PacketTooShort', line)
+        if 'Parser \'parser\': end' in line:
+            extracted_path.append('sink')
         if m is not None:
             extracted_path.append(P4_HLIR.PACKET_TOO_SHORT)
-        if 'Transmitting packet' in line:
+        if 'Pipeline \'ingress\': end' in line:
             break
 
     proc.kill()
