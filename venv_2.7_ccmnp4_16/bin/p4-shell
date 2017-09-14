@@ -1,4 +1,0 @@
-#!/Users/cburgin/Development/P4/ccmp4_16/venv_2.7_ccmnp4_16/bin/python
-# EASY-INSTALL-SCRIPT: 'p4-hlir==0.9.46','p4-shell'
-__requires__ = 'p4-hlir==0.9.46'
-__import__('pkg_resources').run_script('p4-hlir==0.9.46', 'p4-shell')

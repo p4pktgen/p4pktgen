@@ -1,3 +1,6 @@
+# TODO:
+# - Print out which values were used for constraints.
+
 from z3 import *
 
 # XXX: This class needs some heavy refactoring.
