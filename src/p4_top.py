@@ -25,7 +25,7 @@ from collections import OrderedDict
 # Local API Libraries
 from p4_graphs import P4_Graphs
 from p4_utils import dict_or_OrdDict_to_formatted_str
-from p4_constraints import generate_constraints
+from core.translator import generate_constraints
 
 class P4_Top():
     """Top-level for P4_16 API. Takes input P4 device and generates JSON"""

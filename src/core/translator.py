@@ -5,84 +5,14 @@
 
 from z3 import *
 from p4_hlir import *
+from hlir.type_value import *
 from scapy.all import *
 from config import Config
+from core.context import Context
+from core.packet import Packet
 
-import logging
 import math
 import subprocess
-
-
-# XXX: Ugly
-class Context:
-    def __init__(self):
-        self.sym_vars = {}
-
-    def field_to_var(self, field):
-        assert field.header is not None
-        return '{}.{}'.format(field.header.name, field.name)
-
-    def insert(self, field, sym_val):
-        self.sym_vars[self.field_to_var(field)] = sym_val
-
-    def set_field_value(self, header_name, header_field, sym_val):
-        self.sym_vars['{}.{}'.format(header_name, header_field)] = sym_val
-
-    def get(self, field):
-        return self.sym_vars[self.field_to_var(field)]
-
-    def get_header_field(self, header_name, header_field):
-        return self.sym_vars['{}.{}'.format(header_name, header_field)]
-
-    def has_header_field(self, header_name, header_field):
-        return '{}.{}'.format(header_name, header_field) in self.sym_vars
-
-    def print_values(self, model):
-        for k, v in self.sym_vars.items():
-            print('{}: {}'.format(k, model[v]))
-
-
-class Packet:
-    def __init__(self):
-        # XXX: dynamic packet size
-        self.max_packet_size = 4096
-        self.sym_packet = BitVec('packet', self.max_packet_size)
-        self.packet_size = BitVecVal(0, 32)
-        self.packet_size_var = BitVec('packet_size', 32)
-        self.max_length = None
-
-    def extract(self, start, size):
-        end = start + BitVecVal(size, 32)
-        self.packet_size = simplify(
-            If(self.packet_size > end, self.packet_size, end))
-        return Extract(size - 1, 0,
-                       LShR(self.sym_packet,
-                            ZeroExt(self.max_packet_size - start.size(),
-                                    self.max_packet_size - start - size)))
-
-    def get_length_constraint(self):
-        if self.max_length is None:
-            return self.packet_size_var == self.packet_size
-        else:
-            return self.packet_size_var < self.max_length
-
-    def set_max_length(self, max_length):
-        self.max_length = max_length
-
-    def get_payload_from_model(self, model):
-        # XXX: find a better way to do this
-        size = model[self.packet_size_var].as_long()
-
-        if model[self.sym_packet] is not None:
-            hex_str = '{0:x}'.format(model[self.sym_packet].as_long())
-        else:
-            hex_str = ''
-
-        logging.info(hex_str)
-        hex_str = hex_str.zfill(self.max_packet_size // 4)
-        n_bytes = (size + 7) // 8
-        hex_str = hex_str[:n_bytes * 2]
-        return bytearray.fromhex(hex_str)
 
 
 def equalize_bv_size(bvs):
@@ -91,7 +21,6 @@ def equalize_bv_size(bvs):
         ZeroExt(target_size - bv.size(), bv)
         if bv.size() != target_size else bv for bv in bvs
     ]
-
 
 def p4_field_to_sym(context, field):
     return context.get(field)
@@ -351,20 +280,38 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
             sym_expr = type_value_to_smt(context, conditional.expression)
             constraints.append(sym_expr == expected_result)
         elif table_name in pipeline.tables:
-            pass
+            table = pipeline.tables[table_name]
+            if table.match_type == 'exact':
+                sym_key_elems = []
+                for key_elem in table.key:
+                    assert key_elem.match_type == 'exact'
+                    header_name, header_field = key_elem.target
+                    if context.has_header_field(header_name, header_field):
+                        sym_key_elems.append(context.get_header_field(key_elem.target[0], key_elem.target[1]))
+                    else:
+                        constraints.append(False)
+                        sym_key_elems = []
+                        break
+                if len(sym_key_elems) > 0:
+                    sym_key = Concat(sym_key_elems)
+            else:
+                raise Exception('Match type {} not supported!'.format(table.match_type))
         else:
             assert table_name in hlir.actions
             action_to_smt(context, hlir.actions[table_name])
 
+    constraints += context.get_name_constraints()
+
     expected_path = path + control_path
 
-    # Construct packet
+    # Construct and test the packet
     logging.info(And(constraints))
     s = Solver()
     s.add(And(constraints))
     result = s.check()
     if result != unsat:
         model = s.model()
+        context.print_model(model)
         payload = sym_packet.get_payload_from_model(model)
 
         # XXX: Is 14 the correct number here? Is it possible to construct
@@ -397,7 +344,6 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
     else:
         print('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
-
 
 def test_packet(packet, json_file):
     """This function starts simple_switch, sends a packet to the switch and

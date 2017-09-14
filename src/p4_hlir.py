@@ -26,6 +26,7 @@ from p4_obj import P4_Obj
 from p4_utils import OrderedGraph
 from p4_utils import OrderedDiGraph
 from p4_utils import p4_parser_ops_enum
+from hlir.type_value import *
 
 
 class P4_HLIR(P4_Obj):
@@ -217,8 +218,14 @@ class P4_HLIR(P4_Obj):
                     self.next_state_name = json_obj['next_state']
                     self.next_state = None
                     self.mask = json_obj['mask']  # TODO Convert to int ?
-                    self.value = None if json_obj[
-                        'value'] == 'default' else int(json_obj['value'], 16)
+                    print(json_obj['value'])
+                    print(self.next_state_name)
+
+                    # XXX: is "default" possible here?
+                    if json_obj['value'] is None or json_obj['value'] == 'default':
+                        self.value = None
+                    else:
+                        self.value = int(json_obj['value'], 16)
 
             # Init for parse states class
             def __init__(self, json_obj):
@@ -288,7 +295,7 @@ class P4_HLIR(P4_Obj):
         if json_obj.has_key('program') and json_obj['program'] != None:
             self.program = str(json_obj['program'])
         else:
-            raise ValueError('Missing program attribute value')
+            self.program = None
 
         # Get the meta field
         json_meta = json_obj['__meta__']
@@ -433,91 +440,6 @@ class P4_HLIR(P4_Obj):
             assert False
 
 
-class TypeValue:
-    def __init__(self):
-        pass
-
-
-class TypeValueExpression(TypeValue):
-    def __init__(self, json_obj):
-        # XXX: Make op an enum
-        self.op = json_obj['op']
-        if json_obj['left'] is None:
-            self.left = None
-        else:
-            self.left = parse_type_value(json_obj['left'])
-        self.right = parse_type_value(json_obj['right'])
-
-    def __repr__(self):
-        if self.left is None:
-            return '{}({})'.format(self.op, self.right)
-        else:
-            return '({} {} {})'.format(self.left, self.op, self.right)
-
-
-class TypeValueField(TypeValue):
-    def __init__(self, json_obj):
-        self.header_name = json_obj[0]
-        self.header_field = json_obj[1]
-
-    def __repr__(self):
-        return '{}.{}'.format(self.header_name, self.header_field)
-
-
-class TypeValueHexstr(TypeValue):
-    def __init__(self, json_obj):
-        self.value = int(json_obj, 16)
-
-    def __repr__(self):
-        return str(self.value)
-
-
-class TypeValueHeader(TypeValue):
-    def __init__(self, json_obj):
-        self.header_name = json_obj
-
-    def __repr__(self):
-        return self.header_name
-
-
-class TypeValueBool(TypeValue):
-    def __init__(self, json_obj):
-        self.value = json_obj
-
-    def __repr__(self):
-        return str(self.value)
-
-
-class TypeValueRuntimeData(TypeValue):
-    def __init__(self, json_obj):
-        self.index = int(json_obj)
-
-    def __repr__(self):
-        return 'runtime_data[{}]'.format(self.index)
-
-
-def parse_type_value(json_obj):
-    p4_type_str = json_obj['type']
-    value = json_obj['value']
-    if p4_type_str == 'expression':
-        # XXX: this is a hack for expressions wrapped in expressions
-        if 'type' in value:
-            return parse_type_value(value)
-        return TypeValueExpression(value)
-    elif p4_type_str == 'field':
-        return TypeValueField(value)
-    elif p4_type_str == 'hexstr':
-        return TypeValueHexstr(value)
-    elif p4_type_str == 'header':
-        return TypeValueHeader(value)
-    elif p4_type_str == 'bool':
-        return TypeValueBool(value)
-    elif p4_type_str == 'runtime_data':
-        return TypeValueRuntimeData(value)
-    else:
-        raise Exception('{} not supported'.format(p4_type_str))
-
-
 class PrimitiveCall:
     def __init__(self, json_obj):
         # XXX: Make enum instead of string
@@ -548,6 +470,12 @@ class Action:
         for primitive in json_obj['primitives']:
             self.primitives.append(PrimitiveCall(primitive))
 
+class TableKey:
+    def __init__(self, json_obj):
+        self.match_type = json_obj['match_type']
+        self.target = json_obj['target']
+        self.mask = json_obj['mask']
+
 
 class TableEntry:
     def __init__(self, json_obj):
@@ -563,9 +491,12 @@ class TableEntry:
 class Table:
     def __init__(self, json_obj):
         self.name = json_obj['name']
+        print(self.name)
         self.id = int(json_obj['id'])
 
         self.key = []
+        for json_key in json_obj['key']:
+            self.key.append(TableKey(json_key))
         # XXX: implement
 
         # XXX: Make enum?
@@ -576,8 +507,9 @@ class Table:
         self.direct_meters = json_obj['direct_meters']
 
         self.action_ids = []
-        for action_id in json_obj['action_ids']:
-            self.action_ids.append(int(action_id))
+        if 'action_ids' in json_obj:
+            for action_id in json_obj['action_ids']:
+                self.action_ids.append(int(action_id))
 
         self.action_names = []
         for action_name in json_obj['actions']:
@@ -589,7 +521,9 @@ class Table:
         for action_name, next_table_name in json_obj['next_tables'].items():
             self.next_tables[action_name] = next_table_name
 
-        self.default_entry = TableEntry(json_obj['default_entry'])
+        self.default_entry = None
+        if 'default_entry' in json_obj:
+            self.default_entry = TableEntry(json_obj['default_entry'])
 
     def __repr__(self):
         return 'Table {}'.format(self.name)
@@ -624,11 +558,6 @@ class Pipeline:
         for conditional_json in json_obj['conditionals']:
             conditional = Conditional(conditional_json)
             self.conditionals[conditional.name] = conditional
-
-        print('PIPELINE')
-        print(self.tables)
-        print(self.conditionals)
-        print('/PIPELINE')
 
     def generate_CFG(self):
         graph = {}
@@ -679,6 +608,14 @@ class Pipeline:
 
         return generate_all_paths_(self.init_table_name)
 
+class Calculation:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+        self.algo = json_obj['algo']
+        self.input = []
+        for _input in json_obj['input']:
+           self.input.append(parse_type_value(_input))
 
 class PathSegment:
     def __init__(self):

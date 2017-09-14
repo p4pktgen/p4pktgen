@@ -26,27 +26,14 @@ from graphviz import Digraph
 from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
-from p4_constraints import generate_constraints
+from core.translator import generate_constraints
 
 
 def main():
     #Parse the command line arguments provided at run time.
     parser = argparse.ArgumentParser(description='P4 device input file')
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        '-p',
-        '--input_p4',
-        dest='p4_file',
-        type=str,
-        help='Provide the path to the P4 device file')
-    group.add_argument(
-        '-j',
-        '--input_json',
-        dest='json_file',
-        type=str,
-        help='Provide the path to the compiled JSON')
     parser.add_argument(
-        '-f',
+        '-cf',
         '--flags',
         dest='flags',
         type=str,
@@ -65,6 +52,17 @@ def main():
         type=str,
         default='veth2',
         help='Interface to send the packets to')
+    parser.add_argument(
+        '-f',
+        '--format',
+        dest='format',
+        type=str,
+        default='json',
+        help='The format of the input (currently supported: json, p4)')
+    parser.add_argument(
+        dest='input_file',
+        type=str,
+        help='Provide the path to the input file')
 
     # Parse the input arguments
     args = parser.parse_args()
@@ -77,10 +75,11 @@ def main():
     top = P4_Top(args.debug)
 
     # Build the IR
-    if args.p4_file != None:
-        top.build_from_p4(args.p4_file, args.flags)
+    assert args.format in ['json', 'p4']
+    if args.format == 'json':
+        top.build_from_json(args.input_file)
     else:
-        top.build_from_json(args.json_file)
+        top.build_from_p4(args.input_file, args.flags)
 
     # Get the parser graph
     hlir = P4_HLIR(args.debug, top.json_obj)
@@ -90,15 +89,18 @@ def main():
     in_pipeline = hlir.pipelines['ingress']
     graph = in_pipeline.generate_CFG()
     print(graph)
+
     """
     # Graphviz visualization
     dot = Digraph(comment=in_pipeline.name)
     for node, neighbors in graph.items():
         if node in in_pipeline.conditionals:
             node_str = repr(in_pipeline.conditionals[node].expression)
+            shape = 'oval'
         else:
             node_str = node
-        dot.node(node_str)
+            shape = 'box' if node in in_pipeline.tables else 'diamond'
+        dot.node(node_str, shape=shape)
         for neighbor in neighbors:
             if neighbor is None:
                 neighbor_str = "null"
@@ -122,7 +124,7 @@ def main():
     for path in paths:
         for control_path in control_paths:
             generate_constraints(hlir, in_pipeline, path, control_path,
-                                 args.json_file)
+                                 args.input_file)
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:
