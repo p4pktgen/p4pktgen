@@ -84,6 +84,12 @@ def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueExpression):
         if type_value.op == 'not':
             return Not(type_value_to_smt(context, type_value.right))
+        elif type_value.op == 'and':
+            return And(type_value_to_smt(context, type_value.left),
+                       type_value_to_smt(context, type_value.right))
+        elif type_value.op == 'or':
+            return Or(type_value_to_smt(context, type_value.left),
+                      type_value_to_smt(context, type_value.right))
         elif type_value.op == 'd2b':
             return If(
                 type_value_to_smt(context, type_value.right) == 1,
@@ -135,7 +141,13 @@ def type_value_to_smt(context, type_value):
 
 def action_to_smt(context, action):
     for primitive in action.primitives:
-        if primitive.op == 'modify_field':
+        # In Apr 2017, p4c and behavioral-model added primitives
+        # "assign", "assign_VL" (for assigning variable length
+        # 'varbit' fields), and "assign_header" primitives.  I believe
+        # that "assign" is either identical to "modify_field", or very
+        # very close.  See
+        # https://github.com/p4lang/behavioral-model/pull/330
+        if primitive.op in ['modify_field', 'assign']:
             value = type_value_to_smt(context, primitive.parameters[1])
             field = primitive.parameters[0]
             context.set_field_value(field.header_name, field.header_field,
@@ -281,10 +293,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
             constraints.append(sym_expr == expected_result)
         elif table_name in pipeline.tables:
             table = pipeline.tables[table_name]
-            if table.match_type == 'exact':
+            if table.match_type in ['exact', 'lpm']:
                 sym_key_elems = []
                 for key_elem in table.key:
-                    assert key_elem.match_type == 'exact'
                     header_name, header_field = key_elem.target
                     if context.has_header_field(header_name, header_field):
                         sym_key_elems.append(context.get_header_field(key_elem.target[0], key_elem.target[1]))
@@ -292,8 +303,10 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                         constraints.append(False)
                         sym_key_elems = []
                         break
-                if len(sym_key_elems) > 0:
+                if len(sym_key_elems) > 1:
                     sym_key = Concat(sym_key_elems)
+                elif len(sym_key_elems) == 1:
+                    sym_key = sym_key_elems[0]
             else:
                 raise Exception('Match type {} not supported!'.format(table.match_type))
         else:
