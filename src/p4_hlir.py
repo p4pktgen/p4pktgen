@@ -594,19 +594,26 @@ class Pipeline:
 
         return graph
 
-    def generate_all_paths(self, graph):
+    def generate_all_paths(self, graph, debug=False):
         # XXX: does not work with cycles, inefficient in general
-        def generate_all_paths_(node):
+        def generate_all_paths_(node, path_so_far):
             if node is None:
+                if debug:
+                    print("generate_all_paths: PATH len %2d %s"
+                          "" % (len(path_so_far), path_so_far))
                 return [[]]
 
             neighbor_paths = []
             for neighbor in graph[node]:
+                if debug:
+                    print("generate_all_paths: %2d %s node %s to %s"
+                          "" % (len(path_so_far), path_so_far, node, neighbor))
                 neighbor_paths += [[node] + path
-                                   for path in generate_all_paths_(neighbor)]
+                                   for path in generate_all_paths_(
+                                           neighbor, path_so_far + [node])]
             return neighbor_paths
 
-        return generate_all_paths_(self.init_table_name)
+        return generate_all_paths_(self.init_table_name, [])
 
 class Calculation:
     def __init__(self, json_obj):
