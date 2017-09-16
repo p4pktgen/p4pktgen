@@ -201,7 +201,15 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                                            pos + extract_offset, field.size))
                         extract_offset += BitVecVal(field.size, 32)
                     else:
-                        context.insert(field, BoolVal(True))
+                        # Even though the P4_16 isValid() method
+                        # returns a boolean value, it appears that
+                        # when p4c-bm2-ss compiles expressions like
+                        # "if (ipv4.isValid())" into a JSON file, it
+                        # compares the "ipv4.$valid$" field to a bit
+                        # vector value of 1 with the == operator, thus
+                        # effectively treating the "ipv4.$valid$" as
+                        # if it is a bit<1> type.
+                        context.insert(field, BitVecVal(1, 1))
 
                 new_pos += extract_offset
             elif op == p4_parser_ops_enum.set:
