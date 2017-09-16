@@ -41,10 +41,24 @@ The flag `-d` prints additional debug information.
 
 ## Clone a copy of the p4pktgen repository from bitbucket.org
 
+As of 2017-Sep-14, the latest greatest version of the code is in the
+`constraints2` branch, hence the `git checkout` command below.
+
 ```bash
 % BITBUCKET_USERID=jafingerhut
 % git clone https://${BITBUCKET_USERID}@bitbucket.org/p4pktgen/p4pktgen.git
 % cd p4pktgen
+% git checkout constraints2
+```
+
+
+## Install required Ubuntu packages
+
+Starting from a default Ubuntu 16.04 installation, the only additional
+packages required may be installed with the command below:
+
+```bash
+% sudo apt-get install --yes python-tk
 ```
 
 
