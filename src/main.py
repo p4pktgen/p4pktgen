@@ -124,6 +124,9 @@ def main():
             parser_graph,
             source=hlir.parsers['parser'].init_state,
             target='sink'))
+    max_path_len = max([len(p) for p in paths])
+    print("Found %d parser paths, longest with length %d"
+          "" % (len(paths), max_path_len))
     for path in paths:
         for control_path in control_paths:
             generate_constraints(hlir, in_pipeline, path, control_path,
