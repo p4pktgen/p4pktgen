@@ -323,7 +323,19 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
 
     constraints += context.get_name_constraints()
 
-    expected_path = path + control_path
+    # Create modified version of control_path where conditional node
+    # names are replaced with the source_fragment.  The
+    # source_fragment is what simple_switch's log will contain when
+    # conditionals are evaluated.
+    control_path2 = []
+    for n in control_path:
+        if n in pipeline.conditionals:
+            conditional = pipeline.conditionals[n]
+            if conditional.source_fragment is not None:
+                n = conditional.source_fragment
+        control_path2.append(n)
+
+    expected_path = path + control_path2
 
     # Construct and test the packet
     logging.info(And(constraints))

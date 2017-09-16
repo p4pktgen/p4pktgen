@@ -536,6 +536,9 @@ class Conditional:
         self.expression = parse_type_value(json_obj['expression'])
         self.true_next_name = json_obj['true_next']
         self.false_next_name = json_obj['false_next']
+        self.source_fragment = None
+        if 'source_info' in json_obj:
+            self.source_fragment = json_obj['source_info']['source_fragment']
 
     def __repr__(self):
         return '{}: if {} then {} else {}'.format(self.name, self.expression,
