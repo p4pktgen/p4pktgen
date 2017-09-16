@@ -71,7 +71,10 @@ def p4_value_to_bv(value, size):
 
 def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueHexstr):
-        size = int(math.ceil(math.log(type_value.value, 2))) + 1
+        if type_value.value == 0:
+            size = 1
+        else:
+            size = int(math.ceil(math.log(type_value.value, 2))) + 1
         return BitVecVal(type_value.value, size)
     if isinstance(type_value, TypeValueHeader):
         # XXX: What should be done here?
