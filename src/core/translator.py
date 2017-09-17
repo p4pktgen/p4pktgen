@@ -62,6 +62,10 @@ def p4_expr_to_sym(context, expr):
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
+        if not (value == 0 or int(math.log(value, 2)) <= size):
+            print("ERROR dbg: p4_value_to_bv: type(value)=%s value=%s"
+                  " type(size)=%s size=%s"
+                  "" % (type(value), value, type(size), size))
         assert value == 0 or int(math.log(value, 2)) <= size
         return BitVecVal(value, size)
     else:
