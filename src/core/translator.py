@@ -127,17 +127,43 @@ def type_value_to_smt(context, type_value):
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs & rhs
+        elif type_value.op == '|':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs | rhs
+        elif type_value.op == '^':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs ^ rhs
+        elif type_value.op == '~':
+            rhs = type_value_to_smt(context, type_value.right)
+            return ~rhs
         elif type_value.op == '+':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs + rhs
+        elif type_value.op == '-':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs - rhs
         elif type_value.op == '>':
             # XXX: signed/unsigned?
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return UGT(lhs, rhs)
+        elif type_value.op == '<<':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            return lhs << rhs
+        elif type_value.op == '>>':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            return lhs >> rhs
         else:
             raise Exception(
                 'Type value expression {} not supported'.format(type_value.op))
