@@ -333,7 +333,15 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
 
     # XXX: very ugly to split parsing/control like that, need better solution
     logging.info('control_path = {}'.format(' -> '.join(control_path)))
-    for table_name, next_table in zip(control_path, control_path[1:]):
+
+    # The second argument to zip is control_path[1:] + [None], so that
+    # the last time through the loop the pair of loop variables have
+    # the values table_name=control_path[-1] and next_table=None.  If
+    # the last node in control_path is a conditional node with
+    # conditional.false_next_name == null in the JSON file, we want to
+    # ensure that (sym_expr == BoolVal(False)) is added to the list of
+    # constraints.
+    for table_name, next_table in zip(control_path, control_path[1:] + [None]):
         if table_name in pipeline.conditionals:
             conditional = pipeline.conditionals[table_name]
             expected_result = BoolVal(True)
