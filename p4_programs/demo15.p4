@@ -87,10 +87,6 @@ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout 
             default: accept;
         }
     }
-    // This program is not the way one would typically do this.  It is
-    // an experiment to see if p4c-bm2-ss handles it, and a workaround
-    // for a current bug in p4pktgen where it doesn't correctly handle
-    // multiple fields in the select expression.
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         transition select(hdr.ipv4.protocol) {
@@ -170,8 +166,6 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         } else if (hdr.ethernet.etherType == 10) {
             do_unary_minus();
         }
-        // Operators to add tests for:
-
         // For '/' and '%' operators, p4test and p4c-bm2-ss compilers
         // both give an error when compiling programs that use these
         // operators, unless the value of both operands can be
@@ -179,16 +173,6 @@ control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_
         // time constants.  In that case, the compiler calculates the
         // answer at compile time, and puts the answer into the
         // compiled JSON file.
-        
-        // ! (boolean expression only)
-        // &&
-        // ||
-        // <=
-        // >=
-        // <
-        // >
-        // !=
-        // (condition) ? then_expr : else_expr
         if (hdr.ethernet.dstAddr == 0x0afedeadbee0) {
             hdr.ethernet.etherType = hdr.ethernet.etherType + 5;
         }
