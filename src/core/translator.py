@@ -62,6 +62,10 @@ def p4_expr_to_sym(context, expr):
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
+        if not (value == 0 or int(math.log(value, 2)) <= size):
+            print("ERROR dbg: p4_value_to_bv: type(value)=%s value=%s"
+                  " type(size)=%s size=%s"
+                  "" % (type(value), value, type(size), size))
         assert value == 0 or int(math.log(value, 2)) <= size
         return BitVecVal(value, size)
     else:
@@ -71,7 +75,10 @@ def p4_value_to_bv(value, size):
 
 def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueHexstr):
-        size = int(math.ceil(math.log(type_value.value, 2))) + 1
+        if type_value.value == 0:
+            size = 1
+        else:
+            size = int(math.ceil(math.log(type_value.value, 2))) + 1
         return BitVecVal(type_value.value, size)
     if isinstance(type_value, TypeValueHeader):
         # XXX: What should be done here?
@@ -120,17 +127,72 @@ def type_value_to_smt(context, type_value):
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs & rhs
+        elif type_value.op == '|':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs | rhs
+        elif type_value.op == '^':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs ^ rhs
+        elif type_value.op == '~':
+            rhs = type_value_to_smt(context, type_value.right)
+            return ~rhs
         elif type_value.op == '+':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs + rhs
+        elif type_value.op == '-':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs - rhs
+        elif type_value.op == '*':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs * rhs
+        # P4_16 operators '/' and '%' give errors during compilation
+        # unless both operands are known at compile time.  In that
+        # case, the compiler precalculates the result and puts that
+        # constant in the JSON file.
         elif type_value.op == '>':
             # XXX: signed/unsigned?
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return UGT(lhs, rhs)
+        elif type_value.op == '<':
+            # XXX: signed/unsigned?
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return ULT(lhs, rhs)
+        elif type_value.op == '>=':
+            # XXX: signed/unsigned?
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return UGE(lhs, rhs)
+        elif type_value.op == '<=':
+            # XXX: signed/unsigned?
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return ULE(lhs, rhs)
+        elif type_value.op == '<<':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs << rhs
+        elif type_value.op == '>>':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs >> rhs
         else:
             raise Exception(
                 'Type value expression {} not supported'.format(type_value.op))
@@ -201,7 +263,15 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                                            pos + extract_offset, field.size))
                         extract_offset += BitVecVal(field.size, 32)
                     else:
-                        context.insert(field, BoolVal(True))
+                        # Even though the P4_16 isValid() method
+                        # returns a boolean value, it appears that
+                        # when p4c-bm2-ss compiles expressions like
+                        # "if (ipv4.isValid())" into a JSON file, it
+                        # compares the "ipv4.$valid$" field to a bit
+                        # vector value of 1 with the == operator, thus
+                        # effectively treating the "ipv4.$valid$" as
+                        # if it is a bit<1> type.
+                        context.insert(field, BitVecVal(1, 1))
 
                 new_pos += extract_offset
             elif op == p4_parser_ops_enum.set:
@@ -283,7 +353,15 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
 
     # XXX: very ugly to split parsing/control like that, need better solution
     logging.info('control_path = {}'.format(' -> '.join(control_path)))
-    for table_name, next_table in zip(control_path, control_path[1:]):
+
+    # The second argument to zip is control_path[1:] + [None], so that
+    # the last time through the loop the pair of loop variables have
+    # the values table_name=control_path[-1] and next_table=None.  If
+    # the last node in control_path is a conditional node with
+    # conditional.false_next_name == null in the JSON file, we want to
+    # ensure that (sym_expr == BoolVal(False)) is added to the list of
+    # constraints.
+    for table_name, next_table in zip(control_path, control_path[1:] + [None]):
         if table_name in pipeline.conditionals:
             conditional = pipeline.conditionals[table_name]
             expected_result = BoolVal(True)
@@ -315,7 +393,19 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
 
     constraints += context.get_name_constraints()
 
-    expected_path = path + control_path
+    # Create modified version of control_path where conditional node
+    # names are replaced with the source_fragment.  The
+    # source_fragment is what simple_switch's log will contain when
+    # conditionals are evaluated.
+    control_path2 = []
+    for n in control_path:
+        if n in pipeline.conditionals:
+            conditional = pipeline.conditionals[n]
+            if conditional.source_fragment is not None:
+                n = conditional.source_fragment
+        control_path2.append(n)
+
+    expected_path = path + control_path2
 
     # Construct and test the packet
     logging.info(And(constraints))

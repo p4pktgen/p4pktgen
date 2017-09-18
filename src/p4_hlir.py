@@ -536,6 +536,9 @@ class Conditional:
         self.expression = parse_type_value(json_obj['expression'])
         self.true_next_name = json_obj['true_next']
         self.false_next_name = json_obj['false_next']
+        self.source_fragment = None
+        if 'source_info' in json_obj:
+            self.source_fragment = json_obj['source_info']['source_fragment']
 
     def __repr__(self):
         return '{}: if {} then {} else {}'.format(self.name, self.expression,
@@ -594,20 +597,19 @@ class Pipeline:
 
         return graph
 
-    def generate_all_paths(self, graph, debug=False):
+    def generate_all_paths(self, graph):
         # XXX: does not work with cycles, inefficient in general
         def generate_all_paths_(node, path_so_far):
             if node is None:
-                if debug:
-                    print("generate_all_paths: PATH len %2d %s"
-                          "" % (len(path_so_far), path_so_far))
+                logging.info("generate_all_paths: PATH len %2d %s"
+                             "" % (len(path_so_far), path_so_far))
                 return [[]]
 
             neighbor_paths = []
             for neighbor in graph[node]:
-                if debug:
-                    print("generate_all_paths: %2d %s node %s to %s"
-                          "" % (len(path_so_far), path_so_far, node, neighbor))
+                logging.info("generate_all_paths: %2d %s node %s to %s"
+                             "" % (len(path_so_far), path_so_far, node,
+                                   neighbor))
                 neighbor_paths += [[node] + path
                                    for path in generate_all_paths_(
                                            neighbor, path_so_far + [node])]

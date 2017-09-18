@@ -113,7 +113,7 @@ def main():
     return
     """
 
-    control_paths = in_pipeline.generate_all_paths(graph, debug=args.debug)
+    control_paths = in_pipeline.generate_all_paths(graph)
     # control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
     max_path_len = max([len(p) for p in control_paths])
     print("Found %d control paths, longest with length %d"
@@ -124,6 +124,9 @@ def main():
             parser_graph,
             source=hlir.parsers['parser'].init_state,
             target='sink'))
+    max_path_len = max([len(p) for p in paths])
+    print("Found %d parser paths, longest with length %d"
+          "" % (len(paths), max_path_len))
     for path in paths:
         for control_path in control_paths:
             generate_constraints(hlir, in_pipeline, path, control_path,
