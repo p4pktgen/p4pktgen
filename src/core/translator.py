@@ -150,6 +150,15 @@ def type_value_to_smt(context, type_value):
             rhs = type_value_to_smt(context, type_value.right)
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs - rhs
+        elif type_value.op == '*':
+            lhs = type_value_to_smt(context, type_value.left)
+            rhs = type_value_to_smt(context, type_value.right)
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs * rhs
+        # P4_16 operators '/' and '%' give errors during compilation
+        # unless both operands are known at compile time.  In that
+        # case, the compiler precalculates the result and puts that
+        # constant in the JSON file.
         elif type_value.op == '>':
             # XXX: signed/unsigned?
             lhs = type_value_to_smt(context, type_value.left)
