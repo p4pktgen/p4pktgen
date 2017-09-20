@@ -112,7 +112,10 @@ def type_value_to_smt(context, type_value):
                 BitVecVal(1, 1), BitVecVal(0, 1))
         elif type_value.op == 'valid':
             assert isinstance(type_value.right, TypeValueHeader)
-            return context.get_header_field(type_value.header_name, '$valid$')
+            return If(
+                context.get_header_field(type_value.right.header_name,
+                                         '$valid$') == BitVecVal(1, 1),
+                BoolVal(True), BoolVal(False))
         elif type_value.op == '==':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
@@ -468,7 +471,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                 # assert False
 
             else:
-                logging.info('Test successful: {}'.format(' -> '.join(expected_path)))
+                logging.info(
+                    'Test successful: {}'.format(' -> '.join(expected_path)))
         else:
             logging.warning('Packet not sent (too short)')
     else:
@@ -476,6 +480,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             ' -> '.join(expected_path)))
     logging.info("END   %d Exp path: %s"
                  "" % (count, ' -> '.join(expected_path)))
+
 
 def test_packet(packet, json_file):
     """This function starts simple_switch, sends a packet to the switch and
@@ -497,8 +502,7 @@ def test_packet(packet, json_file):
 
     # Start simple_switch
     proc = subprocess.Popen(
-        ['simple_switch', '--log-console'] + eth_args
-        + [json_file],
+        ['simple_switch', '--log-console'] + eth_args + [json_file],
         stdout=subprocess.PIPE)
 
     # Wait for simple_switch to finish initializing
