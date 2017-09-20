@@ -132,10 +132,12 @@ def main():
     max_path_len = max([len(p) for p in paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(paths), max_path_len))
+    count = 0
     for path in paths:
         for control_path in control_paths:
+            count += 1
             generate_constraints(hlir, in_pipeline, path, control_path,
-                                 args.input_file)
+                                 args.input_file, count)
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:

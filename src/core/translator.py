@@ -239,11 +239,28 @@ def action_to_smt(context, action):
         context.remove_field('$runtime_data$', str(i))
 
 
-def generate_constraints(hlir, pipeline, path, control_path, json_file):
+def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
     constraints = []
+
+    # Create modified version of control_path where conditional node
+    # names are replaced with the source_fragment.  The
+    # source_fragment is what simple_switch's log will contain when
+    # conditionals are evaluated.
+    control_path2 = []
+    for n in control_path:
+        if n in pipeline.conditionals:
+            conditional = pipeline.conditionals[n]
+            if conditional.source_fragment is not None:
+                n = conditional.source_fragment
+        control_path2.append(n)
+
+    expected_path = path + control_path2
+    logging.info("")
+    logging.info("BEGIN %d Exp path: %s"
+                 "" % (count, ' -> '.join(expected_path)))
 
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
@@ -416,20 +433,6 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
 
     constraints += context.get_name_constraints()
 
-    # Create modified version of control_path where conditional node
-    # names are replaced with the source_fragment.  The
-    # source_fragment is what simple_switch's log will contain when
-    # conditionals are evaluated.
-    control_path2 = []
-    for n in control_path:
-        if n in pipeline.conditionals:
-            conditional = pipeline.conditionals[n]
-            if conditional.source_fragment is not None:
-                n = conditional.source_fragment
-        control_path2.append(n)
-
-    expected_path = path + control_path2
-
     # Construct and test the packet
     logging.debug(And(constraints))
     s = Solver()
@@ -470,7 +473,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
     else:
         logging.info('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
-
+    logging.info("END   %d Exp path: %s"
+                 "" % (count, ' -> '.join(expected_path)))
 
 def test_packet(packet, json_file):
     """This function starts simple_switch, sends a packet to the switch and
