@@ -3,6 +3,7 @@
 
 from z3 import *
 
+
 # XXX: This class needs some heavy refactoring.
 class Context:
     """The context that is used to generate the symbolic
@@ -10,6 +11,13 @@ class Context:
 
     def __init__(self):
         self.sym_vars = {}
+        self.sym_vars_stack = []
+
+    def push(self):
+        self.sym_vars_stack.append(self.sym_vars.copy())
+
+    def pop(self):
+        self.sym_vars = self.sym_vars_stack.pop()
 
     def field_to_var(self, field):
         assert field.header is not None

@@ -22,6 +22,7 @@ def equalize_bv_size(bvs):
         if bv.size() != target_size else bv for bv in bvs
     ]
 
+
 def p4_field_to_sym(context, field):
     return context.get(field)
 
@@ -86,17 +87,26 @@ def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueBool):
         return BoolVal(type_value.value)
     if isinstance(type_value, TypeValueField):
-        return context.get_header_field(type_value.header_name,
-                                        type_value.header_field)
+        if type_value.header_field == '$valid$' and not context.has_header_field(
+                type_value.header_name, type_value.header_field):
+            return BitVecVal(0, 1)
+        else:
+            return context.get_header_field(type_value.header_name,
+                                            type_value.header_field)
+    if isinstance(type_value, TypeValueRuntimeData):
+        return context.get_header_field('$runtime_data$',
+                                        str(type_value.index))
     if isinstance(type_value, TypeValueExpression):
         if type_value.op == 'not':
             return Not(type_value_to_smt(context, type_value.right))
         elif type_value.op == 'and':
-            return And(type_value_to_smt(context, type_value.left),
-                       type_value_to_smt(context, type_value.right))
+            return And(
+                type_value_to_smt(context, type_value.left),
+                type_value_to_smt(context, type_value.right))
         elif type_value.op == 'or':
-            return Or(type_value_to_smt(context, type_value.left),
-                      type_value_to_smt(context, type_value.right))
+            return Or(
+                type_value_to_smt(context, type_value.left),
+                type_value_to_smt(context, type_value.right))
         elif type_value.op == 'd2b':
             return If(
                 type_value_to_smt(context, type_value.right) == 1,
@@ -202,6 +212,16 @@ def type_value_to_smt(context, type_value):
 
 
 def action_to_smt(context, action):
+    context.push()
+
+    # XXX: This will not work if an action is used multiple times
+    # XXX: Need a way to access the model for those parameters
+    # Create symbolic values for the runtime data (parameters for actions)
+    for i, runtime_param in enumerate(action.runtime_data):
+        sym_param = BitVec('${}.runtime_data[{}]'.format(
+            action.name, runtime_param.name), runtime_param.bitwidth)
+        context.set_field_value('$runtime_data$', str(i), sym_param)
+
     for primitive in action.primitives:
         # In Apr 2017, p4c and behavioral-model added primitives
         # "assign", "assign_VL" (for assigning variable length
@@ -217,6 +237,8 @@ def action_to_smt(context, action):
         else:
             raise Exception(
                 'Primitive op {} not supported'.format(primitive.op))
+
+    context.pop()
 
 
 def generate_constraints(hlir, pipeline, path, control_path, json_file):
@@ -376,7 +398,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                 for key_elem in table.key:
                     header_name, header_field = key_elem.target
                     if context.has_header_field(header_name, header_field):
-                        sym_key_elems.append(context.get_header_field(key_elem.target[0], key_elem.target[1]))
+                        sym_key_elems.append(
+                            context.get_header_field(key_elem.target[0],
+                                                     key_elem.target[1]))
                     else:
                         constraints.append(False)
                         sym_key_elems = []
@@ -386,7 +410,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                 elif len(sym_key_elems) == 1:
                     sym_key = sym_key_elems[0]
             else:
-                raise Exception('Match type {} not supported!'.format(table.match_type))
+                raise Exception(
+                    'Match type {} not supported!'.format(table.match_type))
         else:
             assert table_name in hlir.actions
             action_to_smt(context, hlir.actions[table_name])
@@ -448,6 +473,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
         print('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
 
+
 def test_packet(packet, json_file):
     """This function starts simple_switch, sends a packet to the switch and
     returns the parser states that the packet traverses based on the output of
@@ -468,7 +494,7 @@ def test_packet(packet, json_file):
 
     # Start simple_switch
     proc = subprocess.Popen(
-        ['simple_switch', '--thrift-port', '9091', '--log-console'] + eth_args
+        ['simple_switch', '--log-console'] + eth_args
         + [json_file],
         stdout=subprocess.PIPE)
 

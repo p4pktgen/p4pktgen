@@ -454,7 +454,7 @@ class PrimitiveCall:
 class ActionParameter:
     def __init__(self, json_obj):
         self.name = json_obj['name']
-        self.bitwidth = json_obj['bitwidth']
+        self.bitwidth = int(json_obj['bitwidth'])
 
 
 class Action:
@@ -469,6 +469,7 @@ class Action:
         self.primitives = []
         for primitive in json_obj['primitives']:
             self.primitives.append(PrimitiveCall(primitive))
+
 
 class TableKey:
     def __init__(self, json_obj):
@@ -612,10 +613,11 @@ class Pipeline:
                                    neighbor))
                 neighbor_paths += [[node] + path
                                    for path in generate_all_paths_(
-                                           neighbor, path_so_far + [node])]
+                                       neighbor, path_so_far + [node])]
             return neighbor_paths
 
         return generate_all_paths_(self.init_table_name, [])
+
 
 class Calculation:
     def __init__(self, json_obj):
@@ -624,7 +626,8 @@ class Calculation:
         self.algo = json_obj['algo']
         self.input = []
         for _input in json_obj['input']:
-           self.input.append(parse_type_value(_input))
+            self.input.append(parse_type_value(_input))
+
 
 class PathSegment:
     def __init__(self):
