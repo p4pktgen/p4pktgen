@@ -61,7 +61,7 @@ class P4_Top():
         call_list.insert(0, "p4c-bm2-ss")
 
         if self.debug:
-            print("The compiler call was: " + str(call_list))
+            logging.debug("The compiler call was: " + str(call_list))
 
         for path in self.graphs.paths:
             generate_constraints(self.hlir, path, input_file)
