@@ -13,9 +13,19 @@ class Context:
     def __init__(self):
         self.sym_vars = {}
         self.sym_vars_stack = []
+        self.fields = {}
+        self.id = 0
+
+    def register_field(self, field):
+        self.fields[self.field_to_var(field)] = field
+
+    def fresh_var(self, prefix):
+        self.id += 1
+        return '{}_{}'.format(prefix, self.id)
 
     def remove_field(self, header_name, header_field):
-        del self.sym_vars['{}.{}'.format(header_name, header_field)]
+        var_name = '{}.{}'.format(header_name, header_field)
+        del self.sym_vars[var_name]
 
     def field_to_var(self, field):
         assert field.header is not None
@@ -25,15 +35,25 @@ class Context:
         self.sym_vars[self.field_to_var(field)] = sym_val
 
     def set_field_value(self, header_name, header_field, sym_val):
-        self.sym_vars['{}.{}'.format(header_name, header_field)] = sym_val
+        var_name = '{}.{}'.format(header_name, header_field)
+        self.sym_vars[var_name] = sym_val
 
     def get(self, field):
-        return self.sym_vars[self.field_to_var(field)]
+        return self.get_var(self.field_to_var(field))
 
     def get_header_field(self, header_name, header_field):
-        return self.sym_vars['{}.{}'.format(header_name, header_field)]
+        return self.get_var('{}.{}'.format(header_name, header_field))
+
+    def get_var(self, var_name):
+        if var_name not in self.sym_vars:
+            # If the header field has not been initialized, return a fresh
+            # variable for each read access
+            return BitVec(self.fresh_var(var_name), self.fields[var_name].size)
+        else:
+            return self.sym_vars[var_name]
 
     def has_header_field(self, header_name, header_field):
+        # XXX: this method should not be necessary
         return '{}.{}'.format(header_name, header_field) in self.sym_vars
 
     def print_values(self, model):

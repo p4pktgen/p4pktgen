@@ -86,12 +86,8 @@ def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueBool):
         return BoolVal(type_value.value)
     if isinstance(type_value, TypeValueField):
-        if type_value.header_field == '$valid$' and not context.has_header_field(
-                type_value.header_name, type_value.header_field):
-            return BitVecVal(0, 1)
-        else:
-            return context.get_header_field(type_value.header_name,
-                                            type_value.header_field)
+        return context.get_header_field(type_value.header_name,
+                                        type_value.header_field)
     if isinstance(type_value, TypeValueRuntimeData):
         return context.get_header_field('$runtime_data$',
                                         str(type_value.index))
@@ -116,11 +112,7 @@ def type_value_to_smt(context, type_value):
                 BitVecVal(1, 1), BitVecVal(0, 1))
         elif type_value.op == 'valid':
             assert isinstance(type_value.right, TypeValueHeader)
-            if context.has_header_field(type_value.right.header_name,
-                                        '$valid$'):
-                return BoolVal(True)
-            else:
-                return BoolVal(False)
+            return context.get_header_field(type_value.header_name, '$valid$')
         elif type_value.op == '==':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
@@ -244,6 +236,15 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     context = Context()
     sym_packet = Packet()
     constraints = []
+
+    # Register the fields of all headers in the context
+    for header_name, header in hlir.headers.items():
+        for field_name, field in header.fields.items():
+            if field_name == '$valid$':
+                # All valid bits in headers are 0 in the beginning
+                context.insert(field, BitVecVal(0, 1))
+            else:
+                context.register_field(field)
 
     # Create modified version of control_path where conditional node
     # names are replaced with the source_fragment.  The
