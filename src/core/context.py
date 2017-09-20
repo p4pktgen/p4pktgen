@@ -13,11 +13,8 @@ class Context:
         self.sym_vars = {}
         self.sym_vars_stack = []
 
-    def push(self):
-        self.sym_vars_stack.append(self.sym_vars.copy())
-
-    def pop(self):
-        self.sym_vars = self.sym_vars_stack.pop()
+    def remove_field(self, header_name, header_field):
+        del self.sym_vars['{}.{}'.format(header_name, header_field)]
 
     def field_to_var(self, field):
         assert field.header is not None

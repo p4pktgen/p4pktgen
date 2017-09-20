@@ -212,8 +212,6 @@ def type_value_to_smt(context, type_value):
 
 
 def action_to_smt(context, action):
-    context.push()
-
     # XXX: This will not work if an action is used multiple times
     # XXX: Need a way to access the model for those parameters
     # Create symbolic values for the runtime data (parameters for actions)
@@ -238,7 +236,8 @@ def action_to_smt(context, action):
             raise Exception(
                 'Primitive op {} not supported'.format(primitive.op))
 
-    context.pop()
+    for i, runtime_param in enumerate(action.runtime_data):
+        context.remove_field('$runtime_data$', str(i))
 
 
 def generate_constraints(hlir, pipeline, path, control_path, json_file):
