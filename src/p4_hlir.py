@@ -218,8 +218,8 @@ class P4_HLIR(P4_Obj):
                     self.next_state_name = json_obj['next_state']
                     self.next_state = None
                     self.mask = json_obj['mask']  # TODO Convert to int ?
-                    print(json_obj['value'])
-                    print(self.next_state_name)
+                    logging.debug(json_obj['value'])
+                    logging.debug(self.next_state_name)
 
                     # XXX: is "default" possible here?
                     if json_obj['value'] is None or json_obj['value'] == 'default':
@@ -448,7 +448,7 @@ class PrimitiveCall:
         self.parameters = []
         for parameter in json_obj['parameters']:
             self.parameters.append(parse_type_value(parameter))
-        print(self.op, self.parameters)
+        logging.debug('%s %s' % (self.op, self.parameters))
 
 
 class ActionParameter:
@@ -492,7 +492,7 @@ class TableEntry:
 class Table:
     def __init__(self, json_obj):
         self.name = json_obj['name']
-        print(self.name)
+        logging.debug(self.name)
         self.id = int(json_obj['id'])
 
         self.key = []
@@ -582,7 +582,7 @@ class Pipeline:
                     if action_name not in graph:
                         graph[action_name] = []
                     graph[action_name].append(next_table)
-                    print(table_name, action_name, next_table)
+                    logging.debug('%s %s %s' % (table_name, action_name, next_table))
             else:
                 assert table_name in self.conditionals
                 conditional = self.conditionals[table_name]
@@ -602,15 +602,15 @@ class Pipeline:
         # XXX: does not work with cycles, inefficient in general
         def generate_all_paths_(node, path_so_far):
             if node is None:
-                logging.info("generate_all_paths: PATH len %2d %s"
-                             "" % (len(path_so_far), path_so_far))
+                logging.debug("generate_all_paths: PATH len %2d %s"
+                              "" % (len(path_so_far), path_so_far))
                 return [[]]
 
             neighbor_paths = []
             for neighbor in graph[node]:
-                logging.info("generate_all_paths: %2d %s node %s to %s"
-                             "" % (len(path_so_far), path_so_far, node,
-                                   neighbor))
+                logging.debug("generate_all_paths: %2d %s node %s to %s"
+                              "" % (len(path_so_far), path_so_far, node,
+                                    neighbor))
                 neighbor_paths += [[node] + path
                                    for path in generate_all_paths_(
                                        neighbor, path_so_far + [node])]

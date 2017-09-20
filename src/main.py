@@ -68,9 +68,14 @@ def main():
     args = parser.parse_args()
     Config().load_args(args)
 
+    # This is useful if you want file name and line number info of
+    # where each log message was generated.
+    #logging.basicConfig(
+    #    format='%(levelname)s: [%(filename)s:%(lineno)s] %(message)s', level=logging.INFO)
+    logging.basicConfig(
+        format='%(levelname)s: %(message)s', level=logging.INFO)
     if args.debug:
-        logging.basicConfig(
-            format='%(levelname)s: %(message)s', level=logging.INFO)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     top = P4_Top(args.debug)
 
@@ -88,7 +93,7 @@ def main():
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
     graph = in_pipeline.generate_CFG()
-    print(graph)
+    logging.debug(graph)
 
     """
     # Graphviz visualization
@@ -116,8 +121,8 @@ def main():
     control_paths = in_pipeline.generate_all_paths(graph)
     # control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
     max_path_len = max([len(p) for p in control_paths])
-    print("Found %d control paths, longest with length %d"
-          "" % (len(control_paths), max_path_len))
+    logging.info("Found %d control paths, longest with length %d"
+                 "" % (len(control_paths), max_path_len))
 
     paths = list(
         nx.all_simple_paths(
@@ -125,12 +130,14 @@ def main():
             source=hlir.parsers['parser'].init_state,
             target='sink'))
     max_path_len = max([len(p) for p in paths])
-    print("Found %d parser paths, longest with length %d"
-          "" % (len(paths), max_path_len))
+    logging.info("Found %d parser paths, longest with length %d"
+                 "" % (len(paths), max_path_len))
+    count = 0
     for path in paths:
         for control_path in control_paths:
+            count += 1
             generate_constraints(hlir, in_pipeline, path, control_path,
-                                 args.input_file)
+                                 args.input_file, count)
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:

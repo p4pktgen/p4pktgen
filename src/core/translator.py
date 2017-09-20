@@ -46,7 +46,7 @@ def p4_expr_to_sym(context, expr):
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs + rhs
         else:
-            print('operation', expr.op)
+            logging.warning('Unsupported operation', expr.op)
     elif isinstance(expr, P4_HLIR.HLIR_Field):
         return p4_field_to_sym(context, expr)
     elif isinstance(expr, bool):
@@ -57,16 +57,15 @@ def p4_expr_to_sym(context, expr):
     else:
         # XXX: implement other operators
         logging.error(expr.__class__)
-        print('expr', expr.__class__)
 
 
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
         if not (value == 0 or int(math.log(value, 2)) <= size):
-            print("ERROR dbg: p4_value_to_bv: type(value)=%s value=%s"
-                  " type(size)=%s size=%s"
-                  "" % (type(value), value, type(size), size))
+            logging.error("p4_value_to_bv: type(value)=%s value=%s"
+                          " type(size)=%s size=%s"
+                          "" % (type(value), value, type(size), size))
         assert value == 0 or int(math.log(value, 2)) <= size
         return BitVecVal(value, size)
     else:
@@ -240,18 +239,35 @@ def action_to_smt(context, action):
         context.remove_field('$runtime_data$', str(i))
 
 
-def generate_constraints(hlir, pipeline, path, control_path, json_file):
+def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
     constraints = []
+
+    # Create modified version of control_path where conditional node
+    # names are replaced with the source_fragment.  The
+    # source_fragment is what simple_switch's log will contain when
+    # conditionals are evaluated.
+    control_path2 = []
+    for n in control_path:
+        if n in pipeline.conditionals:
+            conditional = pipeline.conditionals[n]
+            if conditional.source_fragment is not None:
+                n = conditional.source_fragment
+        control_path2.append(n)
+
+    expected_path = path + control_path2
+    logging.info("")
+    logging.info("BEGIN %d Exp path: %s"
+                 "" % (count, ' -> '.join(expected_path)))
 
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
     pos = BitVecVal(0, 32)
     logging.info('path = {}'.format(' -> '.join(path)))
     for node, next_node in zip(path, path[1:]):
-        logging.info('{} -> {}\tpos = {}'.format(node, next_node, pos))
+        logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
         new_pos = pos
         parse_state = parser.parse_states[node]
 
@@ -366,7 +382,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                     Or([(sym_transition_key == bv_value)
                         for bv_value in other_bv_values])))
 
-        logging.info(sym_transition_key)
+        logging.debug(sym_transition_key)
         pos = simplify(new_pos)
 
     # XXX: workaround
@@ -417,28 +433,14 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
 
     constraints += context.get_name_constraints()
 
-    # Create modified version of control_path where conditional node
-    # names are replaced with the source_fragment.  The
-    # source_fragment is what simple_switch's log will contain when
-    # conditionals are evaluated.
-    control_path2 = []
-    for n in control_path:
-        if n in pipeline.conditionals:
-            conditional = pipeline.conditionals[n]
-            if conditional.source_fragment is not None:
-                n = conditional.source_fragment
-        control_path2.append(n)
-
-    expected_path = path + control_path2
-
     # Construct and test the packet
-    logging.info(And(constraints))
+    logging.debug(And(constraints))
     s = Solver()
     s.add(And(constraints))
     result = s.check()
     if result != unsat:
         model = s.model()
-        context.print_model(model)
+        context.log_model(model)
         payload = sym_packet.get_payload_from_model(model)
 
         # XXX: Is 14 the correct number here? Is it possible to construct
@@ -465,13 +467,14 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file):
                 # assert False
 
             else:
-                print('Test successful: {}'.format(' -> '.join(expected_path)))
+                logging.info('Test successful: {}'.format(' -> '.join(expected_path)))
         else:
             logging.warning('Packet not sent (too short)')
     else:
-        print('Unable to find packet for path: {}'.format(
+        logging.info('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
-
+    logging.info("END   %d Exp path: %s"
+                 "" % (count, ' -> '.join(expected_path)))
 
 def test_packet(packet, json_file):
     """This function starts simple_switch, sends a packet to the switch and
@@ -520,7 +523,7 @@ def test_packet(packet, json_file):
     extracted_path = []
     for b_line in iter(proc.stdout.readline, b''):
         line = str(b_line)
-        logging.info(line.strip())
+        logging.debug(line.strip())
         m = re.search(r'Parser state \'(.*)\'', line)
         if m is not None:
             extracted_path.append(m.group(1))

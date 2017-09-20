@@ -1,6 +1,7 @@
 # TODO:
 # - Print out which values were used for constraints.
 
+import logging
 from z3 import *
 
 
@@ -52,3 +53,10 @@ class Context:
             if is_bv(sym_val):
                 sym_var = BitVec(var_name, sym_val.size())
                 print('{}: {}'.format(var_name, model[sym_var]))
+
+    def log_model(self, model):
+        for var_name in sorted(self.sym_vars):
+            sym_val = self.sym_vars[var_name]
+            if is_bv(sym_val):
+                sym_var = BitVec(var_name, sym_val.size())
+                logging.info('{}: {}'.format(var_name, model[sym_var]))

@@ -40,7 +40,7 @@ class Packet:
         else:
             hex_str = ''
 
-        logging.info(hex_str)
+        logging.debug(hex_str)
         hex_str = hex_str.zfill(self.max_packet_size // 4)
         n_bytes = (size + 7) // 8
         hex_str = hex_str[:n_bytes * 2]
