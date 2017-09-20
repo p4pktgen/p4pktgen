@@ -4,6 +4,7 @@
 # - Move to smt-switch
 
 from z3 import *
+from enum import Enum
 from p4_hlir import *
 from hlir.type_value import *
 from scapy.all import *
@@ -14,6 +15,7 @@ from core.packet import Packet
 import math
 import subprocess
 
+TestPathResult = Enum('TestPathResult', 'SUCCESS NO_PACKET_FOUND TEST_FAILED')
 
 def equalize_bv_size(bvs):
     target_size = max([bv.size() for bv in bvs])
@@ -441,8 +443,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     logging.debug(And(constraints))
     s = Solver()
     s.add(And(constraints))
-    result = s.check()
-    if result != unsat:
+    smt_result = s.check()
+    result = None
+    if smt_result != unsat:
         model = s.model()
         context.log_model(model)
         payload = sym_packet.get_payload_from_model(model)
@@ -469,17 +472,21 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                               format(' -> '.join(expected_path), ' -> '.join(
                                   extracted_path)))
                 # assert False
-
+                result = TestPathResult.TEST_FAILED
             else:
                 logging.info(
                     'Test successful: {}'.format(' -> '.join(expected_path)))
+                result = TestPathResult.SUCCESS
         else:
             logging.warning('Packet not sent (too short)')
     else:
         logging.info('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
+        result = TestPathResult.NO_PACKET_FOUND
     logging.info("END   %d Exp path: %s"
                  "" % (count, ' -> '.join(expected_path)))
+
+    return result
 
 
 def test_packet(packet, json_file):

@@ -14,6 +14,7 @@ __status__ = "in progress"
 # Standard Python Libraries
 import argparse
 import logging
+from collections import defaultdict
 
 # Installed Packages/Libraries
 import networkx as nx
@@ -132,12 +133,19 @@ def main():
     max_path_len = max([len(p) for p in paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(paths), max_path_len))
+
     count = 0
+    stats = defaultdict(int)
     for path in paths:
         for control_path in control_paths:
             count += 1
-            generate_constraints(hlir, in_pipeline, path, control_path,
+            result = generate_constraints(hlir, in_pipeline, path, control_path,
                                  args.input_file, count)
+            stats[result] += 1
+
+    for result, count in stats.items():
+        logging.info('{}: {}'.format(result, count))
+
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:
