@@ -252,7 +252,7 @@
           ],
           "transitions" : [
             {
-              "value" : "0x4",
+              "value" : "0x04",
               "mask" : null,
               "next_state" : "check_ipv4_ihl"
             },
@@ -275,7 +275,7 @@
           "parser_ops" : [],
           "transitions" : [
             {
-              "value" : "0x5",
+              "value" : "0x05",
               "mask" : null,
               "next_state" : "check_ipv4_frag_offset"
             },
@@ -298,7 +298,7 @@
           "parser_ops" : [],
           "transitions" : [
             {
-              "value" : "0xff",
+              "value" : "0x00ff",
               "mask" : null,
               "next_state" : "check_ipv4_protocol"
             },
