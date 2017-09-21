@@ -432,16 +432,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                 sym_key_elems = []
                 for key_elem in table.key:
                     header_name, header_field = key_elem.target
-                    if context.has_header_field(header_name, header_field):
-                        sym_key_elems.append(
-                            context.get_header_field(key_elem.target[0],
-                                                     key_elem.target[1]))
-                    else:
-                        # XXX: What should be done when the key is not in
-                        # the context?
-                        sym_key_elems = []
-                        constraints.append(False)
-                        break
+                    sym_key_elems.append(
+                        context.get_header_field(key_elem.target[0],
+                                                 key_elem.target[1]))
 
                 if len(sym_key_elems) > 0:
                     context.set_table_values(table_name, sym_key_elems)
