@@ -172,9 +172,12 @@ class P4_HLIR(P4_Obj):
             # TODO: Special or hidden fields are not declared in the json but
             # are assumed to exist
             self.fields = OrderedDict()
-            valid_field = P4_HLIR.HLIR_Field('$valid$', 1, False)
-            valid_field.header = self
-            self.fields['$valid$'] = valid_field
+
+            if not self.metadata:
+                # Add a valid bit for headers. Metadata has no valid bit.
+                valid_field = P4_HLIR.HLIR_Field('$valid$', 1, False)
+                valid_field.header = self
+                self.fields['$valid$'] = valid_field
 
     class HLIR_Parser(P4_Obj):
         """
