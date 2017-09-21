@@ -220,6 +220,8 @@ def action_to_smt(context, table_name, action):
                                       runtime_param.bitwidth)
 
     for primitive in action.primitives:
+        context.set_source_info(primitive.source_info)
+
         # In Apr 2017, p4c and behavioral-model added primitives
         # "assign", "assign_VL" (for assigning variable length
         # 'varbit' fields), and "assign_header" primitives.  I believe
@@ -238,6 +240,8 @@ def action_to_smt(context, table_name, action):
         else:
             raise Exception(
                 'Primitive op {} not supported'.format(primitive.op))
+
+        context.unset_source_info()
 
     context.remove_runtime_data()
 
@@ -266,8 +270,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         n = [table_name, transition_name]
         if table_name in pipeline.conditionals:
             conditional = pipeline.conditionals[table_name]
-            if conditional.source_fragment is not None:
-                n = [conditional.source_fragment]
+            if conditional.source_info.source_fragment is not None and conditional.source_info.source_fragment:
+                n = [conditional.source_info.source_fragment]
             else:
                 n = [table_name]
         control_path2 += n
@@ -418,6 +422,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             control_path, control_path[1:] + [(None, None)]):
         if table_name in pipeline.conditionals:
             conditional = pipeline.conditionals[table_name]
+            context.set_source_info(conditional.source_info)
+
             expected_result = BoolVal(True)
             if conditional.false_next_name == next_table:
                 expected_result = BoolVal(False)
@@ -428,6 +434,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             assert transition_name in hlir.actions
 
             table = pipeline.tables[table_name]
+            context.set_source_info(table.source_info)
+
             if table.match_type in ['exact', 'lpm']:
                 sym_key_elems = []
                 for key_elem in table.key:
@@ -445,6 +453,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                 raise Exception(
                     'Match type {} not supported!'.format(table.match_type))
 
+        context.unset_source_info()
+
     constraints += context.get_name_constraints()
 
     # Construct and test the packet
@@ -458,7 +468,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         context.log_model(model)
         payload = sym_packet.get_payload_from_model(model)
 
-        # Determine table configurations 
+        # Determine table configurations
         table_configs = []
         for table_name, transition_name in control_path:
             if table_name in pipeline.tables and context.has_table_values(
@@ -488,7 +498,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                             table_key.match_type))
 
                 table_configs.append((table_name, transition_name,
-                                     table_values_strs, runtime_data_values))
+                                      table_values_strs, runtime_data_values))
 
         # Print table configuration
         for table, action, values, params in table_configs:
@@ -497,8 +507,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
-                logging.error(
-                    'Uninitialized read of {}!'.format(uninitialized_read))
+                var_name, source_info = uninitialized_read
+                logging.error('Uninitialized read of {} at {}'.format(
+                    var_name, source_info))
                 result = TestPathResult.UNINITIALIZED_READ
         # XXX: Is 14 the correct number here? Is it possible to construct
         # shorter, invalid packets?

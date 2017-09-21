@@ -18,6 +18,13 @@ class Context:
         self.uninitialized_reads = []
         self.runtime_data = []
         self.table_values = {}
+        self.source_info = None
+
+    def set_source_info(self, source_info):
+        self.source_info = source_info
+
+    def unset_source_info(self):
+        self.source_info = None
 
     def register_field(self, field):
         self.fields[self.field_to_var(field)] = field
@@ -82,7 +89,7 @@ class Context:
         if var_name not in self.sym_vars:
             # If the header field has not been initialized, return a fresh
             # variable for each read access
-            self.uninitialized_reads.append(var_name)
+            self.uninitialized_reads.append((var_name, self.source_info))
             return BitVec(self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.sym_vars[var_name]

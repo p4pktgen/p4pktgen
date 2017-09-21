@@ -453,6 +453,10 @@ class PrimitiveCall:
             self.parameters.append(parse_type_value(parameter))
         logging.debug('%s %s' % (self.op, self.parameters))
 
+        self.source_info = None
+        if 'source_info' in json_obj:
+            self.source_info = SourceInfo(json_obj['source_info'])
+
 
 class ActionParameter:
     def __init__(self, json_obj):
@@ -529,6 +533,10 @@ class Table:
         if 'default_entry' in json_obj:
             self.default_entry = TableEntry(json_obj['default_entry'])
 
+        self.source_info = None
+        if 'source_info' in json_obj:
+            self.source_info = SourceInfo(json_obj['source_info'])
+
     def __repr__(self):
         return 'Table {}'.format(self.name)
 
@@ -541,8 +549,10 @@ class Conditional:
         self.true_next_name = json_obj['true_next']
         self.false_next_name = json_obj['false_next']
         self.source_fragment = None
+
+        self.source_info = None
         if 'source_info' in json_obj:
-            self.source_fragment = json_obj['source_info']['source_fragment']
+            self.source_info = SourceInfo(json_obj['source_info'])
 
     def __repr__(self):
         return '{}: if {} then {} else {}'.format(self.name, self.expression,
@@ -642,3 +652,13 @@ class PathSegmentConditional(PathSegment):
     def __init__(self, conditional_name, value):
         self.conditional_name = conditional_name
         self.value = value
+
+class SourceInfo:
+    def __init__(self, json_obj):
+        self.filename = json_obj['filename']
+        self.line = int(json_obj['line'])
+        self.column = int(json_obj['column'])
+        self.source_fragment = json_obj['source_fragment']
+
+    def __repr__(self):
+        return '{}:{},{} : {}'.format(self.filename, self.line, self.column, self.source_fragment)
