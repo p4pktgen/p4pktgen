@@ -58,18 +58,16 @@ class Context:
         return self.get_header_field('{}.{}.{}'.format(table_name, action_name,
                                                        param_name), str(idx))
 
-    def set_table_value(self, table_name, sym_val):
-        var_name = '$table$.{}'.format(table_name)
-        self.sym_vars[var_name] = sym_val
+    def set_table_values(self, table_name, sym_vals):
+        self.table_values[table_name] = sym_vals
 
-    def get_table_value(self, model, table_name):
-        var_name = '$table$.{}'.format(table_name)
-        print(BitVec(var_name, self.sym_vars[var_name].size()))
-        return model[BitVec(var_name, self.sym_vars[var_name].size())]
+    def get_table_values(self, model, table_name):
+        return [
+            model.eval(sym_val) for sym_val in self.table_values[table_name]
+        ]
 
-    def has_table_value(self, table_name):
-        var_name = '$table$.{}'.format(table_name)
-        return var_name in self.sym_vars
+    def has_table_values(self, table_name):
+        return table_name in self.table_values
 
     def get(self, field):
         return self.get_var(self.field_to_var(field))

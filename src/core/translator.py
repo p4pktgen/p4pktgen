@@ -436,18 +436,11 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                         # XXX: What should be done when the key is not in
                         # the context?
                         sym_key_elems = []
+                        constraints.append(False)
                         break
 
-                sym_key = None
-                if len(sym_key_elems) > 1:
-                    sym_key = Concat(sym_key_elems)
-                elif len(sym_key_elems) == 1:
-                    sym_key = sym_key_elems[0]
-
-                if sym_key is not None:
-                    context.set_table_value(table_name, sym_key)
-                else:
-                    constraints.append(False)
+                if len(sym_key_elems) > 0:
+                    context.set_table_values(table_name, sym_key_elems)
 
                 action_to_smt(context, table_name,
                               hlir.actions[transition_name])
@@ -470,7 +463,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
         table_values = []
         for table_name, transition_name in control_path:
-            if table_name in pipeline.tables:
+            if table_name in pipeline.tables and context.has_table_values(
+                    table_name):
                 runtime_data_values = []
                 for i, runtime_param in enumerate(
                         hlir.actions[transition_name].runtime_data):
@@ -478,9 +472,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                         model[context.get_runtime_data_for_table_action(
                             table_name, transition_name, runtime_param.name,
                             i)])
-                table_values.append((table_name, transition_name, [
-                    context.get_table_value(model, table_name)
-                ], runtime_data_values))
+                table_values.append(
+                    (table_name, transition_name, context.get_table_values(
+                        model, table_name), runtime_data_values))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
