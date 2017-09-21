@@ -571,25 +571,20 @@ class Pipeline:
             table_name = queue[0]
             queue = queue[1:]
 
+            next_tables = []
             if table_name in self.tables:
                 table = self.tables[table_name]
-                next_tables = [
-                    next_table for _, next_table in table.next_tables.items()
-                ]
-                graph[table_name] = table.action_names
-
+                graph[table_name] = []
                 for action_name, next_table in table.next_tables.items():
-                    if action_name not in graph:
-                        graph[action_name] = []
-                    graph[action_name].append(next_table)
-                    logging.debug('%s %s %s' % (table_name, action_name, next_table))
+                    graph[table_name].append((action_name, next_table))
+                    next_tables.append(next_table)
             else:
                 assert table_name in self.conditionals
                 conditional = self.conditionals[table_name]
                 next_tables = [
                     conditional.true_next_name, conditional.false_next_name
                 ]
-                graph[table_name] = next_tables
+                graph[table_name] = [(None, next_table) for next_table in next_tables]
 
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
@@ -607,11 +602,11 @@ class Pipeline:
                 return [[]]
 
             neighbor_paths = []
-            for neighbor in graph[node]:
+            for transition_name, neighbor in graph[node]:
                 logging.debug("generate_all_paths: %2d %s node %s to %s"
                               "" % (len(path_so_far), path_so_far, node,
                                     neighbor))
-                neighbor_paths += [[node] + path
+                neighbor_paths += [[(node, transition_name)] + path
                                    for path in generate_all_paths_(
                                        neighbor, path_so_far + [node])]
             return neighbor_paths
@@ -635,16 +630,12 @@ class PathSegment:
 
 
 class PathSegmentTable(PathSegment):
-    def __init__(self, table_name):
+    def __init__(self, table_name, action_name):
         self.table_name = table_name
+        self.action_name = action_name
 
 
 class PathSegmentConditional(PathSegment):
     def __init__(self, conditional_name, value):
         self.conditional_name = conditional_name
         self.value = value
-
-
-class PathSegmentAction(PathSegment):
-    def __init__(self, action_name):
-        self.action = action

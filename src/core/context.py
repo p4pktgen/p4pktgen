@@ -15,6 +15,9 @@ class Context:
         self.sym_vars_stack = []
         self.fields = {}
         self.id = 0
+        self.uninitialized_reads = []
+        self.runtime_data = []
+        self.table_values = {}
 
     def register_field(self, field):
         self.fields[self.field_to_var(field)] = field
@@ -22,10 +25,6 @@ class Context:
     def fresh_var(self, prefix):
         self.id += 1
         return '{}_{}'.format(prefix, self.id)
-
-    def remove_field(self, header_name, header_field):
-        var_name = '{}.{}'.format(header_name, header_field)
-        del self.sym_vars[var_name]
 
     def field_to_var(self, field):
         assert field.header is not None
@@ -38,16 +37,52 @@ class Context:
         var_name = '{}.{}'.format(header_name, header_field)
         self.sym_vars[var_name] = sym_val
 
+    def register_runtime_data(self, table_name, action_name, param_name,
+                              bitwidth):
+        # XXX: can actions call other actions? This won't work in that case
+        runtime_data_val = BitVec('${}$.${}$.runtime_data_{}'.format(
+            table_name, action_name, param_name), bitwidth)
+        self.set_field_value('{}.{}.{}'.format(table_name, action_name,
+                                               param_name),
+                             str(len(self.runtime_data)), runtime_data_val)
+        self.runtime_data.append(runtime_data_val)
+
+    def get_runtime_data(self, idx):
+        return self.runtime_data[idx]
+
+    def remove_runtime_data(self):
+        self.runtime_data = []
+
+    def get_runtime_data_for_table_action(self, table_name, action_name,
+                                          param_name, idx):
+        return self.get_header_field('{}.{}.{}'.format(table_name, action_name,
+                                                       param_name), str(idx))
+
+    def set_table_values(self, table_name, sym_vals):
+        self.table_values[table_name] = sym_vals
+
+    def get_table_values(self, model, table_name):
+        return [
+            model.eval(sym_val) for sym_val in self.table_values[table_name]
+        ]
+
+    def has_table_values(self, table_name):
+        return table_name in self.table_values
+
     def get(self, field):
         return self.get_var(self.field_to_var(field))
 
     def get_header_field(self, header_name, header_field):
         return self.get_var('{}.{}'.format(header_name, header_field))
 
+    def get_header_field_size(self, header_name, header_field):
+        return self.get_header_field(header_name, header_field).size()
+
     def get_var(self, var_name):
         if var_name not in self.sym_vars:
             # If the header field has not been initialized, return a fresh
             # variable for each read access
+            self.uninitialized_reads.append(var_name)
             return BitVec(self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.sym_vars[var_name]

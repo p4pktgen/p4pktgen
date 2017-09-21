@@ -11,11 +11,15 @@ from scapy.all import *
 from config import Config
 from core.context import Context
 from core.packet import Packet
+from switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
 
 import math
 import subprocess
+import time
 
-TestPathResult = Enum('TestPathResult', 'SUCCESS NO_PACKET_FOUND TEST_FAILED')
+TestPathResult = Enum('TestPathResult',
+                      'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')
+
 
 def equalize_bv_size(bvs):
     target_size = max([bv.size() for bv in bvs])
@@ -91,8 +95,7 @@ def type_value_to_smt(context, type_value):
         return context.get_header_field(type_value.header_name,
                                         type_value.header_field)
     if isinstance(type_value, TypeValueRuntimeData):
-        return context.get_header_field('$runtime_data$',
-                                        str(type_value.index))
+        return context.get_runtime_data(type_value.index)
     if isinstance(type_value, TypeValueExpression):
         if type_value.op == 'not':
             return Not(type_value_to_smt(context, type_value.right))
@@ -207,14 +210,14 @@ def type_value_to_smt(context, type_value):
         raise Exception('Type value {} not supported'.format(type_value))
 
 
-def action_to_smt(context, action):
+def action_to_smt(context, table_name, action):
     # XXX: This will not work if an action is used multiple times
     # XXX: Need a way to access the model for those parameters
     # Create symbolic values for the runtime data (parameters for actions)
     for i, runtime_param in enumerate(action.runtime_data):
-        sym_param = BitVec('${}.runtime_data[{}]'.format(
-            action.name, runtime_param.name), runtime_param.bitwidth)
-        context.set_field_value('$runtime_data$', str(i), sym_param)
+        context.register_runtime_data(table_name, action.name,
+                                      runtime_param.name,
+                                      runtime_param.bitwidth)
 
     for primitive in action.primitives:
         # In Apr 2017, p4c and behavioral-model added primitives
@@ -228,12 +231,15 @@ def action_to_smt(context, action):
             field = primitive.parameters[0]
             context.set_field_value(field.header_name, field.header_field,
                                     value)
+        elif primitive.op == 'drop':
+            # Dropping the packet does not modify the context. However we
+            # should eventually adapt the expected path.
+            pass
         else:
             raise Exception(
                 'Primitive op {} not supported'.format(primitive.op))
 
-    for i, runtime_param in enumerate(action.runtime_data):
-        context.remove_field('$runtime_data$', str(i))
+    context.remove_runtime_data()
 
 
 def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
@@ -256,17 +262,20 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # source_fragment is what simple_switch's log will contain when
     # conditionals are evaluated.
     control_path2 = []
-    for n in control_path:
-        if n in pipeline.conditionals:
-            conditional = pipeline.conditionals[n]
+    for table_name, transition_name in control_path:
+        n = [table_name, transition_name]
+        if table_name in pipeline.conditionals:
+            conditional = pipeline.conditionals[table_name]
             if conditional.source_fragment is not None:
-                n = conditional.source_fragment
-        control_path2.append(n)
+                n = [conditional.source_fragment]
+            else:
+                n = [table_name]
+        control_path2 += n
 
     expected_path = path + control_path2
     logging.info("")
     logging.info("BEGIN %d Exp path: %s"
-                 "" % (count, ' -> '.join(expected_path)))
+                 "" % (count, ' -> '.join([str(n) for n in expected_path])))
 
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
@@ -395,7 +404,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     constraints.append(sym_packet.get_length_constraint())
 
     # XXX: very ugly to split parsing/control like that, need better solution
-    logging.info('control_path = {}'.format(' -> '.join(control_path)))
+    logging.info('control_path = {}'.format(' -> '.join(
+        [str(n) for n in control_path])))
 
     # The second argument to zip is control_path[1:] + [None], so that
     # the last time through the loop the pair of loop variables have
@@ -404,7 +414,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # conditional.false_next_name == null in the JSON file, we want to
     # ensure that (sym_expr == BoolVal(False)) is added to the list of
     # constraints.
-    for table_name, next_table in zip(control_path, control_path[1:] + [None]):
+    for (table_name, transition_name), (next_table, _) in zip(
+            control_path, control_path[1:] + [(None, None)]):
         if table_name in pipeline.conditionals:
             conditional = pipeline.conditionals[table_name]
             expected_result = BoolVal(True)
@@ -412,7 +423,10 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                 expected_result = BoolVal(False)
             sym_expr = type_value_to_smt(context, conditional.expression)
             constraints.append(sym_expr == expected_result)
-        elif table_name in pipeline.tables:
+        else:
+            assert table_name in pipeline.tables
+            assert transition_name in hlir.actions
+
             table = pipeline.tables[table_name]
             if table.match_type in ['exact', 'lpm']:
                 sym_key_elems = []
@@ -423,19 +437,20 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                             context.get_header_field(key_elem.target[0],
                                                      key_elem.target[1]))
                     else:
-                        constraints.append(False)
+                        # XXX: What should be done when the key is not in
+                        # the context?
                         sym_key_elems = []
+                        constraints.append(False)
                         break
-                if len(sym_key_elems) > 1:
-                    sym_key = Concat(sym_key_elems)
-                elif len(sym_key_elems) == 1:
-                    sym_key = sym_key_elems[0]
+
+                if len(sym_key_elems) > 0:
+                    context.set_table_values(table_name, sym_key_elems)
+
+                action_to_smt(context, table_name,
+                              hlir.actions[transition_name])
             else:
                 raise Exception(
                     'Match type {} not supported!'.format(table.match_type))
-        else:
-            assert table_name in hlir.actions
-            action_to_smt(context, hlir.actions[table_name])
 
     constraints += context.get_name_constraints()
 
@@ -450,11 +465,47 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         context.log_model(model)
         payload = sym_packet.get_payload_from_model(model)
 
+        table_values = []
+        for table_name, transition_name in control_path:
+            if table_name in pipeline.tables and context.has_table_values(
+                    table_name):
+                runtime_data_values = []
+                for i, runtime_param in enumerate(
+                        hlir.actions[transition_name].runtime_data):
+                    runtime_data_values.append(
+                        model[context.get_runtime_data_for_table_action(
+                            table_name, transition_name, runtime_param.name,
+                            i)])
+                sym_table_values = context.get_table_values(model, table_name)
+
+                table = pipeline.tables[table_name]
+                table_values_strs = []
+                for table_key, sym_table_value in zip(table.key,
+                                                      sym_table_values):
+                    if table_key.match_type == 'lpm':
+                        bitwidth = context.get_header_field_size(
+                            table_key.target[0], table_key.target[1])
+                        table_values_strs.append(
+                            '{}/{}'.format(sym_table_value, bitwidth))
+                    elif table_key.match_type == 'exact':
+                        table_values_strs.append(str(sym_table_value))
+                    else:
+                        raise Exception('Match type {} not supported'.format(
+                            table_key.match_type))
+
+                table_values.append((table_name, transition_name,
+                                     table_values_strs, runtime_data_values))
+
+        if len(context.uninitialized_reads) != 0:
+            for uninitialized_read in context.uninitialized_reads:
+                logging.error(
+                    'Uninitialized read of {}!'.format(uninitialized_read))
+                result = TestPathResult.UNINITIALIZED_READ
         # XXX: Is 14 the correct number here? Is it possible to construct
         # shorter, invalid packets?
-        if len(payload) >= 14:
+        elif len(payload) >= 14:
             packet = Ether(bytes(payload))
-            extracted_path = test_packet(packet, json_file)
+            extracted_path = test_packet(packet, table_values, json_file)
 
             if expected_path[-1] == P4_HLIR.PACKET_TOO_SHORT:
                 if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT
@@ -489,7 +540,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     return result
 
 
-def test_packet(packet, json_file):
+def test_packet(packet, table_configs, json_file):
     """This function starts simple_switch, sends a packet to the switch and
     returns the parser states that the packet traverses based on the output of
     simple_switch."""
@@ -509,7 +560,8 @@ def test_packet(packet, json_file):
 
     # Start simple_switch
     proc = subprocess.Popen(
-        ['simple_switch', '--log-console'] + eth_args + [json_file],
+        ['simple_switch', '--log-console', '--thrift-port', '9090'] + eth_args
+        + [json_file],
         stdout=subprocess.PIPE)
 
     # Wait for simple_switch to finish initializing
@@ -523,6 +575,21 @@ def test_packet(packet, json_file):
 
     if not init_done:
         raise Exception('Initializing simple_switch failed')
+
+    time.sleep(1)
+
+    # XXX: read params from config
+    pre = PreType.SimplePreLAG
+    standard_client, mc_client = thrift_connect(
+        'localhost', '9090', RuntimeAPI.get_thrift_services(pre))
+    load_json_config(standard_client)
+    api = RuntimeAPI(pre, standard_client, mc_client)
+
+    for table, action, values, params in table_configs:
+        logging.info('{} {} {} => {}'.format(table, action, ' '.join(
+            values), ' '.join([str(x) for x in params])))
+        api.do_table_add('{} {} {} => {}'.format(table, action, ' '.join(
+            values), ' '.join([str(x) for x in params])))
 
     interface = config.get_interface()
     logging.info('Sending packet to {}'.format(interface))
