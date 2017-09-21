@@ -15,7 +15,7 @@ from core.packet import Packet
 import math
 import subprocess
 
-TestPathResult = Enum('TestPathResult', 'SUCCESS NO_PACKET_FOUND TEST_FAILED')
+TestPathResult = Enum('TestPathResult', 'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')
 
 def equalize_bv_size(bvs):
     target_size = max([bv.size() for bv in bvs])
@@ -450,9 +450,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         context.log_model(model)
         payload = sym_packet.get_payload_from_model(model)
 
+        if len(context.uninitialized_reads) != 0:
+            for uninitialized_read in context.uninitialized_reads:
+                logging.error('Uninitialized read of {}!'.format(uninitialized_read))
+                result = TestPathResult.UNINITIALIZED_READ
         # XXX: Is 14 the correct number here? Is it possible to construct
         # shorter, invalid packets?
-        if len(payload) >= 14:
+        elif len(payload) >= 14:
             packet = Ether(bytes(payload))
             extracted_path = test_packet(packet, json_file)
 

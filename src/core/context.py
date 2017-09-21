@@ -15,6 +15,7 @@ class Context:
         self.sym_vars_stack = []
         self.fields = {}
         self.id = 0
+        self.uninitialized_reads = []
 
     def register_field(self, field):
         self.fields[self.field_to_var(field)] = field
@@ -48,6 +49,7 @@ class Context:
         if var_name not in self.sym_vars:
             # If the header field has not been initialized, return a fresh
             # variable for each read access
+            self.uninitialized_reads.append(var_name)
             return BitVec(self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.sym_vars[var_name]
