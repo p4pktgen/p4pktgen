@@ -231,6 +231,10 @@ def action_to_smt(context, table_name, action):
             field = primitive.parameters[0]
             context.set_field_value(field.header_name, field.header_field,
                                     value)
+        elif primitive.op == 'drop':
+            # Dropping the packet does not modify the context. However we
+            # should eventually adapt the expected path.
+            pass
         else:
             raise Exception(
                 'Primitive op {} not supported'.format(primitive.op))
