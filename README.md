@@ -81,13 +81,16 @@ pip 9.0.1 from /home/jafinger/.local/lib/python2.7/site-packages (python 2.7)
 
 ## One-time setup: Create Python venv for p4pktgen
 
-A 'venv' is a Python virtual environment.  Creating one helps to keep
-separate the set of Python modules you need to install for that
-project, from other projects, or from your system-wide Python
-installation.
+A 'venv' is a Python virtual environment.  Creating one helps to keep separate
+the set of Python modules you need to install for that project, from other
+projects, or from your system-wide Python installation.
 
 One-time setup to create a local Python venv, activate it, and install
 Python packages required for p4pktgen in it.
+
+When creating the virtual environment it is advisable to inherit global
+site-packages with the `--system-site-packages` flag. This will make it easier
+to include the Python files of the behavioral-model.
 
 If you want more detail on Python virtual environments,
 [this guide](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
@@ -96,7 +99,7 @@ seems well written and up to date.
 First, the short version, with all command output removed:
 
 ```bash
-% virtualenv my-venv
+% virtualenv my-venv --system-site-packages
 % source my-venv/bin/activate
 % pip install -r requirements.txt
 ```

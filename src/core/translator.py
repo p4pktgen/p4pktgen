@@ -11,10 +11,11 @@ from scapy.all import *
 from config import Config
 from core.context import Context
 from core.packet import Packet
-#from switch.runtime_CLI import RuntimeAPI, PreType
+from switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
 
 import math
 import subprocess
+import time
 
 TestPathResult = Enum('TestPathResult',
                       'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')
@@ -228,7 +229,6 @@ def action_to_smt(context, table_name, action):
         if primitive.op in ['modify_field', 'assign']:
             value = type_value_to_smt(context, primitive.parameters[1])
             field = primitive.parameters[0]
-            print(field, value)
             context.set_field_value(field.header_name, field.header_field,
                                     value)
         else:
@@ -472,9 +472,25 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                         model[context.get_runtime_data_for_table_action(
                             table_name, transition_name, runtime_param.name,
                             i)])
-                table_values.append(
-                    (table_name, transition_name, context.get_table_values(
-                        model, table_name), runtime_data_values))
+                sym_table_values = context.get_table_values(model, table_name)
+
+                table = pipeline.tables[table_name]
+                table_values_strs = []
+                for table_key, sym_table_value in zip(table.key,
+                                                      sym_table_values):
+                    if table_key.match_type == 'lpm':
+                        bitwidth = context.get_header_field_size(
+                            table_key.target[0], table_key.target[1])
+                        table_values_strs.append(
+                            '{}/{}'.format(sym_table_value, bitwidth))
+                    elif table_key.match_type == 'exact':
+                        table_values_strs.append(str(sym_table_value))
+                    else:
+                        raise Exception('Match type {} not supported'.format(
+                            table_key.match_type))
+
+                table_values.append((table_name, transition_name,
+                                     table_values_strs, runtime_data_values))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
@@ -540,7 +556,7 @@ def test_packet(packet, table_configs, json_file):
 
     # Start simple_switch
     proc = subprocess.Popen(
-        ['simple_switch', '--log-console', '--thrift-port', '9092'] + eth_args
+        ['simple_switch', '--log-console', '--thrift-port', '9090'] + eth_args
         + [json_file],
         stdout=subprocess.PIPE)
 
@@ -556,19 +572,20 @@ def test_packet(packet, table_configs, json_file):
     if not init_done:
         raise Exception('Initializing simple_switch failed')
 
+    time.sleep(1)
+
     # XXX: read params from config
-    #pre = PreType.SimplePreLAG
-    #standard_client, mc_client = thrift_connect(
-    #        'localhost', '9090',
-    #        RuntimeAPI.get_thrift_services(pre)
-    #)
-    #load_json_config(standard_client)
-    #api = RuntimeAPI(pre, standard_client, mc_client)
+    pre = PreType.SimplePreLAG
+    standard_client, mc_client = thrift_connect(
+        'localhost', '9090', RuntimeAPI.get_thrift_services(pre))
+    load_json_config(standard_client)
+    api = RuntimeAPI(pre, standard_client, mc_client)
 
     for table, action, values, params in table_configs:
         logging.info('{} {} {} => {}'.format(table, action, ' '.join(
-            [str(x) for x in values]), ' '.join([str(x) for x in params])))
-    #    api.do_table_add('{} {} {} => {}'.format(table, action, ' '.join(values), ' '.join(params)))
+            values), ' '.join([str(x) for x in params])))
+        api.do_table_add('{} {} {} => {}'.format(table, action, ' '.join(
+            values), ' '.join([str(x) for x in params])))
 
     interface = config.get_interface()
     logging.info('Sending packet to {}'.format(interface))

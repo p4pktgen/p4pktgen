@@ -75,6 +75,9 @@ class Context:
     def get_header_field(self, header_name, header_field):
         return self.get_var('{}.{}'.format(header_name, header_field))
 
+    def get_header_field_size(self, header_name, header_field):
+        return self.get_header_field(header_name, header_field).size()
+
     def get_var(self, var_name):
         if var_name not in self.sym_vars:
             # If the header field has not been initialized, return a fresh

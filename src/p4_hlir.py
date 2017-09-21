@@ -571,6 +571,7 @@ class Pipeline:
             table_name = queue[0]
             queue = queue[1:]
 
+            next_tables = []
             if table_name in self.tables:
                 table = self.tables[table_name]
                 graph[table_name] = []
