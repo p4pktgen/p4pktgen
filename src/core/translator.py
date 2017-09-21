@@ -458,7 +458,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         context.log_model(model)
         payload = sym_packet.get_payload_from_model(model)
 
-        table_values = []
+        # Determine table configurations 
+        table_configs = []
         for table_name, transition_name in control_path:
             if table_name in pipeline.tables and context.has_table_values(
                     table_name):
@@ -486,8 +487,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                         raise Exception('Match type {} not supported'.format(
                             table_key.match_type))
 
-                table_values.append((table_name, transition_name,
+                table_configs.append((table_name, transition_name,
                                      table_values_strs, runtime_data_values))
+
+        # Print table configuration
+        for table, action, values, params in table_configs:
+            logging.info('{} {} {} => {}'.format(table, action, ' '.join(
+                values), ' '.join([str(x) for x in params])))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
@@ -498,7 +504,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         # shorter, invalid packets?
         elif len(payload) >= 14:
             packet = Ether(bytes(payload))
-            extracted_path = test_packet(packet, table_values, json_file)
+            extracted_path = test_packet(packet, table_configs, json_file)
 
             if expected_path[-1] == P4_HLIR.PACKET_TOO_SHORT:
                 if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT
@@ -579,8 +585,6 @@ def test_packet(packet, table_configs, json_file):
     api = RuntimeAPI(pre, standard_client, mc_client)
 
     for table, action, values, params in table_configs:
-        logging.info('{} {} {} => {}'.format(table, action, ' '.join(
-            values), ' '.join([str(x) for x in params])))
         api.do_table_add('{} {} {} => {}'.format(table, action, ' '.join(
             values), ' '.join([str(x) for x in params])))
 
