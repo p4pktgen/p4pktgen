@@ -8,34 +8,66 @@ class CheckSystem:
         Config().load_defaults()
         results = process_json_file('compiled_p4_programs/demo1b.json')
         expected_results = {
-            'start -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
             TestPathResult.NO_PACKET_FOUND,
-            'start -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
             TestPathResult.NO_PACKET_FOUND,
-            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act -> act':
             TestPathResult.SUCCESS,
-            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act -> act':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
             TestPathResult.NO_PACKET_FOUND,
             'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid()':
             TestPathResult.NO_PACKET_FOUND,
-            'start -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
             TestPathResult.NO_PACKET_FOUND,
-            'start -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
-            TestPathResult.NO_PACKET_FOUND,
-            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
             TestPathResult.SUCCESS,
-            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act -> act':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
             TestPathResult.SUCCESS,
-            'start -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
             TestPathResult.NO_PACKET_FOUND,
-            'start -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
             TestPathResult.NO_PACKET_FOUND,
-            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            TestPathResult.SUCCESS,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            TestPathResult.SUCCESS,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act -> act':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_permit -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.NO_PACKET_FOUND,
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> my_drop1 -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> my_drop2':
             TestPathResult.NO_PACKET_FOUND,
             'start -> sink -> hdr.ipv4.isValid()':
             TestPathResult.SUCCESS,
-            'start -> parse_ipv4 -> sink -> hdr.ipv4.isValid() -> tbl_act -> act -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
-            TestPathResult.SUCCESS
+            'start -> sink -> hdr.ipv4.isValid() -> ipv4_acl -> do_acl_drop -> acl_drop -> tbl_act_0 -> act_0 -> ipv4_da_lpm -> set_l2ptr -> meta.fwd_metadata.l2ptr != L2PTR_UNSET -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.NO_PACKET_FOUND
         }
         assert results == expected_results
 

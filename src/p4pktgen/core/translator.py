@@ -248,6 +248,16 @@ def action_to_smt(context, table_name, action):
     context.remove_runtime_data()
 
 
+def table_add_cmd_string(table, action, values, params, priority):
+    priority_str = ""
+    if priority:
+        priority_str = " %d" % (priority)
+    return ('{} {} {} => {}{}'.format(table, action,
+                                      ' '.join(values),
+                                      ' '.join([str(x) for x in params]),
+                                      priority_str))
+
+
 def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # Maps variable names to symbolic values
     context = Context()
@@ -438,7 +448,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             table = pipeline.tables[table_name]
             context.set_source_info(table.source_info)
 
-            if table.match_type in ['exact', 'lpm']:
+            if table.match_type in ['exact', 'lpm', 'ternary', 'range']:
                 sym_key_elems = []
                 for key_elem in table.key:
                     header_name, header_field = key_elem.target
@@ -486,6 +496,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
                 table = pipeline.tables[table_name]
                 table_values_strs = []
+                table_entry_priority = None
                 for table_key, sym_table_value in zip(table.key,
                                                       sym_table_values):
                     if table_key.match_type == 'lpm':
@@ -493,6 +504,23 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                             table_key.target[0], table_key.target[1])
                         table_values_strs.append(
                             '{}/{}'.format(sym_table_value, bitwidth))
+                    elif table_key.match_type == 'ternary':
+                        # Always use exact match mask, which is
+                        # represented in simple_switch_CLI as a 1 bit
+                        # in every bit position of the field.
+                        bitwidth = context.get_header_field_size(
+                            table_key.target[0], table_key.target[1])
+                        mask = (1 << bitwidth) - 1;
+                        table_values_strs.append(
+                            '{}&&&{}'.format(sym_table_value, mask))
+                        table_entry_priority = 1
+                    elif table_key.match_type == 'range':
+                        # Always use a range where the min and max
+                        # values are exactly the one desired value
+                        # generated.
+                        table_values_strs.append(
+                            '{}->{}'.format(sym_table_value, sym_table_value))
+                        table_entry_priority = 1
                     elif table_key.match_type == 'exact':
                         table_values_strs.append(str(sym_table_value))
                     else:
@@ -500,12 +528,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                             table_key.match_type))
 
                 table_configs.append((table_name, transition_name,
-                                      table_values_strs, runtime_data_values))
+                                      table_values_strs, runtime_data_values,
+                                      table_entry_priority))
 
         # Print table configuration
-        for table, action, values, params in table_configs:
-            logging.info('{} {} {} => {}'.format(table, action, ' '.join(
-                values), ' '.join([str(x) for x in params])))
+        for table, action, values, params, priority in table_configs:
+            logging.info(table_add_cmd_string(table, action, values, params,
+                                              priority))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
@@ -597,9 +626,9 @@ def test_packet(packet, table_configs, json_file):
     load_json_config(standard_client)
     api = RuntimeAPI(pre, standard_client, mc_client)
 
-    for table, action, values, params in table_configs:
-        api.do_table_add('{} {} {} => {}'.format(table, action, ' '.join(
-            values), ' '.join([str(x) for x in params])))
+    for table, action, values, params, priority in table_configs:
+        api.do_table_add(table_add_cmd_string(table, action, values, params,
+                                              priority))
 
     interface = config.get_interface()
     logging.info('Sending packet to {}'.format(interface))

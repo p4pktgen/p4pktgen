@@ -60,6 +60,9 @@ struct headers {
 // You must use 'compound actions', i.e. ones explicitly defined with
 // the 'action' keyword like below.
 
+action my_drop0() {
+    mark_to_drop();
+}
 action my_drop1() {
     mark_to_drop();
 }
@@ -97,6 +100,28 @@ control ingress(inout headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
 
+    bool acl_drop;
+    
+    action do_acl_permit() {
+        acl_drop = false;
+    }
+    action do_acl_drop() {
+        acl_drop = true;
+    }
+    table ipv4_acl {
+        key = {
+            hdr.ipv4.srcAddr:  ternary;
+            hdr.ipv4.dstAddr:  ternary;
+            hdr.ipv4.protocol: ternary;
+            hdr.ipv4.ttl:      range;
+        }
+        actions = {
+            do_acl_permit;
+            do_acl_drop;
+        }
+        default_action = do_acl_drop;
+    }
+
     action set_l2ptr(bit<32> l2ptr) {
         meta.fwd_metadata.l2ptr = l2ptr;
     }
@@ -131,6 +156,11 @@ control ingress(inout headers hdr,
     apply {
         const bit<32> L2PTR_UNSET = 0;
         if (hdr.ipv4.isValid()) {
+            ipv4_acl.apply();
+            if (acl_drop) {
+                mark_to_drop();
+                exit;
+            }
             meta.fwd_metadata.l2ptr = L2PTR_UNSET;
             ipv4_da_lpm.apply();
             if (meta.fwd_metadata.l2ptr != L2PTR_UNSET) {
