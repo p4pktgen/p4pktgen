@@ -123,12 +123,6 @@ def process_json_file(input_file, debug=False):
     return
     """
 
-    control_paths = in_pipeline.generate_all_paths(graph)
-    # control_paths = [['node_2', 'tbl_act_0', 'node_5', 'node_6', 'node_8', 'tbl_act_3', 'node_11', 'tbl_act_5', 'ipv4_da_lpm']]
-    max_path_len = max([len(p) for p in control_paths])
-    logging.info("Found %d control paths, longest with length %d"
-                 "" % (len(control_paths), max_path_len))
-
     paths = list(
         nx.all_simple_paths(
             parser_graph,
@@ -137,6 +131,13 @@ def process_json_file(input_file, debug=False):
     max_path_len = max([len(p) for p in paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(paths), max_path_len))
+
+    num_control_paths = in_pipeline.count_all_paths(graph)
+    logging.info("Counted %d control paths" % (num_control_paths))
+    control_paths = in_pipeline.generate_all_paths(graph)
+    max_path_len = max([len(p) for p in control_paths])
+    logging.info("Found %d control paths, longest with length %d"
+                 "" % (len(control_paths), max_path_len))
 
     count = 0
     results = {}

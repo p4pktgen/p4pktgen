@@ -607,6 +607,30 @@ class Pipeline:
 
         return graph
 
+    def count_all_paths(self, graph):
+        """Quickly count the number of paths in a directed acyclic graph (DAG)
+        starting from node self.init_table_name, leading to the "None" node,
+        without enumerating them all. This can be done in linear time in the
+        number of edges in the DAG, even if the number of paths is
+        exponentially large."""
+
+        num_paths_to_end = {}
+        # XXX: does not work with cycles
+        def count_all_paths_(node):
+            if node is None:
+                return 1
+            if node in num_paths_to_end:
+                return num_paths_to_end[node]
+            count = 0
+            for transition_name, neighbor in graph[node]:
+                tmp = count_all_paths_(neighbor)
+                logging.debug("  %d ways to end through transition %s -> %s -> %s" % (tmp, node, transition_name, neighbor))
+                count += tmp
+            logging.debug("%d ways to end starting from node %s" % (count, node))
+            num_paths_to_end[node] = count
+            return count
+        return count_all_paths_(self.init_table_name)
+
     def generate_all_paths(self, graph):
         path_so_far = []
         all_paths = []
