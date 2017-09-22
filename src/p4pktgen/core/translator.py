@@ -549,7 +549,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     logging.info("END   %d Exp path: %s"
                  "" % (count, ' -> '.join(expected_path)))
 
-    return result
+    return (' -> '.join([str(n) for n in expected_path]), result)
 
 
 def test_packet(packet, table_configs, json_file):

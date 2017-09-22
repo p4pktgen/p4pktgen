@@ -4,6 +4,10 @@ class Config:
     def __init__(self):
         self.__dict__ = self.__shared_state
 
+    def load_defaults(self):
+        self.interface = 'veth2'
+        self.debug = False
+
     def load_args(self, args):
         self.interface = args.interface
         self.debug = args.debug

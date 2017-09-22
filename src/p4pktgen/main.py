@@ -139,16 +139,21 @@ def process_json_file(input_file, debug=False):
                  "" % (len(paths), max_path_len))
 
     count = 0
+    results = {}
     stats = defaultdict(int)
     for path in paths:
         for control_path in control_paths:
             count += 1
-            result = generate_constraints(hlir, in_pipeline, path, control_path,
-                                 input_file, count)
+            expected_path, result = generate_constraints(hlir, in_pipeline, path, control_path, input_file, count)
+            results[expected_path] = result
             stats[result] += 1
 
     for result, count in stats.items():
         logging.info('{}: {}'.format(result, count))
+
+    print(results)
+
+    return results
 
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
