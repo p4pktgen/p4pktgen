@@ -110,6 +110,14 @@ def parse_type_value(json_obj):
         return TypeValueBool(value)
     elif p4_type_str == 'runtime_data':
         return TypeValueRuntimeData(value)
+    elif p4_type_str == 'local':
+        # There are times where 'local' is used to refer to
+        # runtime_data inside the definition of an action.  There
+        # might be other reasons 'local' is used for other purposes,
+        # but I do not know what those are yet.  Assume for now that
+        # it is a synonym for runtime_data.  See this issue for some
+        # more details: https://github.com/p4lang/p4c/issues/680
+        return TypeValueRuntimeData(value)
     elif p4_type_str == 'calculation':
         return TypeValueCalculation(value)
     elif p4_type_str == 'counter_array':
