@@ -38,3 +38,75 @@ class CheckSystem:
             TestPathResult.SUCCESS
         }
         assert results == expected_results
+
+    def check_demo1(self):
+        Config().load_defaults()
+        results = process_json_file('compiled_p4_programs/demo1-action-names-uniquified.p4_16.json')
+        expected_results = {
+            'start -> sink -> ipv4_da_lpm -> set_l2ptr -> mac_da -> my_drop2':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ipv4 -> sink -> ipv4_da_lpm -> my_drop1 -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> sink -> ipv4_da_lpm -> my_drop1 -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> sink -> ipv4_da_lpm -> my_drop1 -> mac_da -> my_drop2':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> sink -> ipv4_da_lpm -> set_l2ptr -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ipv4 -> sink -> ipv4_da_lpm -> set_l2ptr -> mac_da -> my_drop2':
+            TestPathResult.SUCCESS,
+            'start -> parse_ipv4 -> sink -> ipv4_da_lpm -> my_drop1 -> mac_da -> my_drop2':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ipv4 -> sink -> ipv4_da_lpm -> set_l2ptr -> mac_da -> set_bd_dmac_intf':
+            TestPathResult.SUCCESS
+        }
+        assert results == expected_results
+
+    def check_demo9b(self):
+        Config().load_defaults()
+        results = process_json_file('compiled_p4_programs/demo9b.json')
+        expected_results = {
+            'start -> parse_ethernet -> parse_ipv6 -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv4 -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv6 -> parse_udp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv4 -> parse_tcp -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv6 -> parse_udp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv4 -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv6 -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv6 -> parse_tcp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv4 -> parse_tcp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv4 -> parse_udp -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv4 -> parse_udp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv6 -> parse_tcp -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv6 -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv4 -> parse_udp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act -> act':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv4 -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.UNINITIALIZED_READ,
+            'start -> parse_ethernet -> parse_ipv6 -> parse_tcp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv6 -> parse_udp -> sink -> hdr.ipv6.version != 6':
+            TestPathResult.SUCCESS,
+            'start -> parse_ethernet -> parse_ipv4 -> parse_tcp -> sink -> hdr.ipv6.version != 6 -> hdr.ethernet.srcAddr == 123456 -> tbl_act_0 -> act_0':
+            TestPathResult.UNINITIALIZED_READ
+        }
+        assert results == expected_results
