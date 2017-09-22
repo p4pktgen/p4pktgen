@@ -3,19 +3,21 @@
 # - Position is a 32-bit integer right now. Smaller/larger?
 # - Move to smt-switch
 
-from z3 import *
-from enum import Enum
-from p4_hlir import *
-from hlir.type_value import *
-from scapy.all import *
-from config import Config
-from core.context import Context
-from core.packet import Packet
-from switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
-
 import math
 import subprocess
 import time
+
+from z3 import *
+from scapy.all import *
+from enum import Enum
+
+from p4pktgen.p4_hlir import *
+from p4pktgen.hlir.type_value import *
+from p4pktgen.config import Config
+from p4pktgen.core.context import Context
+from p4pktgen.core.packet import Packet
+from p4pktgen.switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
+
 
 TestPathResult = Enum('TestPathResult',
                       'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')

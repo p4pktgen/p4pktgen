@@ -78,17 +78,21 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    top = P4_Top(args.debug)
-
     # Build the IR
     assert args.format in ['json', 'p4']
+
     if args.format == 'json':
-        top.build_from_json(args.input_file)
+        process_json_file(args.input_file, args.debug)
     else:
+        # XXX: revisit
         top.build_from_p4(args.input_file, args.flags)
 
+def process_json_file(input_file, debug=False):
+    top = P4_Top(debug)
+    top.build_from_json(input_file)
+
     # Get the parser graph
-    hlir = P4_HLIR(args.debug, top.json_obj)
+    hlir = P4_HLIR(debug, top.json_obj)
     parser_graph = hlir.get_parser_graph()
 
     assert 'ingress' in hlir.pipelines
@@ -140,7 +144,7 @@ def main():
         for control_path in control_paths:
             count += 1
             result = generate_constraints(hlir, in_pipeline, path, control_path,
-                                 args.input_file, count)
+                                 input_file, count)
             stats[result] += 1
 
     for result, count in stats.items():

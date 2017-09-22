@@ -30,7 +30,7 @@ allow unpriviledged users to send raw ethernet packets.
 The basic command to run p4pktgen is as follows:
 
 ```
-python src/main.py <json file>
+p4pktgen <json file>
 ```
 
 The flag `-d` prints additional debug information.
@@ -102,6 +102,7 @@ First, the short version, with all command output removed:
 % virtualenv my-venv --system-site-packages
 % source my-venv/bin/activate
 % pip install -r requirements.txt
+% python setup.py develop
 ```
 
 Next, a longer and more detailed version, with a few extra commands to
@@ -113,7 +114,7 @@ see what is happening at some of the steps.
 
 [ Your directory name will likely be different. ]
 
-% virtualenv my-venv
+% virtualenv my-venv --system-site-packages
 New python executable in /home/jafinger/p4pktgen/my-venv/bin/python
 Installing setuptools, pip, wheel...done.
 
@@ -173,6 +174,8 @@ thrift (0.10.0)
 wheel (0.30.0)
 yapf (0.16.3)
 z3-solver (4.5.1.0.post2)
+
+% python setup.py develop
 ```
 
 

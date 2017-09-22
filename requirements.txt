@@ -6,7 +6,9 @@ graphviz==0.8
 matplotlib==2.0.2
 networkx==1.11
 numpy==1.13.1
+py==1.4.34
 pyparsing==2.2.0
+pytest==3.2.2
 python-dateutil==2.6.1
 pytz==2017.2
 scapy==2.3.3
