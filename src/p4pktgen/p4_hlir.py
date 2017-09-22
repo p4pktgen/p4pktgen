@@ -12,6 +12,7 @@ __email__ = "jehandad@vt.edu, cburgin@vt.edu"
 __status__ = "in progress"
 
 # Standard Python Libraries
+import copy
 import json
 import logging
 from pprint import pprint
@@ -607,24 +608,28 @@ class Pipeline:
         return graph
 
     def generate_all_paths(self, graph):
+        path_so_far = []
+        all_paths = []
         # XXX: does not work with cycles, inefficient in general
-        def generate_all_paths_(node, path_so_far):
+        def generate_all_paths_(node):
             if node is None:
                 logging.debug("generate_all_paths: PATH len %2d %s"
                               "" % (len(path_so_far), path_so_far))
-                return [[]]
+                all_paths.append(copy.copy(path_so_far))
+                if len(all_paths) % 1000 == 0:
+                    logging.info("generated %d paths so far..." % (len(all_paths)))
+                return
 
-            neighbor_paths = []
             for transition_name, neighbor in graph[node]:
+                path_so_far.append((node, transition_name))
                 logging.debug("generate_all_paths: %2d %s node %s to %s"
                               "" % (len(path_so_far), path_so_far, node,
                                     neighbor))
-                neighbor_paths += [[(node, transition_name)] + path
-                                   for path in generate_all_paths_(
-                                       neighbor, path_so_far + [node])]
-            return neighbor_paths
+                generate_all_paths_(neighbor)
+                path_so_far.pop()
 
-        return generate_all_paths_(self.init_table_name, [])
+        generate_all_paths_(self.init_table_name)
+        return all_paths
 
 
 class Calculation:
