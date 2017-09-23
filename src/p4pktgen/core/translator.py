@@ -35,6 +35,14 @@ def p4_field_to_sym(context, field):
     return context.get(field)
 
 
+def min_bits_for_uint(uint):
+    # The fewest number of bits needed to represent an unsigned
+    # integer in binary.
+    if uint == 0:
+        return 1
+    return int(math.log(uint, 2)) + 1
+
+
 def p4_expr_to_sym(context, expr):
     if isinstance(expr, P4_HLIR.P4_Expression):
         lhs = p4_expr_to_sym(context,
@@ -60,7 +68,8 @@ def p4_expr_to_sym(context, expr):
     elif isinstance(expr, bool):
         return expr
     elif isinstance(expr, int):
-        size = int(math.log(expr, 2))
+        size = min_bits_for_uint(expr)
+        #logging.debug("jdbg expr %s size %s" % (expr, size))
         return BitVecVal(expr, size)
     else:
         # XXX: implement other operators
@@ -70,11 +79,11 @@ def p4_expr_to_sym(context, expr):
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
-        if not (value == 0 or int(math.log(value, 2)) <= size):
+        if not (min_bits_for_uint(value) <= size):
             logging.error("p4_value_to_bv: type(value)=%s value=%s"
                           " type(size)=%s size=%s"
                           "" % (type(value), value, type(size), size))
-        assert value == 0 or int(math.log(value, 2)) <= size
+        assert min_bits_for_uint(value) <= size
         return BitVecVal(value, size)
     else:
         raise Exception(
@@ -83,10 +92,7 @@ def p4_value_to_bv(value, size):
 
 def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueHexstr):
-        if type_value.value == 0:
-            size = 1
-        else:
-            size = int(math.ceil(math.log(type_value.value, 2))) + 1
+        size = min_bits_for_uint(type_value.value)
         return BitVecVal(type_value.value, size)
     if isinstance(type_value, TypeValueHeader):
         # XXX: What should be done here?
@@ -386,6 +392,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             elif op == p4_parser_ops_enum.set:
                 assert len(parser_op.value) == 2
                 assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
+                #logging.debug("jdbg parser_op %s .value %s"
+                #              "" % (parser_op, parser_op.value))
                 context.insert(parser_op.value[0],
                                p4_expr_to_sym(context, parser_op.value[1]))
             elif op == p4_parser_ops_enum.extract_VL:
