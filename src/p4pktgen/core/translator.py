@@ -258,6 +258,47 @@ def table_add_cmd_string(table, action, values, params, priority):
                                       priority_str))
 
 
+def parser_transition_key_constraint(sym_transition_keys, value, mask):
+    # value should be int
+    # mask should be int or None
+    # XXX: Handle masks on transition keys
+
+    # In the JSON file, if there are multiple fields in the
+    # transition_key, then the values are packed in a particular
+    # manner -- each transition_key is separately rounded up to a
+    # multiple of 8 bits wide, and its value is packed into the value
+    # as that width, with most significant 0 bits for padding, if
+    # needed.
+    #
+    # See https://github.com/p4lang/behavioral-model/issues/441 for a
+    # reference to the relevant part of the behavioral-model JSON
+    # spec.
+    assert mask is None
+    assert len(sym_transition_keys) >= 1
+    keys_rev = copy.copy(sym_transition_keys)
+    keys_rev.reverse()
+    bitvecs = []
+    for k in keys_rev:
+        sz_bits = k.size()
+        sz_bytes = (sz_bits + 7) / 8
+        mask = (1 << (8 * sz_bytes)) - 1
+        v = value & mask
+        bitvec = p4_value_to_bv(v, sz_bits)
+        bitvecs.append(bitvec)
+
+        value >>= (8 * sz_bytes)
+        #mask >>= (8 * sz_bytes)
+
+    bitvecs.reverse()
+    logging.debug("sym_transition_keys %s bitvecs %s"
+                  "" % (sym_transition_keys, bitvecs))
+    if len(sym_transition_keys) > 1:
+        constraint = Concat(sym_transition_keys) == Concat(bitvecs)
+    else:
+        constraint = sym_transition_keys[0] == bitvecs[0]
+    return constraint
+
+
 def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # Maps variable names to symbolic values
     context = Context()
@@ -388,30 +429,21 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
         # XXX: support key types other than hexstr
         if transition.value is not None:
-            if len(sym_transition_key) > 1:
-                sym_transition_key_complete = Concat(sym_transition_key)
-            else:
-                sym_transition_key_complete = sym_transition_key[0]
-            bv_value = p4_value_to_bv(transition.value,
-                                      sym_transition_key_complete.size())
-            constraints.append(sym_transition_key_complete == bv_value)
+            constraint = parser_transition_key_constraint(sym_transition_key,
+                                                          transition.value, None)
+            constraints.append(constraint)
         elif len(sym_transition_key) > 0:
-            sym_transition_key = sym_transition_key[0]
-
             # XXX: check that default is last option
             other_values = []
             for _, current_transition in parse_state.transitions.items():
                 if current_transition.value is not None:
                     other_values.append(current_transition.value)
+            logging.debug("other_values %s" % (other_values))
 
-            other_bv_values = [
-                p4_value_to_bv(value, sym_transition_key.size())
-                for value in other_values
-            ]
-            constraints.append(
-                Not(
-                    Or([(sym_transition_key == bv_value)
-                        for bv_value in other_bv_values])))
+            other_constraints = [parser_transition_key_constraint(sym_transition_key,
+                                                                  value, None)
+                                 for value in other_values]
+            constraints.append(Not(Or(other_constraints)))
 
         logging.debug(sym_transition_key)
         pos = simplify(new_pos)
