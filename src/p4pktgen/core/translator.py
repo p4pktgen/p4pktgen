@@ -340,6 +340,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     logging.info("BEGIN %d Exp path: %s"
                  "" % (count, ' -> '.join([str(n) for n in expected_path])))
 
+    time1 = time.time()
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
     pos = BitVecVal(0, 32)
@@ -456,6 +457,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         logging.debug(sym_transition_key)
         pos = simplify(new_pos)
 
+    time2 = time.time()
     # XXX: workaround
     constraints.append(sym_packet.get_length_constraint())
 
@@ -508,12 +510,14 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         context.unset_source_info()
 
     constraints += context.get_name_constraints()
+    time3 = time.time()
 
     # Construct and test the packet
     logging.debug(And(constraints))
     s = Solver()
     s.add(And(constraints))
     smt_result = s.check()
+    time4 = time.time()
     result = None
     if smt_result != unsat:
         model = s.model()
@@ -615,8 +619,17 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         logging.info('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
         result = TestPathResult.NO_PACKET_FOUND
+    time5 = time.time()
     logging.info("END   %d Exp path: %s"
                  "" % (count, ' -> '.join(expected_path)))
+    logging.info("%.3f sec = %.3f gen parser constraints"
+                 " + %.3f gen ingress constraints"
+                 " + %.3f solve + %.3f gen pkt, table entries, sim packet"
+                 "" % (time5 - time1,
+                       time2 - time1,
+                       time3 - time2,
+                       time4 - time3,
+                       time5 - time4))
 
     return (' -> '.join([str(n) for n in expected_path]), result)
 
