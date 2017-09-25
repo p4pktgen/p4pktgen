@@ -35,6 +35,14 @@ def p4_field_to_sym(context, field):
     return context.get(field)
 
 
+def min_bits_for_uint(uint):
+    # The fewest number of bits needed to represent an unsigned
+    # integer in binary.
+    if uint == 0:
+        return 1
+    return int(math.log(uint, 2)) + 1
+
+
 def p4_expr_to_sym(context, expr):
     if isinstance(expr, P4_HLIR.P4_Expression):
         lhs = p4_expr_to_sym(context,
@@ -60,7 +68,8 @@ def p4_expr_to_sym(context, expr):
     elif isinstance(expr, bool):
         return expr
     elif isinstance(expr, int):
-        size = int(math.log(expr, 2))
+        size = min_bits_for_uint(expr)
+        #logging.debug("jdbg expr %s size %s" % (expr, size))
         return BitVecVal(expr, size)
     else:
         # XXX: implement other operators
@@ -70,11 +79,11 @@ def p4_expr_to_sym(context, expr):
 def p4_value_to_bv(value, size):
     # XXX: Support values that are not simple hexstrs
     if True:
-        if not (value == 0 or int(math.log(value, 2)) <= size):
+        if not (min_bits_for_uint(value) <= size):
             logging.error("p4_value_to_bv: type(value)=%s value=%s"
                           " type(size)=%s size=%s"
                           "" % (type(value), value, type(size), size))
-        assert value == 0 or int(math.log(value, 2)) <= size
+        assert min_bits_for_uint(value) <= size
         return BitVecVal(value, size)
     else:
         raise Exception(
@@ -83,10 +92,7 @@ def p4_value_to_bv(value, size):
 
 def type_value_to_smt(context, type_value):
     if isinstance(type_value, TypeValueHexstr):
-        if type_value.value == 0:
-            size = 1
-        else:
-            size = int(math.ceil(math.log(type_value.value, 2))) + 1
+        size = min_bits_for_uint(type_value.value)
         return BitVecVal(type_value.value, size)
     if isinstance(type_value, TypeValueHeader):
         # XXX: What should be done here?
@@ -248,6 +254,57 @@ def action_to_smt(context, table_name, action):
     context.remove_runtime_data()
 
 
+def table_add_cmd_string(table, action, values, params, priority):
+    priority_str = ""
+    if priority:
+        priority_str = " %d" % (priority)
+    return ('{} {} {} => {}{}'.format(table, action,
+                                      ' '.join(values),
+                                      ' '.join([str(x) for x in params]),
+                                      priority_str))
+
+
+def parser_transition_key_constraint(sym_transition_keys, value, mask):
+    # value should be int
+    # mask should be int or None
+    # XXX: Handle masks on transition keys
+
+    # In the JSON file, if there are multiple fields in the
+    # transition_key, then the values are packed in a particular
+    # manner -- each transition_key is separately rounded up to a
+    # multiple of 8 bits wide, and its value is packed into the value
+    # as that width, with most significant 0 bits for padding, if
+    # needed.
+    #
+    # See https://github.com/p4lang/behavioral-model/issues/441 for a
+    # reference to the relevant part of the behavioral-model JSON
+    # spec.
+    assert mask is None
+    assert len(sym_transition_keys) >= 1
+    keys_rev = copy.copy(sym_transition_keys)
+    keys_rev.reverse()
+    bitvecs = []
+    for k in keys_rev:
+        sz_bits = k.size()
+        sz_bytes = (sz_bits + 7) / 8
+        mask = (1 << (8 * sz_bytes)) - 1
+        v = value & mask
+        bitvec = p4_value_to_bv(v, sz_bits)
+        bitvecs.append(bitvec)
+
+        value >>= (8 * sz_bytes)
+        #mask >>= (8 * sz_bytes)
+
+    bitvecs.reverse()
+    logging.debug("sym_transition_keys %s bitvecs %s"
+                  "" % (sym_transition_keys, bitvecs))
+    if len(sym_transition_keys) > 1:
+        constraint = Concat(sym_transition_keys) == Concat(bitvecs)
+    else:
+        constraint = sym_transition_keys[0] == bitvecs[0]
+    return constraint
+
+
 def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     # Maps variable names to symbolic values
     context = Context()
@@ -283,6 +340,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     logging.info("BEGIN %d Exp path: %s"
                  "" % (count, ' -> '.join([str(n) for n in expected_path])))
 
+    time1 = time.time()
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
     pos = BitVecVal(0, 32)
@@ -335,6 +393,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             elif op == p4_parser_ops_enum.set:
                 assert len(parser_op.value) == 2
                 assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
+                #logging.debug("jdbg parser_op %s .value %s"
+                #              "" % (parser_op, parser_op.value))
                 context.insert(parser_op.value[0],
                                p4_expr_to_sym(context, parser_op.value[1]))
             elif op == p4_parser_ops_enum.extract_VL:
@@ -378,34 +438,26 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
         # XXX: support key types other than hexstr
         if transition.value is not None:
-            if len(sym_transition_key) > 1:
-                sym_transition_key_complete = Concat(sym_transition_key)
-            else:
-                sym_transition_key_complete = sym_transition_key[0]
-            bv_value = p4_value_to_bv(transition.value,
-                                      sym_transition_key_complete.size())
-            constraints.append(sym_transition_key_complete == bv_value)
+            constraint = parser_transition_key_constraint(sym_transition_key,
+                                                          transition.value, None)
+            constraints.append(constraint)
         elif len(sym_transition_key) > 0:
-            sym_transition_key = sym_transition_key[0]
-
             # XXX: check that default is last option
             other_values = []
             for _, current_transition in parse_state.transitions.items():
                 if current_transition.value is not None:
                     other_values.append(current_transition.value)
+            logging.debug("other_values %s" % (other_values))
 
-            other_bv_values = [
-                p4_value_to_bv(value, sym_transition_key.size())
-                for value in other_values
-            ]
-            constraints.append(
-                Not(
-                    Or([(sym_transition_key == bv_value)
-                        for bv_value in other_bv_values])))
+            other_constraints = [parser_transition_key_constraint(sym_transition_key,
+                                                                  value, None)
+                                 for value in other_values]
+            constraints.append(Not(Or(other_constraints)))
 
         logging.debug(sym_transition_key)
         pos = simplify(new_pos)
 
+    time2 = time.time()
     # XXX: workaround
     constraints.append(sym_packet.get_length_constraint())
 
@@ -438,7 +490,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             table = pipeline.tables[table_name]
             context.set_source_info(table.source_info)
 
-            if table.match_type in ['exact', 'lpm']:
+            if table.match_type in ['exact', 'lpm', 'ternary', 'range']:
                 sym_key_elems = []
                 for key_elem in table.key:
                     header_name, header_field = key_elem.target
@@ -458,12 +510,14 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         context.unset_source_info()
 
     constraints += context.get_name_constraints()
+    time3 = time.time()
 
     # Construct and test the packet
     logging.debug(And(constraints))
     s = Solver()
     s.add(And(constraints))
     smt_result = s.check()
+    time4 = time.time()
     result = None
     if smt_result != unsat:
         model = s.model()
@@ -486,6 +540,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
                 table = pipeline.tables[table_name]
                 table_values_strs = []
+                table_entry_priority = None
                 for table_key, sym_table_value in zip(table.key,
                                                       sym_table_values):
                     if table_key.match_type == 'lpm':
@@ -493,6 +548,23 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                             table_key.target[0], table_key.target[1])
                         table_values_strs.append(
                             '{}/{}'.format(sym_table_value, bitwidth))
+                    elif table_key.match_type == 'ternary':
+                        # Always use exact match mask, which is
+                        # represented in simple_switch_CLI as a 1 bit
+                        # in every bit position of the field.
+                        bitwidth = context.get_header_field_size(
+                            table_key.target[0], table_key.target[1])
+                        mask = (1 << bitwidth) - 1;
+                        table_values_strs.append(
+                            '{}&&&{}'.format(sym_table_value, mask))
+                        table_entry_priority = 1
+                    elif table_key.match_type == 'range':
+                        # Always use a range where the min and max
+                        # values are exactly the one desired value
+                        # generated.
+                        table_values_strs.append(
+                            '{}->{}'.format(sym_table_value, sym_table_value))
+                        table_entry_priority = 1
                     elif table_key.match_type == 'exact':
                         table_values_strs.append(str(sym_table_value))
                     else:
@@ -500,12 +572,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                             table_key.match_type))
 
                 table_configs.append((table_name, transition_name,
-                                      table_values_strs, runtime_data_values))
+                                      table_values_strs, runtime_data_values,
+                                      table_entry_priority))
 
         # Print table configuration
-        for table, action, values, params in table_configs:
-            logging.info('{} {} {} => {}'.format(table, action, ' '.join(
-                values), ' '.join([str(x) for x in params])))
+        for table, action, values, params, priority in table_configs:
+            logging.info(table_add_cmd_string(table, action, values, params,
+                                              priority))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
@@ -546,8 +619,17 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         logging.info('Unable to find packet for path: {}'.format(
             ' -> '.join(expected_path)))
         result = TestPathResult.NO_PACKET_FOUND
+    time5 = time.time()
     logging.info("END   %d Exp path: %s"
                  "" % (count, ' -> '.join(expected_path)))
+    logging.info("%.3f sec = %.3f gen parser constraints"
+                 " + %.3f gen ingress constraints"
+                 " + %.3f solve + %.3f gen pkt, table entries, sim packet"
+                 "" % (time5 - time1,
+                       time2 - time1,
+                       time3 - time2,
+                       time4 - time3,
+                       time5 - time4))
 
     return (' -> '.join([str(n) for n in expected_path]), result)
 
@@ -597,9 +679,9 @@ def test_packet(packet, table_configs, json_file):
     load_json_config(standard_client)
     api = RuntimeAPI(pre, standard_client, mc_client)
 
-    for table, action, values, params in table_configs:
-        api.do_table_add('{} {} {} => {}'.format(table, action, ' '.join(
-            values), ' '.join([str(x) for x in params])))
+    for table, action, values, params, priority in table_configs:
+        api.do_table_add(table_add_cmd_string(table, action, values, params,
+                                              priority))
 
     interface = config.get_interface()
     logging.info('Sending packet to {}'.format(interface))
