@@ -49,20 +49,71 @@ def p4_expr_to_sym(context, expr):
                              expr.left) if expr.left is not None else None
         rhs = p4_expr_to_sym(context,
                              expr.right) if expr.right is not None else None
+        # TBD: Is there a strong reason why this implementation of
+        # various operators is separate from the implementation in
+        # method type_value_to_smt()?
         if expr.op == '&':
             assert lhs is not None and rhs is not None
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs & rhs
+        elif expr.op == '|':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs | rhs
+        elif expr.op == '^':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs ^ rhs
+        elif expr.op == 'd2b':
+            return If(rhs == 1, BoolVal(True), BoolVal(False))
+        elif expr.op == 'b2d':
+            return If(rhs, 1, 0)
+        elif expr.op == '==':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs == rhs
+        elif expr.op == '!=':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs != rhs
+        elif expr.op == '>':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            # XXX: signed/unsigned?
+            return UGT(lhs, rhs)
+        elif expr.op == '<':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            # XXX: signed/unsigned?
+            return ULT(lhs, rhs)
+        elif expr.op == '>=':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            # XXX: signed/unsigned?
+            return UGE(lhs, rhs)
+        elif expr.op == '<=':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            # XXX: signed/unsigned?
+            return ULE(lhs, rhs)
         elif expr.op == '<<':
             assert lhs is not None and rhs is not None
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs << rhs
+        elif expr.op == '>>':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs >> rhs
         elif expr.op == '+':
             assert lhs is not None and rhs is not None
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs + rhs
+        elif expr.op == '-':
+            assert lhs is not None and rhs is not None
+            lhs, rhs = equalize_bv_size([lhs, rhs])
+            return lhs + rhs
         else:
-            logging.warning('Unsupported operation', expr.op)
+            logging.warning('Unsupported operation %s', expr.op)
     elif isinstance(expr, P4_HLIR.HLIR_Field):
         return p4_field_to_sym(context, expr)
     elif isinstance(expr, bool):
@@ -203,11 +254,17 @@ def type_value_to_smt(context, type_value):
         elif type_value.op == '<<':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
+            # P4_16 does not require that lhs and rhs of << operator
+            # be equal bit widths, but I believe that the Z3 SMT
+            # solver does.
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs << rhs
         elif type_value.op == '>>':
             lhs = type_value_to_smt(context, type_value.left)
             rhs = type_value_to_smt(context, type_value.right)
+            # P4_16 does not require that lhs and rhs of >> operator
+            # be equal bit widths, but I believe that the Z3 SMT
+            # solver does.
             lhs, rhs = equalize_bv_size([lhs, rhs])
             return lhs >> rhs
         else:
