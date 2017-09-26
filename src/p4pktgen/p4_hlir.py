@@ -581,31 +581,50 @@ class Pipeline:
         graph = {}
         queue = [self.init_table_name]
         visited = set(self.init_table_name)
+        source_info_to_node_name = {}
         while len(queue) != 0:
             table_name = queue[0]
             queue = queue[1:]
 
             next_tables = []
+            assert table_name not in graph
+            graph[table_name] = []
             if table_name in self.tables:
                 table = self.tables[table_name]
-                graph[table_name] = []
                 for action_name, next_table in table.next_tables.items():
                     graph[table_name].append((action_name, next_table))
                     next_tables.append(next_table)
             else:
                 assert table_name in self.conditionals
                 conditional = self.conditionals[table_name]
-                next_tables = [
-                    conditional.true_next_name, conditional.false_next_name
-                ]
-                graph[table_name] = [(None, next_table) for next_table in next_tables]
+                tmp = conditional.source_info
+                source_info = (tmp.filename, tmp.line, tmp.source_fragment)
+                if source_info in source_info_to_node_name:
+                    logging.error(
+                        "JSON file contains multiple different conditions"
+                        " with same expression '%s' in the same file '%s'"
+                        " on the same line %d."
+                        "  It will not be possible to convert simple_switch"
+                        " log output lines back to unique node names."
+                        "  Consider changing your P4 source code"
+                        " to avoid this situation."
+                        "" % (tmp.source_fragment, tmp.filename, tmp.line))
+                    logging.error("One has node name %s, the other %s"
+                                  "" % (source_info_to_node_name[source_info],
+                                        table_name))
+                    assert False
+                source_info_to_node_name[source_info] = table_name
+                for branch, next_name in [(True, conditional.true_next_name),
+                                          (False, conditional.false_next_name)]:
+                    next_tables.append(next_name)
+                    graph[table_name].append((branch, next_name) + source_info)
 
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
                     queue.append(next_table)
                     visited.add(next_table)
 
-        return graph
+        return graph, source_info_to_node_name
 
     def count_all_paths(self, graph):
         """Quickly count the number of paths in a directed acyclic graph (DAG)
@@ -622,7 +641,9 @@ class Pipeline:
             if node in num_paths_to_end:
                 return num_paths_to_end[node]
             count = 0
-            for transition_name, neighbor in graph[node]:
+            for t in graph[node]:
+                transition_name = t[0]
+                neighbor = t[1]
                 tmp = count_all_paths_(neighbor)
                 logging.debug("  %d ways to end through transition %s -> %s -> %s" % (tmp, node, transition_name, neighbor))
                 count += tmp
@@ -644,8 +665,10 @@ class Pipeline:
                     logging.info("generated %d paths so far..." % (len(all_paths)))
                 return
 
-            for transition_name, neighbor in graph[node]:
-                path_so_far.append((node, transition_name))
+            for t in graph[node]:
+                transition_name = t[0]
+                neighbor = t[1]
+                path_so_far.append((node, transition_name) + t[2:])
                 logging.debug("generate_all_paths: %2d %s node %s to %s"
                               "" % (len(path_so_far), path_so_far, node,
                                     neighbor))
