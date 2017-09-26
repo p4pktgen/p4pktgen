@@ -97,7 +97,7 @@ def process_json_file(input_file, debug=False):
 
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
-    graph = in_pipeline.generate_CFG()
+    graph, source_info_to_node_name = in_pipeline.generate_CFG()
     logging.debug(graph)
 
     """
@@ -145,8 +145,10 @@ def process_json_file(input_file, debug=False):
     for path in paths:
         for control_path in control_paths:
             count += 1
-            expected_path, result = generate_constraints(hlir, in_pipeline, path, control_path, input_file, count)
-            results[expected_path] = result
+            expected_path, result = generate_constraints(
+                hlir, in_pipeline, path, control_path, input_file,
+                source_info_to_node_name, count)
+            results[tuple(path + control_path)] = result
             stats[result] += 1
 
     for result, count in stats.items():

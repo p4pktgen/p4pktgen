@@ -362,7 +362,8 @@ def parser_transition_key_constraint(sym_transition_keys, value, mask):
     return constraint
 
 
-def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
+def generate_constraints(hlir, pipeline, path, control_path, json_file,
+                         source_info_to_node_name, count):
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
@@ -377,25 +378,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
             else:
                 context.register_field(field)
 
-    # Create modified version of control_path where conditional node
-    # names are replaced with the source_fragment.  The
-    # source_fragment is what simple_switch's log will contain when
-    # conditionals are evaluated.
-    control_path2 = []
-    for table_name, transition_name in control_path:
-        n = [table_name, transition_name]
-        if table_name in pipeline.conditionals:
-            conditional = pipeline.conditionals[table_name]
-            if conditional.source_info.source_fragment is not None and conditional.source_info.source_fragment:
-                n = [conditional.source_info.source_fragment]
-            else:
-                n = [table_name]
-        control_path2 += n
-
-    expected_path = path + control_path2
+    expected_path = path + control_path
     logging.info("")
-    logging.info("BEGIN %d Exp path: %s"
-                 "" % (count, ' -> '.join([str(n) for n in expected_path])))
+    logging.info("BEGIN %d Exp path: %s" % (count, expected_path))
 
     time1 = time.time()
     # XXX: make this work for multiple parsers
@@ -519,25 +504,16 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
     constraints.append(sym_packet.get_length_constraint())
 
     # XXX: very ugly to split parsing/control like that, need better solution
-    logging.info('control_path = {}'.format(' -> '.join(
-        [str(n) for n in control_path])))
+    logging.info('control_path = {}'.format(control_path))
 
-    # The second argument to zip is control_path[1:] + [None], so that
-    # the last time through the loop the pair of loop variables have
-    # the values table_name=control_path[-1] and next_table=None.  If
-    # the last node in control_path is a conditional node with
-    # conditional.false_next_name == null in the JSON file, we want to
-    # ensure that (sym_expr == BoolVal(False)) is added to the list of
-    # constraints.
-    for (table_name, transition_name), (next_table, _) in zip(
-            control_path, control_path[1:] + [(None, None)]):
+    for t in control_path:
+        table_name = t[0]
+        transition_name = t[1]
         if table_name in pipeline.conditionals:
             conditional = pipeline.conditionals[table_name]
             context.set_source_info(conditional.source_info)
-
-            expected_result = BoolVal(True)
-            if conditional.false_next_name == next_table:
-                expected_result = BoolVal(False)
+            assert (transition_name == True) or (transition_name == False)
+            expected_result = BoolVal(transition_name)
             sym_expr = type_value_to_smt(context, conditional.expression)
             constraints.append(sym_expr == expected_result)
         else:
@@ -583,7 +559,9 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
 
         # Determine table configurations
         table_configs = []
-        for table_name, transition_name in control_path:
+        for t in control_path:
+            table_name = t[0]
+            transition_name = t[1]
             if table_name in pipeline.tables and context.has_table_values(
                     table_name):
                 runtime_data_values = []
@@ -647,38 +625,35 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
         # shorter, invalid packets?
         elif len(payload) >= 14:
             packet = Ether(bytes(payload))
-            extracted_path = test_packet(packet, table_configs, json_file)
+            extracted_path = test_packet(packet, table_configs, json_file,
+                                         source_info_to_node_name)
 
             if expected_path[-1] == P4_HLIR.PACKET_TOO_SHORT:
                 if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT
                         or expected_path[:-2] != extracted_path[:-1]):
                     # XXX: This is a workaround for simple_switch printing
                     # the state only when the packet leaves a state.
-                    logging.error('Expected ({}) and actual ({}) path differ'.
-                                  format(' -> '.join(expected_path),
-                                         ' -> '.join(extracted_path)))
+                    logging.error('Expected and actual path differ')
+                    logging.error('Expected: {}'.format(expected_path))
+                    logging.error('Actual:   {}'.format(extracted_path))
                 else:
-                    logging.info('Test successful ({})'.format(
-                        ' -> '.join(extracted_path)))
+                    logging.info('Test successful ({})'.format(extracted_path))
             elif expected_path != extracted_path:
-                logging.error('Expected ({}) and actual ({}) path differ'.
-                              format(' -> '.join(expected_path), ' -> '.join(
-                                  extracted_path)))
+                logging.error('Expected and actual path differ')
+                logging.error('Expected: {}'.format(expected_path))
+                logging.error('Actual:   {}'.format(extracted_path))
                 # assert False
                 result = TestPathResult.TEST_FAILED
             else:
-                logging.info(
-                    'Test successful: {}'.format(' -> '.join(expected_path)))
+                logging.info('Test successful: {}'.format(expected_path))
                 result = TestPathResult.SUCCESS
         else:
             logging.warning('Packet not sent (too short)')
     else:
-        logging.info('Unable to find packet for path: {}'.format(
-            ' -> '.join(expected_path)))
+        logging.info('Unable to find packet for path: {}'.format(expected_path))
         result = TestPathResult.NO_PACKET_FOUND
     time5 = time.time()
-    logging.info("END   %d Exp path: %s"
-                 "" % (count, ' -> '.join(expected_path)))
+    logging.info("END   %d Exp path: %s" % (count, expected_path))
     logging.info("%.3f sec = %.3f gen parser constraints"
                  " + %.3f gen ingress constraints"
                  " + %.3f solve + %.3f gen pkt, table entries, sim packet"
@@ -688,10 +663,10 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file, count):
                        time4 - time3,
                        time5 - time4))
 
-    return (' -> '.join([str(n) for n in expected_path]), result)
+    return (expected_path, result)
 
 
-def test_packet(packet, table_configs, json_file):
+def test_packet(packet, table_configs, json_file, source_info_to_node_name):
     """This function starts simple_switch, sends a packet to the switch and
     returns the parser states that the packet traverses based on the output of
     simple_switch."""
@@ -749,26 +724,59 @@ def test_packet(packet, table_configs, json_file):
 
     # Extract the parse states from the simple_switch output
     extracted_path = []
+    prev_match = None
+    table_name = None
     for b_line in iter(proc.stdout.readline, b''):
         line = str(b_line)
         logging.debug(line.strip())
         m = re.search(r'Parser state \'(.*)\'', line)
         if m is not None:
             extracted_path.append(m.group(1))
+            prev_match = 'parser_state'
+            continue
         m = re.search(r'Applying table \'(.*)\'', line)
         if m is not None:
-            extracted_path.append(m.group(1))
-        m = re.search(r'Condition "(.*)"', line)
-        if m is not None:
-            extracted_path.append(m.group(1))
+            table_name = m.group(1)
+            prev_match = 'table_apply'
+            continue
         m = re.search(r'Action ([0-9a-zA-Z_]*)$', line)
         if m is not None:
-            extracted_path.append(m.group(1))
-        m = re.search(r'Exception while parsing: PacketTooShort', line)
+            assert prev_match == 'table_apply'
+            extracted_path.append((table_name, m.group(1)))
+            prev_match = 'action'
+            continue
+        m = re.search(r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" is (.*)', line)
+        if m is not None:
+            filename = m.group(1)
+            lineno = int(m.group(2))
+            source_frag = m.group(3)
+            condition_value = m.group(4)
+            # Map file name, line number, and source fragment back to
+            # a node name.
+            source_info = (filename, lineno, source_frag)
+            logging.debug("filename '%s' lineno=%d source_frag='%s'"
+                          "" % (filename, lineno, source_frag))
+            if source_info not in source_info_to_node_name:
+                assert False
+            node_name = source_info_to_node_name[source_info]
+            assert condition_value == 'true' or condition_value == 'false'
+            if condition_value == 'true':
+                condition_value = True
+            else:
+                condition_value = False
+            extracted_path.append((node_name, condition_value,
+                                   filename, lineno, source_frag))
+            prev_match = 'condition'
+            continue
         if 'Parser \'parser\': end' in line:
             extracted_path.append('sink')
+            prev_match = 'parser_exception'
+            continue
+        m = re.search(r'Exception while parsing: PacketTooShort', line)
         if m is not None:
             extracted_path.append(P4_HLIR.PACKET_TOO_SHORT)
+            prev_match = 'parser_packet_too_short'
+            continue
         if 'Pipeline \'ingress\': end' in line:
             break
 
