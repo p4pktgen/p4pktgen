@@ -395,7 +395,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
         # Find correct transition
         # XXX: decide what to do with sink
         transition = None
-        for _, current_transition in parse_state.transitions.items():
+        for current_transition in parse_state.transitions:
             if current_transition.next_state_name == next_node or (
                     current_transition.next_state_name is None
                     and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
@@ -486,7 +486,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
         elif len(sym_transition_key) > 0:
             # XXX: check that default is last option
             other_values = []
-            for _, current_transition in parse_state.transitions.items():
+            for current_transition in parse_state.transitions:
                 if current_transition.value is not None:
                     other_values.append(current_transition.value)
             logging.debug("other_values %s" % (other_values))

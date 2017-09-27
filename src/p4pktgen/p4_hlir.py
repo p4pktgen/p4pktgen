@@ -216,20 +216,32 @@ class P4_HLIR(P4_Obj):
                 Class representing the P4 parser transitions
                 """
 
-                def __init__(self, json_obj):
-                    self.type = None if not 'type' in json_obj else json_obj[
-                        'type']
-                    self.next_state_name = json_obj['next_state']
-                    self.next_state = None
-                    self.mask = json_obj['mask']  # TODO Convert to int ?
-                    logging.debug(json_obj['value'])
-                    logging.debug(self.next_state_name)
+                def __init__(self,
+                             type_=None,
+                             next_state_name=None,
+                             next_state=None,
+                             mask=None,
+                             value=None):
+                    self.type_ = type_
+                    self.next_state_name = next_state_name
+                    self.next_state = next_state
+                    self.maks = mask
+                    self.value = value
 
+                @classmethod
+                def from_json(cls, json_obj):
+                    type_ = None if not 'type' in json_obj else json_obj[
+                        'type']
                     # XXX: is "default" possible here?
                     if json_obj['value'] is None or json_obj['value'] == 'default':
-                        self.value = None
+                        value = None
                     else:
-                        self.value = int(json_obj['value'], 16)
+                        value = int(json_obj['value'], 16)
+                    return cls(
+                        type_=type_,
+                        next_state_name=json_obj['next_state'],
+                        mask=json_obj['mask'],
+                        value=value)
 
             # Init for parse states class
             def __init__(self, json_obj):
@@ -245,7 +257,7 @@ class P4_HLIR(P4_Obj):
                 else:
                     raise ValueError('Missing Parser_States id value')
                 self.parser_ops = []
-                self.transitions = OrderedDict()
+                self.transitions = []
                 self.transition_key = []
 
         # Init for parser class
@@ -344,15 +356,15 @@ class P4_HLIR(P4_Obj):
                         parser_op.value.append(self.parse_p4_value(pair))
                     p4ps.parser_ops.append(parser_op)
                 for k in parse_state['transitions']:
-                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition(
+                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(
                         k)
-                    p4ps.transitions[transition.value] = transition
+                    p4ps.transitions.append(transition)
                 for k in parse_state['transition_key']:
                     p4ps.transition_key.append(self.parse_p4_value(k))
                 parser.parse_states[p4ps.name] = p4ps
             # Link up the parse state objects
             for ps_name, ps in parser.parse_states.items():
-                for tns_name, tns in ps.transitions.items():
+                for tns in ps.transitions:
                     if tns.next_state_name:
                         tns.next_state = parser.parse_states[
                             tns.next_state_name]
@@ -390,7 +402,7 @@ class P4_HLIR(P4_Obj):
 
         # Add all the transitions as edges to the graph
         for ps_name, ps in self.parsers["parser"].parse_states.items():
-            for tns_name, tns in ps.transitions.items():
+            for tns in ps.transitions:
                 if tns.next_state:
                     graph.add_edge(
                         ps_name, tns.next_state.name, transition=tns)
@@ -615,7 +627,8 @@ class Pipeline:
                     assert False
                 source_info_to_node_name[source_info] = table_name
                 for branch, next_name in [(True, conditional.true_next_name),
-                                          (False, conditional.false_next_name)]:
+                                          (False,
+                                           conditional.false_next_name)]:
                     next_tables.append(next_name)
                     graph[table_name].append((branch, next_name) + source_info)
 
@@ -634,6 +647,7 @@ class Pipeline:
         exponentially large."""
 
         num_paths_to_end = {}
+
         # XXX: does not work with cycles
         def count_all_paths_(node):
             if node is None:
@@ -645,16 +659,21 @@ class Pipeline:
                 transition_name = t[0]
                 neighbor = t[1]
                 tmp = count_all_paths_(neighbor)
-                logging.debug("  %d ways to end through transition %s -> %s -> %s" % (tmp, node, transition_name, neighbor))
+                logging.debug(
+                    "  %d ways to end through transition %s -> %s -> %s" %
+                    (tmp, node, transition_name, neighbor))
                 count += tmp
-            logging.debug("%d ways to end starting from node %s" % (count, node))
+            logging.debug("%d ways to end starting from node %s" % (count,
+                                                                    node))
             num_paths_to_end[node] = count
             return count
+
         return count_all_paths_(self.init_table_name)
 
     def generate_all_paths(self, graph):
         path_so_far = []
         all_paths = []
+
         # XXX: does not work with cycles, inefficient in general
         def generate_all_paths_(node):
             if node is None:
@@ -662,7 +681,8 @@ class Pipeline:
                               "" % (len(path_so_far), path_so_far))
                 all_paths.append(copy.copy(path_so_far))
                 if len(all_paths) % 1000 == 0:
-                    logging.info("generated %d paths so far..." % (len(all_paths)))
+                    logging.info("generated %d paths so far..." %
+                                 (len(all_paths)))
                 return
 
             for t in graph[node]:
@@ -705,6 +725,7 @@ class PathSegmentConditional(PathSegment):
         self.conditional_name = conditional_name
         self.value = value
 
+
 class SourceInfo:
     def __init__(self, json_obj):
         self.filename = json_obj['filename']
@@ -713,4 +734,5 @@ class SourceInfo:
         self.source_fragment = json_obj['source_fragment']
 
     def __repr__(self):
-        return '{}:{},{} : {}'.format(self.filename, self.line, self.column, self.source_fragment)
+        return '{}:{},{} : {}'.format(self.filename, self.line, self.column,
+                                      self.source_fragment)
