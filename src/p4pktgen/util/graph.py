@@ -17,13 +17,13 @@ class Graph:
     def __repr__(self):
         return self.graph.__repr__()
 
-    def generate_all_paths(self, v_start):
+    def generate_all_paths(self, v_start, v_end):
         path_so_far = []
         all_paths = []
 
         # XXX: does not work with cycles, inefficient in general
         def generate_all_paths_(node):
-            if node is None:
+            if node == v_end:
                 logging.debug("generate_all_paths: PATH len %2d %s"
                               "" % (len(path_so_far), path_so_far))
                 all_paths.append(copy.copy(path_so_far))

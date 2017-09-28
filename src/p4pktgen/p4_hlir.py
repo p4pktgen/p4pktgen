@@ -18,9 +18,6 @@ import logging
 from pprint import pprint
 from collections import OrderedDict
 
-# Installed Packages/Libraries
-import networkx as nx
-
 # P4 Specfic Libraries
 
 # Local API Libraries
@@ -403,27 +400,23 @@ class P4_HLIR(P4_Obj):
 
         self.parse_vsets = None
 
-    # Creates an Ordered Networkx graph to represent the parser
+    # Creates a graph that represents the parser
     def get_parser_graph(self):
-        graph = nx.MultiDiGraph()
-        # Add all the parse states as nodes
-        for ps_name, ps in self.parsers["parser"].parse_states.items():
-            graph.add_node(ps_name, parse_state=ps)
-        graph.add_node('sink')
-        graph.add_node(P4_HLIR.PACKET_TOO_SHORT)
+        graph = Graph()
 
         # Add all the transitions as edges to the graph
         for ps_name, ps in self.parsers["parser"].parse_states.items():
             for tns in ps.transitions:
-                if tns.next_state:
+                if tns.next_state is not None:
                     graph.add_edge(
-                        ps_name, tns.next_state.name, transition=tns)
+                        ps_name, tns.next_state.name, tns)
                 else:
-                    graph.add_edge(ps_name, 'sink', transition=tns)
+                    graph.add_edge(ps_name, 'sink', tns)
             for parser_op_transitions in ps.parser_ops_transitions:
                 for transition in parser_op_transitions:
-                    graph.add_edge(ps_name, transition.next_state, transition=transition)
-            graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
+                    graph.add_edge(ps_name, transition.next_state, transition)
+            # XXX: implement edges to packet_too_short
+            # graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
 
         return graph
 

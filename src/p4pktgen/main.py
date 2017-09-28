@@ -17,7 +17,6 @@ import logging
 from collections import defaultdict
 
 # Installed Packages/Libraries
-import networkx as nx
 import matplotlib.pyplot as plt
 from graphviz import Digraph
 
@@ -123,18 +122,15 @@ def process_json_file(input_file, debug=False):
     return
     """
 
-    paths = list(
-        nx.all_simple_paths(
-            parser_graph,
-            source=hlir.parsers['parser'].init_state,
-            target='sink'))
+    paths = parser_graph.generate_all_paths(hlir.parsers['parser'].init_state, 'sink')
+    paths = [[n[0] for n in path] + ['sink'] for path in paths]
     max_path_len = max([len(p) for p in paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(paths), max_path_len))
 
     num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d control paths" % (num_control_paths))
-    control_paths = graph.generate_all_paths(in_pipeline.init_table_name)
+    control_paths = graph.generate_all_paths(in_pipeline.init_table_name, None)
     max_path_len = max([len(p) for p in control_paths])
     logging.info("Found %d control paths, longest with length %d"
                  "" % (len(control_paths), max_path_len))
