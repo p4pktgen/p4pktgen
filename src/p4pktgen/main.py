@@ -132,9 +132,9 @@ def process_json_file(input_file, debug=False):
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(paths), max_path_len))
 
-    num_control_paths = in_pipeline.count_all_paths(graph)
+    num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d control paths" % (num_control_paths))
-    control_paths = in_pipeline.generate_all_paths(graph)
+    control_paths = graph.generate_all_paths(in_pipeline.init_table_name)
     max_path_len = max([len(p) for p in control_paths])
     logging.info("Found %d control paths, longest with length %d"
                  "" % (len(control_paths), max_path_len))

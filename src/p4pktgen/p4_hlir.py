@@ -19,15 +19,15 @@ from pprint import pprint
 from collections import OrderedDict
 
 # Installed Packages/Libraries
+import networkx as nx
 
 # P4 Specfic Libraries
 
 # Local API Libraries
 from p4_obj import P4_Obj
-from p4_utils import OrderedGraph
-from p4_utils import OrderedDiGraph
 from p4_utils import p4_parser_ops_enum
 from hlir.type_value import *
+from p4pktgen.util.graph import Graph
 
 
 class P4_HLIR(P4_Obj):
@@ -260,6 +260,11 @@ class P4_HLIR(P4_Obj):
                 self.transitions = []
                 self.transition_key = []
 
+                # List of lists of transitions from parser operators. Every
+                # element in the list corresponds to a list of transitions from
+                # the parser operator with the same index.
+                self.parser_ops_transitions = []
+
         # Init for parser class
         def __init__(self, json_obj):
             # Set name, it should exist
@@ -348,13 +353,20 @@ class P4_HLIR(P4_Obj):
             parser = P4_HLIR.HLIR_Parser(p)
             for parse_state in p['parse_states']:
                 p4ps = P4_HLIR.HLIR_Parser.HLIR_Parse_States(parse_state)
-                for k in parse_state['parser_ops']:
+                for i, k in enumerate(parse_state['parser_ops']):
                     parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(
                         k)
                     parser_op.value = []
                     for pair in k['parameters']:
                         parser_op.value.append(self.parse_p4_value(pair))
+
+                    if parser_op.op == p4_parser_ops_enum.verify:
+                        p4ps.parser_ops_transitions.append([ParserOpTransition(i, None)])
+                    else:
+                        p4ps.parser_ops_transitions.append([])
+
                     p4ps.parser_ops.append(parser_op)
+
                 for k in parse_state['transitions']:
                     transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(
                         k)
@@ -393,7 +405,7 @@ class P4_HLIR(P4_Obj):
 
     # Creates an Ordered Networkx graph to represent the parser
     def get_parser_graph(self):
-        graph = OrderedDiGraph()
+        graph = nx.MultiDiGraph()
         # Add all the parse states as nodes
         for ps_name, ps in self.parsers["parser"].parse_states.items():
             graph.add_node(ps_name, parse_state=ps)
@@ -408,6 +420,9 @@ class P4_HLIR(P4_Obj):
                         ps_name, tns.next_state.name, transition=tns)
                 else:
                     graph.add_edge(ps_name, 'sink', transition=tns)
+            for parser_op_transitions in ps.parser_ops_transitions:
+                for transition in parser_op_transitions:
+                    graph.add_edge(ps_name, transition.next_state, transition=transition)
             graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
 
         return graph
@@ -590,7 +605,7 @@ class Pipeline:
             self.conditionals[conditional.name] = conditional
 
     def generate_CFG(self):
-        graph = {}
+        graph = Graph()
         queue = [self.init_table_name]
         visited = set(self.init_table_name)
         source_info_to_node_name = {}
@@ -599,12 +614,10 @@ class Pipeline:
             queue = queue[1:]
 
             next_tables = []
-            assert table_name not in graph
-            graph[table_name] = []
             if table_name in self.tables:
                 table = self.tables[table_name]
                 for action_name, next_table in table.next_tables.items():
-                    graph[table_name].append((action_name, next_table))
+                    graph.add_edge(table_name, next_table, action_name)
                     next_tables.append(next_table)
             else:
                 assert table_name in self.conditionals
@@ -630,7 +643,7 @@ class Pipeline:
                                           (False,
                                            conditional.false_next_name)]:
                     next_tables.append(next_name)
-                    graph[table_name].append((branch, next_name) + source_info)
+                    graph.add_edge(table_name, next_name, (branch, source_info))
 
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
@@ -638,65 +651,6 @@ class Pipeline:
                     visited.add(next_table)
 
         return graph, source_info_to_node_name
-
-    def count_all_paths(self, graph):
-        """Quickly count the number of paths in a directed acyclic graph (DAG)
-        starting from node self.init_table_name, leading to the "None" node,
-        without enumerating them all. This can be done in linear time in the
-        number of edges in the DAG, even if the number of paths is
-        exponentially large."""
-
-        num_paths_to_end = {}
-
-        # XXX: does not work with cycles
-        def count_all_paths_(node):
-            if node is None:
-                return 1
-            if node in num_paths_to_end:
-                return num_paths_to_end[node]
-            count = 0
-            for t in graph[node]:
-                transition_name = t[0]
-                neighbor = t[1]
-                tmp = count_all_paths_(neighbor)
-                logging.debug(
-                    "  %d ways to end through transition %s -> %s -> %s" %
-                    (tmp, node, transition_name, neighbor))
-                count += tmp
-            logging.debug("%d ways to end starting from node %s" % (count,
-                                                                    node))
-            num_paths_to_end[node] = count
-            return count
-
-        return count_all_paths_(self.init_table_name)
-
-    def generate_all_paths(self, graph):
-        path_so_far = []
-        all_paths = []
-
-        # XXX: does not work with cycles, inefficient in general
-        def generate_all_paths_(node):
-            if node is None:
-                logging.debug("generate_all_paths: PATH len %2d %s"
-                              "" % (len(path_so_far), path_so_far))
-                all_paths.append(copy.copy(path_so_far))
-                if len(all_paths) % 1000 == 0:
-                    logging.info("generated %d paths so far..." %
-                                 (len(all_paths)))
-                return
-
-            for t in graph[node]:
-                transition_name = t[0]
-                neighbor = t[1]
-                path_so_far.append((node, transition_name) + t[2:])
-                logging.debug("generate_all_paths: %2d %s node %s to %s"
-                              "" % (len(path_so_far), path_so_far, node,
-                                    neighbor))
-                generate_all_paths_(neighbor)
-                path_so_far.pop()
-
-        generate_all_paths_(self.init_table_name)
-        return all_paths
 
 
 class Calculation:
@@ -736,3 +690,8 @@ class SourceInfo:
     def __repr__(self):
         return '{}:{},{} : {}'.format(self.filename, self.line, self.column,
                                       self.source_fragment)
+
+class ParserOpTransition:
+    def __init__(self, op_idx, next_state):
+        self.op_idx = op_idx
+        self.next_state = next_state

@@ -18,7 +18,6 @@ from p4pktgen.core.context import Context
 from p4pktgen.core.packet import Packet
 from p4pktgen.switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
 
-
 TestPathResult = Enum('TestPathResult',
                       'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')
 
@@ -315,8 +314,7 @@ def table_add_cmd_string(table, action, values, params, priority):
     priority_str = ""
     if priority:
         priority_str = " %d" % (priority)
-    return ('{} {} {} => {}{}'.format(table, action,
-                                      ' '.join(values),
+    return ('{} {} {} => {}{}'.format(table, action, ' '.join(values),
                                       ' '.join([str(x) for x in params]),
                                       priority_str))
 
@@ -480,8 +478,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
 
         # XXX: support key types other than hexstr
         if transition.value is not None:
-            constraint = parser_transition_key_constraint(sym_transition_key,
-                                                          transition.value, None)
+            constraint = parser_transition_key_constraint(
+                sym_transition_key, transition.value, None)
             constraints.append(constraint)
         elif len(sym_transition_key) > 0:
             # XXX: check that default is last option
@@ -491,9 +489,11 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
                     other_values.append(current_transition.value)
             logging.debug("other_values %s" % (other_values))
 
-            other_constraints = [parser_transition_key_constraint(sym_transition_key,
-                                                                  value, None)
-                                 for value in other_values]
+            other_constraints = [
+                parser_transition_key_constraint(sym_transition_key,
+                                                 value, None)
+                for value in other_values
+            ]
             constraints.append(Not(Or(other_constraints)))
 
         logging.debug(sym_transition_key)
@@ -508,8 +508,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
 
     for t in control_path:
         table_name = t[0]
-        transition_name = t[1]
         if table_name in pipeline.conditionals:
+            transition_name, _ = t[1]
             conditional = pipeline.conditionals[table_name]
             context.set_source_info(conditional.source_info)
             assert (transition_name == True) or (transition_name == False)
@@ -517,6 +517,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
             sym_expr = type_value_to_smt(context, conditional.expression)
             constraints.append(sym_expr == expected_result)
         else:
+            transition_name = t[1]
+
             assert table_name in pipeline.tables
             assert transition_name in hlir.actions
 
@@ -589,7 +591,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
                         # in every bit position of the field.
                         bitwidth = context.get_header_field_size(
                             table_key.target[0], table_key.target[1])
-                        mask = (1 << bitwidth) - 1;
+                        mask = (1 << bitwidth) - 1
                         table_values_strs.append(
                             '{}&&&{}'.format(sym_table_value, mask))
                         table_entry_priority = 1
@@ -606,14 +608,14 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
                         raise Exception('Match type {} not supported'.format(
                             table_key.match_type))
 
-                table_configs.append((table_name, transition_name,
-                                      table_values_strs, runtime_data_values,
-                                      table_entry_priority))
+                table_configs.append(
+                    (table_name, transition_name, table_values_strs,
+                     runtime_data_values, table_entry_priority))
 
         # Print table configuration
         for table, action, values, params, priority in table_configs:
-            logging.info(table_add_cmd_string(table, action, values, params,
-                                              priority))
+            logging.info(
+                table_add_cmd_string(table, action, values, params, priority))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
@@ -650,18 +652,16 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
         else:
             logging.warning('Packet not sent (too short)')
     else:
-        logging.info('Unable to find packet for path: {}'.format(expected_path))
+        logging.info(
+            'Unable to find packet for path: {}'.format(expected_path))
         result = TestPathResult.NO_PACKET_FOUND
     time5 = time.time()
     logging.info("END   %d Exp path: %s" % (count, expected_path))
     logging.info("%.3f sec = %.3f gen parser constraints"
                  " + %.3f gen ingress constraints"
                  " + %.3f solve + %.3f gen pkt, table entries, sim packet"
-                 "" % (time5 - time1,
-                       time2 - time1,
-                       time3 - time2,
-                       time4 - time3,
-                       time5 - time4))
+                 "" % (time5 - time1, time2 - time1, time3 - time2,
+                       time4 - time3, time5 - time4))
 
     return (expected_path, result)
 
@@ -712,8 +712,8 @@ def test_packet(packet, table_configs, json_file, source_info_to_node_name):
     api = RuntimeAPI(pre, standard_client, mc_client)
 
     for table, action, values, params, priority in table_configs:
-        api.do_table_add(table_add_cmd_string(table, action, values, params,
-                                              priority))
+        api.do_table_add(
+            table_add_cmd_string(table, action, values, params, priority))
 
     interface = config.get_interface()
     logging.info('Sending packet to {}'.format(interface))
@@ -745,7 +745,8 @@ def test_packet(packet, table_configs, json_file, source_info_to_node_name):
             extracted_path.append((table_name, m.group(1)))
             prev_match = 'action'
             continue
-        m = re.search(r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" is (.*)', line)
+        m = re.search(r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" is (.*)',
+                      line)
         if m is not None:
             filename = m.group(1)
             lineno = int(m.group(2))
@@ -764,8 +765,9 @@ def test_packet(packet, table_configs, json_file, source_info_to_node_name):
                 condition_value = True
             else:
                 condition_value = False
-            extracted_path.append((node_name, condition_value,
-                                   filename, lineno, source_frag))
+            extracted_path.append((node_name, (condition_value,
+                                               (filename, lineno,
+                                                source_frag))))
             prev_match = 'condition'
             continue
         if 'Parser \'parser\': end' in line:
