@@ -4,6 +4,8 @@
 import logging
 from z3 import *
 
+from p4pktgen.config import Config
+
 
 # XXX: This class needs some heavy refactoring.
 class Context:
@@ -87,10 +89,14 @@ class Context:
 
     def get_var(self, var_name):
         if var_name not in self.sym_vars:
-            # If the header field has not been initialized, return a fresh
-            # variable for each read access
-            self.uninitialized_reads.append((var_name, self.source_info))
-            return BitVec(self.fresh_var(var_name), self.fields[var_name].size)
+            if Config().get_allow_uninitialized_reads():
+                return BitVecVal(0, self.fields[var_name].size)
+            else:
+                # If the header field has not been initialized, return a fresh
+                # variable for each read access
+                self.uninitialized_reads.append((var_name, self.source_info))
+                return BitVec(
+                    self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.sym_vars[var_name]
 

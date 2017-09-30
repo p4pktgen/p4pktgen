@@ -60,9 +60,15 @@ def main():
         default='json',
         help='The format of the input (currently supported: json, p4)')
     parser.add_argument(
-        dest='input_file',
-        type=str,
-        help='Provide the path to the input file')
+        '-au',
+        '--allow-uninitialized-reads',
+        dest='allow_uninitialized_reads',
+        action='store_true',
+        default=False,
+        help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
+    )
+    parser.add_argument(
+        dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
     args = parser.parse_args()
@@ -86,6 +92,7 @@ def main():
         # XXX: revisit
         top.build_from_p4(args.input_file, args.flags)
 
+
 def process_json_file(input_file, debug=False):
     top = P4_Top(debug)
     top.build_from_json(input_file)
@@ -98,7 +105,6 @@ def process_json_file(input_file, debug=False):
     in_pipeline = hlir.pipelines['ingress']
     graph, source_info_to_node_name = in_pipeline.generate_CFG()
     logging.debug(graph)
-
     """
     # Graphviz visualization
     dot = Digraph(comment=in_pipeline.name)
@@ -122,7 +128,8 @@ def process_json_file(input_file, debug=False):
     return
     """
 
-    paths = parser_graph.generate_all_paths(hlir.parsers['parser'].init_state, 'sink')
+    paths = parser_graph.generate_all_paths(hlir.parsers['parser'].init_state,
+                                            'sink')
     paths = [[n[0] for n in path] + ['sink'] for path in paths]
     max_path_len = max([len(p) for p in paths])
     logging.info("Found %d parser paths, longest with length %d"
@@ -153,7 +160,6 @@ def process_json_file(input_file, debug=False):
     print(results)
 
     return results
-
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
     for path in paths:
