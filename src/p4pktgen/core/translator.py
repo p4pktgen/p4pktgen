@@ -310,6 +310,11 @@ def action_to_smt(context, table_name, action):
     context.remove_runtime_data()
 
 
+def table_set_default_cmd_string(table, action, params):
+    return ('{} {} {}'.format(table, action,
+                              ' '.join([str(x) for x in params])))
+
+
 def table_add_cmd_string(table, action, values, params, priority):
     priority_str = ""
     if priority:
@@ -539,8 +544,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
                         context.get_header_field(key_elem.target[0],
                                                  key_elem.target[1]))
 
-                if len(sym_key_elems) > 0:
-                    context.set_table_values(table_name, sym_key_elems)
+                context.set_table_values(table_name, sym_key_elems)
 
                 action_to_smt(context, table_name,
                               hlir.actions[transition_name])
@@ -614,14 +618,30 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
                         raise Exception('Match type {} not supported'.format(
                             table_key.match_type))
 
-                table_configs.append(
-                    (table_name, transition_name, table_values_strs,
-                     runtime_data_values, table_entry_priority))
+                logging.debug("jafinger-dbg table_name %s"
+                              " table.default_entry.action_const %s"
+                              "" % (table_name,
+                                    table.default_entry.action_const))
+                if (len(table_values_strs) == 0 and
+                    table.default_entry.action_const):
+                    # Then we cannot change the default action for the
+                    # table at run time, so don't remember any entry
+                    # for this table.
+                    pass
+                else:
+                    table_configs.append(
+                        (table_name, transition_name, table_values_strs,
+                         runtime_data_values, table_entry_priority))
 
         # Print table configuration
         for table, action, values, params, priority in table_configs:
-            logging.info(
-                table_add_cmd_string(table, action, values, params, priority))
+            if len(values) == 0:
+                logging.info('table_set_default %s',
+                    table_set_default_cmd_string(table, action, params))
+            else:
+                logging.info('table_add %s',
+                    table_add_cmd_string(table, action, values, params,
+                                         priority))
 
         if len(context.uninitialized_reads) != 0:
             for uninitialized_read in context.uninitialized_reads:
@@ -718,8 +738,12 @@ def test_packet(packet, table_configs, json_file, source_info_to_node_name):
     api = RuntimeAPI(pre, standard_client, mc_client)
 
     for table, action, values, params, priority in table_configs:
-        api.do_table_add(
-            table_add_cmd_string(table, action, values, params, priority))
+        if len(values) == 0:
+            api.do_table_set_default(
+                table_set_default_cmd_string(table, action, params))
+        else:
+            api.do_table_add(
+                table_add_cmd_string(table, action, values, params, priority))
 
     interface = config.get_interface()
     logging.info('Sending packet to {}'.format(interface))

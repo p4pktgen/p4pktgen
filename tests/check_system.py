@@ -142,3 +142,26 @@ class CheckSystem:
             TestPathResult.UNINITIALIZED_READ
         }
         assert results == expected_results
+
+    def check_config_table(self):
+        Config().load_defaults()
+        results = process_json_file('compiled_p4_programs/config-table.json')
+        expected_results = {
+            ('start', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'set_bd_dmac_intf')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'my_drop')):
+            TestPathResult.SUCCESS,
+            ('start', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'set_bd_dmac_intf')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'my_drop')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'set_bd_dmac_intf')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'my_drop')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'set_bd_dmac_intf')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'my_drop')):
+            TestPathResult.UNINITIALIZED_READ
+        }
+        assert results == expected_results
