@@ -455,10 +455,10 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
 
                 new_pos += extract_offset
             elif op == p4_parser_ops_enum.verify:
-                logging.warn('Verify not supported')
+                logging.warning('Verify not supported')
                 pass
             elif op == p4_parser_ops_enum.primitive:
-                logging.warn('Primitive not supported')
+                logging.warning('Primitive not supported')
                 pass
             else:
                 raise Exception('Parser op not supported: {}'.format(op))
