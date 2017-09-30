@@ -376,7 +376,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
             else:
                 context.register_field(field)
 
-    expected_path = path + control_path
+    expected_path = [n[0] for n in path] + control_path
     logging.info("")
     logging.info("BEGIN %d Exp path: %s" % (count, expected_path))
 
@@ -384,8 +384,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
     # XXX: make this work for multiple parsers
     parser = hlir.parsers['parser']
     pos = BitVecVal(0, 32)
-    logging.info('path = {}'.format(' -> '.join(path)))
-    for node, next_node in zip(path, path[1:]):
+    logging.info('path = {}'.format(' -> '.join([str(n) for n in list(path)])))
+    for (node, path_transition), (next_node, _) in zip(path, path[1:]):
         logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
         new_pos = pos
         parse_state = parser.parse_states[node]
@@ -401,7 +401,7 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
 
         assert transition is not None
 
-        for parser_op in parse_state.parser_ops:
+        for op_idx, parser_op in enumerate(parse_state.parser_ops):
             op = parser_op.op
             if op == p4_parser_ops_enum.extract:
                 # Extract expects one parameter
@@ -455,8 +455,13 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
 
                 new_pos += extract_offset
             elif op == p4_parser_ops_enum.verify:
-                logging.warning('Verify not supported')
-                pass
+                expected_result = BoolVal(True)
+                if isinstance(
+                        path_transition, ParserOpTransition
+                ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
+                    expected_result = BoolVal(False)
+                sym_cond = p4_expr_to_sym(context, parser_op.value[0])
+                constraints.append(sym_cond == expected_result)
             elif op == p4_parser_ops_enum.primitive:
                 logging.warning('Primitive not supported')
                 pass

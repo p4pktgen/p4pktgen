@@ -130,7 +130,7 @@ def process_json_file(input_file, debug=False):
 
     paths = parser_graph.generate_all_paths(hlir.parsers['parser'].init_state,
                                             'sink')
-    paths = [[n[0] for n in path] + ['sink'] for path in paths]
+    # paths = [[n[0] for n in path] + ['sink'] for path in paths]
     max_path_len = max([len(p) for p in paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(paths), max_path_len))
@@ -149,15 +149,14 @@ def process_json_file(input_file, debug=False):
         for control_path in control_paths:
             count += 1
             expected_path, result = generate_constraints(
-                hlir, in_pipeline, path, control_path, input_file,
-                source_info_to_node_name, count)
-            results[tuple(path + control_path)] = result
+                hlir, in_pipeline, path + [('sink', None)], control_path,
+                input_file, source_info_to_node_name, count)
+            results[tuple([n[0]
+                           for n in path] + ['sink'] + control_path)] = result
             stats[result] += 1
 
     for result, count in stats.items():
         logging.info('{}: {}'.format(result, count))
-
-    print(results)
 
     return results
     """

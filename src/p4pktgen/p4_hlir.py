@@ -358,7 +358,8 @@ class P4_HLIR(P4_Obj):
                         parser_op.value.append(self.parse_p4_value(pair))
 
                     if parser_op.op == p4_parser_ops_enum.verify:
-                        p4ps.parser_ops_transitions.append([ParserOpTransition(i, None)])
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(i, 'sink')])
                     else:
                         p4ps.parser_ops_transitions.append([])
 
@@ -408,8 +409,7 @@ class P4_HLIR(P4_Obj):
         for ps_name, ps in self.parsers["parser"].parse_states.items():
             for tns in ps.transitions:
                 if tns.next_state is not None:
-                    graph.add_edge(
-                        ps_name, tns.next_state.name, tns)
+                    graph.add_edge(ps_name, tns.next_state.name, tns)
                 else:
                     graph.add_edge(ps_name, 'sink', tns)
             for parser_op_transitions in ps.parser_ops_transitions:
@@ -636,7 +636,8 @@ class Pipeline:
                                           (False,
                                            conditional.false_next_name)]:
                     next_tables.append(next_name)
-                    graph.add_edge(table_name, next_name, (branch, source_info))
+                    graph.add_edge(table_name, next_name, (branch,
+                                                           source_info))
 
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
@@ -683,6 +684,7 @@ class SourceInfo:
     def __repr__(self):
         return '{}:{},{} : {}'.format(self.filename, self.line, self.column,
                                       self.source_fragment)
+
 
 class ParserOpTransition:
     def __init__(self, op_idx, next_state):
