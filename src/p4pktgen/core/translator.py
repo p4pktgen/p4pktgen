@@ -376,7 +376,8 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
             else:
                 context.register_field(field)
 
-    expected_path = [n[0] for n in path] + control_path
+    # XXX: This is very hacky right now
+    expected_path = [n[0] for n in path if not isinstance(n[1], ParserOpTransition)] + control_path
     logging.info("")
     logging.info("BEGIN %d Exp path: %s" % (count, expected_path))
 
