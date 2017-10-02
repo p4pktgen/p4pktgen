@@ -27,6 +27,7 @@ from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import generate_constraints
+from p4pktgen.core.translator import TestPathResult
 
 
 def main():
@@ -145,27 +146,37 @@ def process_json_file(input_file, debug=False):
 
     num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d control paths" % (num_control_paths))
-    control_paths = graph.generate_all_paths(in_pipeline.init_table_name, None)
-    max_path_len = max([len(p) for p in control_paths])
-    logging.info("Found %d control paths, longest with length %d"
-                 "" % (len(control_paths), max_path_len))
 
-    count = 0
+    # count is a list of 1 element just to make it more
+    # straightforward in Python 2 to modify it within def
+    # eval_control_path below.
+    count = [0]
     results = {}
     stats = defaultdict(int)
     for path in paths:
-        for control_path in control_paths:
-            count += 1
+        def eval_control_path(control_path, is_complete_control_path):
+            count[0] += 1
             expected_path, result = generate_constraints(
                 hlir, in_pipeline, path + [('sink', None)], control_path,
-                input_file, source_info_to_node_name, count)
-            results[tuple([n[0]
-                           for n in path] + ['sink'] + control_path)] = result
-            stats[result] += 1
+                input_file, source_info_to_node_name, count[0],
+                is_complete_control_path)
+            record_result = (is_complete_control_path or
+                             (result != TestPathResult.SUCCESS))
+            if record_result:
+                result_path = [n[0] for n in path] + ['sink'] + control_path
+                results[tuple(result_path)] = result
+                stats[result] += 1
+
+            go_deeper = (result == TestPathResult.SUCCESS)
+            return go_deeper
+
+        graph.generate_all_paths(in_pipeline.init_table_name, None,
+                                 callback=eval_control_path)
 
     for result, count in stats.items():
         logging.info('{}: {}'.format(result, count))
 
+    print(results)
     return results
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))

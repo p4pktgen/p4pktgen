@@ -17,32 +17,51 @@ class Graph:
     def __repr__(self):
         return self.graph.__repr__()
 
-    def generate_all_paths(self, v_start, v_end):
+    def generate_all_paths(self, v_start, v_end, callback=None):
         path_so_far = []
         all_paths = []
+        # num_paths is a 1-element list just to make it
+        # straightforward in Python 2 to modify it in a sub-def.
+        num_paths = [0]
 
         # XXX: does not work with cycles, inefficient in general
         def generate_all_paths_(node):
             if node == v_end:
                 logging.debug("generate_all_paths: PATH len %2d %s"
                               "" % (len(path_so_far), path_so_far))
-                all_paths.append(copy.copy(path_so_far))
-                if len(all_paths) % 1000 == 0:
-                    logging.info("generated %d paths so far..." %
-                                 (len(all_paths)))
+                if callback is None:
+                    all_paths.append(copy.copy(path_so_far))
+                else:
+                    # Ignore return value in this case -- we will
+                    # never go deeper in this case no matter what the
+                    # return value might be.
+                    callback(copy.copy(path_so_far), True)
+                num_paths[0] += 1
+                if num_paths[0] % 1000 == 0:
+                    logging.info("generated %d complete paths so far..." %
+                                 (num_paths[0]))
                 return
 
             for t in self.get_neighbors(node):
                 transition_name = t[0]
                 neighbor = t[1]
                 path_so_far.append((node, transition_name) + t[2:])
+                go_deeper = True
+                if callback is not None:
+                    go_deeper = callback(copy.copy(path_so_far), False)
                 logging.debug("generate_all_paths: %2d %s node %s to %s"
+                              " go_deeper %s"
                               "" % (len(path_so_far), path_so_far, node,
-                                    neighbor))
-                generate_all_paths_(neighbor)
+                                    neighbor, go_deeper))
+                if go_deeper:
+                    generate_all_paths_(neighbor)
                 path_so_far.pop()
 
-        generate_all_paths_(v_start)
+        go_deeper = True
+        if callback is not None:
+            go_deeper = callback([], False)
+        if go_deeper:
+            generate_all_paths_(v_start)
         return all_paths
 
     def count_all_paths(self, v_start):
