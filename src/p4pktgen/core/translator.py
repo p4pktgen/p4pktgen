@@ -301,6 +301,30 @@ def action_to_smt(context, table_name, action):
             # Dropping the packet does not modify the context. However we
             # should eventually adapt the expected path.
             pass
+        elif (primitive.op == 'add_header' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
+        elif (primitive.op == 'remove_header' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
+        elif (primitive.op == 'modify_field_rng_uniform' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
+        elif (primitive.op == 'clone_ingress_pkt_to_egress' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
+        elif (primitive.op == 'count' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
+        elif (primitive.op == 'execute_meter' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
         else:
             raise Exception(
                 'Primitive op {} not supported'.format(primitive.op))

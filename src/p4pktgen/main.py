@@ -68,6 +68,14 @@ def main():
         help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
     )
     parser.add_argument(
+        '--allow-unimplemented-primitives',
+        dest='allow_unimplemented_primitives',
+        action='store_true',
+        default=False,
+        help="""With this option enabled, allow analysis of paths that use primitives not yet fully implemented.  Use of such primitives only causes warning message to be issued, and the primitive operation is treated as a no-op.  Without this option (the default), use of such primitives causes an exception to be raised, typically aborting the program at that point."""
+
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
