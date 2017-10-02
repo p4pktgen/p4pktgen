@@ -23,8 +23,6 @@ from collections import OrderedDict
 # P4 Specfic Libraries
 
 # Local API Libraries
-from p4_graphs import P4_Graphs
-from p4_utils import dict_or_OrdDict_to_formatted_str
 from core.translator import generate_constraints
 
 class P4_Top():
