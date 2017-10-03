@@ -313,7 +313,15 @@ def action_to_smt(context, table_name, action):
               Config().get_allow_unimplemented_primitives()):
             logging.warning('Primitive op {} allowed but treated as no-op'.
                             format(primitive.op))
+        elif (primitive.op == 'modify_field_with_hash_based_offset' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
         elif (primitive.op == 'clone_ingress_pkt_to_egress' and
+              Config().get_allow_unimplemented_primitives()):
+            logging.warning('Primitive op {} allowed but treated as no-op'.
+                            format(primitive.op))
+        elif (primitive.op == 'clone_egress_pkt_to_egress' and
               Config().get_allow_unimplemented_primitives()):
             logging.warning('Primitive op {} allowed but treated as no-op'.
                             format(primitive.op))
@@ -390,7 +398,8 @@ def parser_transition_key_constraint(sym_transition_keys, value, mask):
 
 
 def generate_constraints(hlir, pipeline, path, control_path, json_file,
-                         source_info_to_node_name, count):
+                         source_info_to_node_name, count,
+                         is_complete_control_path):
     # Maps variable names to symbolic values
     context = Context()
     sym_packet = Packet()
@@ -408,7 +417,10 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
     # XXX: This is very hacky right now
     expected_path = [n[0] for n in path if not isinstance(n[1], ParserOpTransition)] + control_path
     logging.info("")
-    logging.info("BEGIN %d Exp path: %s" % (count, expected_path))
+    logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
+                 "" % (count, len(path), len(control_path),
+                       len(path) + len(control_path),
+                       is_complete_control_path, expected_path))
 
     time1 = time.time()
     # XXX: make this work for multiple parsers
@@ -690,15 +702,25 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
                     logging.error('Actual:   {}'.format(extracted_path))
                 else:
                     logging.info('Test successful ({})'.format(extracted_path))
-            elif expected_path != extracted_path:
-                logging.error('Expected and actual path differ')
-                logging.error('Expected: {}'.format(expected_path))
-                logging.error('Actual:   {}'.format(extracted_path))
-                # assert False
-                result = TestPathResult.TEST_FAILED
             else:
-                logging.info('Test successful: {}'.format(expected_path))
-                result = TestPathResult.SUCCESS
+                if is_complete_control_path:
+                    match = (expected_path == extracted_path)
+                else:
+                    len1 = len(expected_path)
+                    len2 = len(extracted_path)
+                    # I can't think of any reason that this condition
+                    # would be false.
+                    assert len1 <= len2
+                    match = (expected_path == extracted_path[0:len1])
+                if match:
+                    logging.info('Test successful: {}'.format(expected_path))
+                    result = TestPathResult.SUCCESS
+                else:
+                    logging.error('Expected and actual path differ')
+                    logging.error('Expected: {}'.format(expected_path))
+                    logging.error('Actual:   {}'.format(extracted_path))
+                    # assert False
+                    result = TestPathResult.TEST_FAILED
         else:
             logging.warning('Packet not sent (too short)')
     else:
@@ -706,7 +728,11 @@ def generate_constraints(hlir, pipeline, path, control_path, json_file,
             'Unable to find packet for path: {}'.format(expected_path))
         result = TestPathResult.NO_PACKET_FOUND
     time5 = time.time()
-    logging.info("END   %d Exp path: %s" % (count, expected_path))
+    logging.info("END   %d Exp path (len %d+%d=%d)"
+                 " complete_path %s %s: %s"
+                 "" % (count, len(path), len(control_path),
+                       len(path) + len(control_path),
+                       is_complete_control_path, result, expected_path))
     logging.info("%.3f sec = %.3f gen parser constraints"
                  " + %.3f gen ingress constraints"
                  " + %.3f solve + %.3f gen pkt, table entries, sim packet"
