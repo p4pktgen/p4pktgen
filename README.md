@@ -41,14 +41,13 @@ The flag `-d` prints additional debug information.
 
 ## Clone a copy of the p4pktgen repository from bitbucket.org
 
-As of 2017-Sep-14, the latest greatest version of the code is in the
-`constraints2` branch, hence the `git checkout` command below.
+As of 2017-Oct-03, the latest greatest version of the code is in the
+`master` branch.
 
 ```bash
 % BITBUCKET_USERID=jafingerhut
 % git clone https://${BITBUCKET_USERID}@bitbucket.org/p4pktgen/p4pktgen.git
 % cd p4pktgen
-% git checkout constraints2
 ```
 
 
@@ -176,6 +175,8 @@ yapf (0.16.3)
 z3-solver (4.5.1.0.post2)
 
 % python setup.py develop
+
+[ That caused the executable file my-venv/bin/p4pktgen to be created ]
 ```
 
 
