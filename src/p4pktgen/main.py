@@ -153,15 +153,14 @@ def process_json_file(input_file, debug=False):
     count = [0]
     results = {}
     stats = defaultdict(int)
-    translator = Translator()
+    translator = Translator(input_file)
     for path in paths:
 
         def eval_control_path(control_path, is_complete_control_path):
             count[0] += 1
             expected_path, result = translator.generate_constraints(
                 hlir, in_pipeline, path + [('sink', None)], control_path,
-                input_file, source_info_to_node_name, count[0],
-                is_complete_control_path)
+                source_info_to_node_name, count[0], is_complete_control_path)
             record_result = (is_complete_control_path
                              or (result != TestPathResult.SUCCESS))
             if record_result:
@@ -174,6 +173,7 @@ def process_json_file(input_file, debug=False):
 
         graph.generate_all_paths(
             in_pipeline.init_table_name, None, callback=eval_control_path)
+    translator.cleanup()
 
     for result, count in stats.items():
         logging.info('{}: {}'.format(result, count))

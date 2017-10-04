@@ -31,8 +31,11 @@ def min_bits_for_uint(uint):
 
 
 class Translator:
-    def __init__(self):
-        pass
+    def __init__(self, json_file):
+        self.switch = SimpleSwitch(json_file)
+
+    def cleanup(self):
+        self.switch.shutdown()
 
     def equalize_bv_size(self, bvs):
         target_size = max([bv.size() for bv in bvs])
@@ -392,7 +395,7 @@ class Translator:
         return constraint
 
     def generate_constraints(self, hlir, pipeline, path, control_path,
-                             json_file, source_info_to_node_name, count,
+                             source_info_to_node_name, count,
                              is_complete_control_path):
         # Maps variable names to symbolic values
         context = Context()
@@ -692,8 +695,8 @@ class Translator:
             # shorter, invalid packets?
             elif len(payload) >= 14:
                 packet = Ether(bytes(payload))
-                extracted_path = self.test_packet(
-                    packet, table_configs, json_file, source_info_to_node_name)
+                extracted_path = self.test_packet(packet, table_configs,
+                                                  source_info_to_node_name)
 
                 if expected_path[-1] == P4_HLIR.PACKET_TOO_SHORT:
                     if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT
@@ -746,8 +749,7 @@ class Translator:
 
         return (expected_path, result)
 
-    def test_packet(self, packet, table_configs, json_file,
-                    source_info_to_node_name):
+    def test_packet(self, packet, table_configs, source_info_to_node_name):
         """This function starts simple_switch, sends a packet to the switch and
         returns the parser states that the packet traverses based on the output of
         simple_switch."""
@@ -755,15 +757,15 @@ class Translator:
         # Log packet
         wrpcap('test.pcap', packet, append=True)
 
-        switch = SimpleSwitch(json_file)
-
         for table, action, values, params, priority in table_configs:
             if len(values) == 0:
-                switch.table_set_default(table, action, params)
+                self.switch.table_set_default(table, action, params)
             else:
-                switch.table_add(table, action, values, params, priority)
+                self.switch.table_add(table, action, values, params, priority)
 
-        extracted_path = switch.send_packet(packet, source_info_to_node_name)
-        switch.shutdown()
+        extracted_path = self.switch.send_packet(packet,
+                                                 source_info_to_node_name)
+
+        self.switch.clear_tables()
 
         return extracted_path
