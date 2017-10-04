@@ -1,6 +1,5 @@
 # Added support
 from __future__ import print_function
-
 """p4_top.py Top-level for P4_16 API.  Takes input P4 device and generates JSON"""
 
 __author__ = "Colin Burgin"
@@ -18,12 +17,6 @@ from pprint import pprint
 import subprocess
 from collections import OrderedDict
 
-# Installed Packages/Libraries
-
-# P4 Specfic Libraries
-
-# Local API Libraries
-from core.translator import generate_constraints
 
 class P4_Top():
     """Top-level for P4_16 API. Takes input P4 device and generates JSON"""
@@ -42,7 +35,9 @@ class P4_Top():
 
     # Build P4 Top object from input .p4 device file
     ## Still needs improvement ##
+
     def build_from_p4(self, input_file, flags):
+        """
         # Parse input_file
         [name, version, extension] = input_file.split(".")
         name = name.split("/")
@@ -70,9 +65,10 @@ class P4_Top():
         # Output file destination
         self.json_file = outfile_name
         self.json_obj = self.load_json(self.json_file)
-
+        """
 
     # Build P4 Top object from input .json file
+
     def build_from_json(self, input_file):
         # Output file destination
         self.json_file = input_file
