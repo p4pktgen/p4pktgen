@@ -26,7 +26,7 @@ from graphviz import Digraph
 from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
-from core.translator import generate_constraints
+from core.translator import Translator
 from p4pktgen.core.translator import TestPathResult
 
 
@@ -73,8 +73,8 @@ def main():
         dest='allow_unimplemented_primitives',
         action='store_true',
         default=False,
-        help="""With this option enabled, allow analysis of paths that use primitives not yet fully implemented.  Use of such primitives only causes warning message to be issued, and the primitive operation is treated as a no-op.  Without this option (the default), use of such primitives causes an exception to be raised, typically aborting the program at that point."""
-
+        help=
+        """With this option enabled, allow analysis of paths that use primitives not yet fully implemented.  Use of such primitives only causes warning message to be issued, and the primitive operation is treated as a no-op.  Without this option (the default), use of such primitives causes an exception to be raised, typically aborting the program at that point."""
     )
     parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
@@ -153,15 +153,16 @@ def process_json_file(input_file, debug=False):
     count = [0]
     results = {}
     stats = defaultdict(int)
+    translator = Translator(input_file)
     for path in paths:
+
         def eval_control_path(control_path, is_complete_control_path):
             count[0] += 1
-            expected_path, result = generate_constraints(
+            expected_path, result = translator.generate_constraints(
                 hlir, in_pipeline, path + [('sink', None)], control_path,
-                input_file, source_info_to_node_name, count[0],
-                is_complete_control_path)
-            record_result = (is_complete_control_path or
-                             (result != TestPathResult.SUCCESS))
+                source_info_to_node_name, count[0], is_complete_control_path)
+            record_result = (is_complete_control_path
+                             or (result != TestPathResult.SUCCESS))
             if record_result:
                 result_path = [n[0] for n in path] + ['sink'] + control_path
                 results[tuple(result_path)] = result
@@ -170,8 +171,9 @@ def process_json_file(input_file, debug=False):
             go_deeper = (result == TestPathResult.SUCCESS)
             return go_deeper
 
-        graph.generate_all_paths(in_pipeline.init_table_name, None,
-                                 callback=eval_control_path)
+        graph.generate_all_paths(
+            in_pipeline.init_table_name, None, callback=eval_control_path)
+    translator.cleanup()
 
     for result, count in stats.items():
         logging.info('{}: {}'.format(result, count))
