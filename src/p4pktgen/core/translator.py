@@ -273,6 +273,75 @@ class Translator:
             # XXX: implement other operators
             raise Exception('Type value {} not supported'.format(type_value))
 
+    # XXX: "fail" probably needs to be more detailed
+    # XXX: pos/new_pos should be part of the context
+    def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos, new_pos):
+        op = parser_op.op
+        if op == p4_parser_ops_enum.extract:
+            # Extract expects one parameter
+            assert len(parser_op.value) == 1
+            assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Headers)
+
+            # Map bits from packet to context
+            extract_header = parser_op.value[0]
+            extract_offset = BitVecVal(0, 32)
+            for name, field in extract_header.fields.items():
+                # XXX: deal with valid flags
+                if field.name != '$valid$':
+                    context.insert(field,
+                                   sym_packet.extract(
+                                       pos + extract_offset,
+                                       field.size))
+                    extract_offset += BitVecVal(field.size, 32)
+                else:
+                    # Even though the P4_16 isValid() method
+                    # returns a boolean value, it appears that
+                    # when p4c-bm2-ss compiles expressions like
+                    # "if (ipv4.isValid())" into a JSON file, it
+                    # compares the "ipv4.$valid$" field to a bit
+                    # vector value of 1 with the == operator, thus
+                    # effectively treating the "ipv4.$valid$" as
+                    # if it is a bit<1> type.
+                    context.insert(field, BitVecVal(1, 1))
+
+            return new_pos + extract_offset
+        elif op == p4_parser_ops_enum.set:
+            assert len(parser_op.value) == 2
+            assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
+            #logging.debug("jdbg parser_op %s .value %s"
+            #              "" % (parser_op, parser_op.value))
+            context.insert(parser_op.value[0],
+                           self.p4_expr_to_sym(context,
+                                               parser_op.value[1]))
+            return new_pos
+        elif op == p4_parser_ops_enum.extract_VL:
+            assert len(parser_op.value) == 2
+            assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
+
+            # XXX: Take sym_size into account
+            sym_size = self.p4_expr_to_sym(context, parser_op.value[1])
+            extract_header = parser_op.value[0]
+            extract_offset = 0
+            for name, field in extract_header.fields.items():
+                # XXX: deal with valid flags
+                if field.name != '$valid$':
+                    context.insert(field,
+                                   sym_packet.extract(
+                                       pos + extract_offset,
+                                       field.size))
+                    extract_offset += BitVecVal(field.size, 32)
+
+            return new_pos + extract_offset
+        elif op == p4_parser_ops_enum.verify:
+            expected_result = BoolVal(False) if fail else BoolVal(True)
+            sym_cond = self.p4_expr_to_sym(context, parser_op.value[0])
+            constraints.append(sym_cond == expected_result)
+        elif op == p4_parser_ops_enum.primitive:
+            logging.warning('Primitive not supported')
+            return new_pos
+        else:
+            raise Exception('Parser op not supported: {}'.format(op))
+
     def action_to_smt(self, context, table_name, action):
         # XXX: This will not work if an action is used multiple times
         # XXX: Need a way to access the model for those parameters
@@ -444,74 +513,13 @@ class Translator:
             assert transition is not None
 
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
-                op = parser_op.op
-                if op == p4_parser_ops_enum.extract:
-                    # Extract expects one parameter
-                    assert len(parser_op.value) == 1
-                    assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Headers)
+                fail = False
+                if isinstance(
+                        path_transition, ParserOpTransition
+                ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
+                    fail = True
 
-                    # Map bits from packet to context
-                    extract_header = parser_op.value[0]
-                    extract_offset = BitVecVal(0, 32)
-                    for name, field in extract_header.fields.items():
-                        # XXX: deal with valid flags
-                        if field.name != '$valid$':
-                            context.insert(field,
-                                           sym_packet.extract(
-                                               pos + extract_offset,
-                                               field.size))
-                            extract_offset += BitVecVal(field.size, 32)
-                        else:
-                            # Even though the P4_16 isValid() method
-                            # returns a boolean value, it appears that
-                            # when p4c-bm2-ss compiles expressions like
-                            # "if (ipv4.isValid())" into a JSON file, it
-                            # compares the "ipv4.$valid$" field to a bit
-                            # vector value of 1 with the == operator, thus
-                            # effectively treating the "ipv4.$valid$" as
-                            # if it is a bit<1> type.
-                            context.insert(field, BitVecVal(1, 1))
-
-                    new_pos += extract_offset
-                elif op == p4_parser_ops_enum.set:
-                    assert len(parser_op.value) == 2
-                    assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
-                    #logging.debug("jdbg parser_op %s .value %s"
-                    #              "" % (parser_op, parser_op.value))
-                    context.insert(parser_op.value[0],
-                                   self.p4_expr_to_sym(context,
-                                                       parser_op.value[1]))
-                elif op == p4_parser_ops_enum.extract_VL:
-                    assert len(parser_op.value) == 2
-                    assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
-
-                    # XXX: Take sym_size into account
-                    sym_size = self.p4_expr_to_sym(context, parser_op.value[1])
-                    extract_header = parser_op.value[0]
-                    extract_offset = 0
-                    for name, field in extract_header.fields.items():
-                        # XXX: deal with valid flags
-                        if field.name != '$valid$':
-                            context.insert(field,
-                                           sym_packet.extract(
-                                               pos + extract_offset,
-                                               field.size))
-                            extract_offset += BitVecVal(field.size, 32)
-
-                    new_pos += extract_offset
-                elif op == p4_parser_ops_enum.verify:
-                    expected_result = BoolVal(True)
-                    if isinstance(
-                            path_transition, ParserOpTransition
-                    ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
-                        expected_result = BoolVal(False)
-                    sym_cond = self.p4_expr_to_sym(context, parser_op.value[0])
-                    constraints.append(sym_cond == expected_result)
-                elif op == p4_parser_ops_enum.primitive:
-                    logging.warning('Primitive not supported')
-                    pass
-                else:
-                    raise Exception('Parser op not supported: {}'.format(op))
+                new_pos = self.parser_op_to_smt(context, sym_packet, parser_op, fail, pos, new_pos)
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
                 # Packet needs to be at least one byte too short
