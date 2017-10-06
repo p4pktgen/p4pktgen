@@ -7,6 +7,7 @@ from scapy.all import *
 
 from p4pktgen.config import Config
 from p4pktgen.switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
+from p4pktgen.p4_hlir import SourceInfo
 
 
 class SimpleSwitch:
@@ -106,11 +107,10 @@ class SimpleSwitch:
                 condition_value = m.group(4)
                 # Map file name, line number, and source fragment back to
                 # a node name.
-                source_info = (filename, lineno, source_frag)
+                source_info = SourceInfo(filename, source_frag, lineno)
                 logging.debug("filename '%s' lineno=%d source_frag='%s'"
                               "" % (filename, lineno, source_frag))
-                if source_info not in source_info_to_node_name:
-                    assert False
+                assert source_info in source_info_to_node_name
                 node_name = source_info_to_node_name[source_info]
                 assert condition_value == 'true' or condition_value == 'false'
                 if condition_value == 'true':

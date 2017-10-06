@@ -389,7 +389,7 @@ class P4_HLIR(P4_Obj):
         # Get the pipelines
         self.pipelines = {}
         for pipeline_json in json_obj['pipelines']:
-            pipeline = Pipeline(pipeline_json)
+            pipeline = Pipeline(self, pipeline_json)
             self.pipelines[pipeline.name] = pipeline
 
         self.hdr_stacks = None
@@ -476,7 +476,7 @@ class PrimitiveCall:
 
         self.source_info = None
         if 'source_info' in json_obj:
-            self.source_info = SourceInfo(json_obj['source_info'])
+            self.source_info = SourceInfo.from_json(json_obj['source_info'])
 
 
 class ActionParameter:
@@ -556,7 +556,7 @@ class Table:
 
         self.source_info = None
         if 'source_info' in json_obj:
-            self.source_info = SourceInfo(json_obj['source_info'])
+            self.source_info = SourceInfo.from_json(json_obj['source_info'])
 
     def __repr__(self):
         return 'Table {}'.format(self.name)
@@ -573,7 +573,7 @@ class Conditional:
 
         self.source_info = None
         if 'source_info' in json_obj:
-            self.source_info = SourceInfo(json_obj['source_info'])
+            self.source_info = SourceInfo.from_json(json_obj['source_info'])
 
     def __repr__(self):
         return '{}: if {} then {} else {}'.format(self.name, self.expression,
@@ -582,7 +582,8 @@ class Conditional:
 
 
 class Pipeline:
-    def __init__(self, json_obj):
+    def __init__(self, hlir, json_obj):
+        self.hlir = hlir
         self.name = json_obj['name']
         self.id = int(json_obj['id'])
         self.init_table_name = json_obj['init_table']
@@ -610,13 +611,14 @@ class Pipeline:
             if table_name in self.tables:
                 table = self.tables[table_name]
                 for action_name, next_table in table.next_tables.items():
-                    graph.add_edge(table_name, next_table, action_name)
+                    transition = ActionTransition(
+                        table_name, next_table, self.hlir.actions[action_name])
+                    graph.add_edge(table_name, next_table, transition)
                     next_tables.append(next_table)
             else:
                 assert table_name in self.conditionals
                 conditional = self.conditionals[table_name]
-                tmp = conditional.source_info
-                source_info = (tmp.filename, tmp.line, tmp.source_fragment)
+                source_info = conditional.source_info
                 if source_info in source_info_to_node_name:
                     logging.error(
                         "JSON file contains multiple different conditions"
@@ -626,7 +628,8 @@ class Pipeline:
                         " log output lines back to unique node names."
                         "  Consider changing your P4 source code"
                         " to avoid this situation."
-                        "" % (tmp.source_fragment, tmp.filename, tmp.line))
+                        "" % (source_info.source_fragment,
+                              source_info.filename, source_info.line))
                     logging.error("One has node name %s, the other %s"
                                   "" % (source_info_to_node_name[source_info],
                                         table_name))
@@ -636,8 +639,9 @@ class Pipeline:
                                           (False,
                                            conditional.false_next_name)]:
                     next_tables.append(next_name)
-                    graph.add_edge(table_name, next_name, (branch,
-                                                           source_info))
+                    transition = BoolTransition(table_name, next_name, branch,
+                                                source_info)
+                    graph.add_edge(table_name, next_name, transition)
 
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
@@ -675,18 +679,84 @@ class PathSegmentConditional(PathSegment):
 
 
 class SourceInfo:
-    def __init__(self, json_obj):
-        self.filename = json_obj['filename']
-        self.line = int(json_obj['line'])
-        self.column = int(json_obj['column'])
-        self.source_fragment = json_obj['source_fragment']
+    def __init__(self, filename, source_fragment, line, column=None):
+        self.filename = filename
+        self.source_fragment = source_fragment
+        self.line = line
+        self.column = column
+
+    @classmethod
+    def from_json(cls, json_obj):
+        filename = json_obj['filename']
+        source_fragment = json_obj['source_fragment']
+        line = int(json_obj['line'])
+        column = int(json_obj['column'])
+        return SourceInfo(filename, source_fragment, line, column)
 
     def __repr__(self):
-        return '{}:{},{} : {}'.format(self.filename, self.line, self.column,
+        column_str = str(
+            self.column) if self.column is not None else '<unknown>'
+        return '{}:{},{} : {}'.format(self.filename, self.line, column_str,
                                       self.source_fragment)
 
+    def __hash__(self):
+        return hash((self.filename, self.line, self.source_fragment))
 
-class ParserOpTransition:
+    def __eq__(self, other):
+        return isinstance(
+            other, SourceInfo
+        ) and self.filename == other.filename and self.line == other.line and (
+            self.column is None or other.column is None
+            or self.column == other.column
+        ) and self.source_fragment == other.source_fragment
+
+
+class Transition(object):
+    def __init__(self, src, dest):
+        self.src = src
+        self.dest = dest
+
+
+class ParserOpTransition(Transition):
     def __init__(self, op_idx, next_state):
+        super(ParserOpTransition, self).__init__(None, None)
         self.op_idx = op_idx
         self.next_state = next_state
+
+
+class ActionTransition(Transition):
+    def __init__(self, src, dest, action):
+        super(ActionTransition, self).__init__(src, dest)
+        self.action = action
+
+    def get_name(self):
+        return self.action.name
+
+    def __repr__(self):
+        # XXX: better output (will need to change test cases)
+        return self.action.name
+
+    def __eq__(self, other):
+        return self.action.name == str(other)
+
+    def __hash__(self):
+        return hash(self.action.name)
+
+
+class BoolTransition(Transition):
+    def __init__(self, src, dest, val, source_info):
+        super(BoolTransition, self).__init__(src, dest)
+        self.val = val
+        self.source_info = source_info
+
+    def __repr__(self):
+        # XXX: hack for test cases
+        return '({}, {})'.format(self.val, self.source_info)
+
+    def __eq__(self, other):
+        return (self.val, (self.source_info.filename, self.source_info.line,
+                           self.source_info.source_fragment)) == other
+
+    def __hash__(self):
+        # XXX: hack for test cases
+        return hash((self.val, self.source_info))
