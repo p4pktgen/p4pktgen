@@ -1,19 +1,28 @@
+from enum import Enum
+
+TransitionType = Enum('TransitionType',
+                      'PARSER_OP_TRANSITION ACTION_TRANSITION BOOL_TRANSITION')
+
+
 class Transition(object):
-    def __init__(self, src, dest):
+    def __init__(self, transition_type, src, dest):
+        self.transition_type = transition_type
         self.src = src
         self.dest = dest
 
 
 class ParserOpTransition(Transition):
     def __init__(self, op_idx, next_state):
-        super(ParserOpTransition, self).__init__(None, None)
+        super(ParserOpTransition,
+              self).__init__(TransitionType.PARSER_OP_TRANSITION, None, None)
         self.op_idx = op_idx
         self.next_state = next_state
 
 
 class ActionTransition(Transition):
     def __init__(self, src, dest, action):
-        super(ActionTransition, self).__init__(src, dest)
+        super(ActionTransition,
+              self).__init__(TransitionType.ACTION_TRANSITION, src, dest)
         self.action = action
 
     def get_name(self):
@@ -32,7 +41,8 @@ class ActionTransition(Transition):
 
 class BoolTransition(Transition):
     def __init__(self, src, dest, val, source_info):
-        super(BoolTransition, self).__init__(src, dest)
+        super(BoolTransition, self).__init__(TransitionType.BOOL_TRANSITION,
+                                             src, dest)
         self.val = val
         self.source_info = source_info
 

@@ -13,13 +13,16 @@ from z3 import *
 
 from p4pktgen.p4_hlir import *
 from p4pktgen.hlir.type_value import *
+from p4pktgen.hlir.transition import *
 from p4pktgen.config import Config
 from p4pktgen.core.context import Context
 from p4pktgen.core.packet import Packet
 from p4pktgen.switch.simple_switch import SimpleSwitch
 
-TestPathResult = Enum('TestPathResult',
-                      'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ UNINITIALIZED_WRITE')
+TestPathResult = Enum(
+    'TestPathResult',
+    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ UNINITIALIZED_WRITE'
+)
 
 
 def min_bits_for_uint(uint):
@@ -31,8 +34,21 @@ def min_bits_for_uint(uint):
 
 
 class Translator:
-    def __init__(self, json_file):
+    def __init__(self, json_file, hlir, pipeline):
         self.switch = SimpleSwitch(json_file)
+        self.solver = Solver()
+        self.context = Context()
+        self.sym_packet = Packet()
+        self.hlir = hlir
+        self.pipeline = pipeline
+
+    def push(self):
+        self.solver.push()
+        self.context.push()
+
+    def pop(self):
+        self.solver.pop()
+        self.context.pop()
 
     def cleanup(self):
         self.switch.shutdown()
@@ -370,10 +386,12 @@ class Translator:
                 pass
             elif primitive.op == 'add_header':
                 header_name = primitive.parameters[0].header_name
-                context.set_field_value(header_name, '$valid$', BitVecVal(1, 1))
+                context.set_field_value(header_name, '$valid$', BitVecVal(
+                    1, 1))
             elif primitive.op == 'remove_header':
                 header_name = primitive.parameters[0].header_name
-                context.set_field_value(header_name, '$valid$', BitVecVal(0, 1))
+                context.set_field_value(header_name, '$valid$', BitVecVal(
+                    0, 1))
                 context.remove_header_fields(header_name)
             elif (primitive.op == 'modify_field_rng_uniform'
                   and Config().get_allow_unimplemented_primitives()):
@@ -460,16 +478,15 @@ class Translator:
             constraint = sym_transition_keys[0] == bitvecs[0]
         return constraint
 
-    def generate_constraints(self, hlir, pipeline, path, control_path,
+    def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
-        # Maps variable names to symbolic values
+        constraints = []
         context = Context()
         sym_packet = Packet()
-        constraints = []
 
         # Register the fields of all headers in the context
-        for header_name, header in hlir.headers.items():
+        for header_name, header in self.hlir.headers.items():
             for field_name, field in header.fields.items():
                 if field_name == '$valid$':
                     # All valid bits in headers are 0 in the beginning
@@ -489,7 +506,7 @@ class Translator:
 
         time1 = time.time()
         # XXX: make this work for multiple parsers
-        parser = hlir.parsers['parser']
+        parser = self.hlir.parsers['parser']
         pos = BitVecVal(0, 32)
         logging.info(
             'path = {}'.format(' -> '.join([str(n) for n in list(path)])))
@@ -564,22 +581,21 @@ class Translator:
 
         for t in control_path:
             table_name = t[0]
-            if table_name in pipeline.conditionals:
-                transition_name = t[1].val
-                conditional = pipeline.conditionals[table_name]
+            transition = t[1]
+            if transition.transition_type == TransitionType.BOOL_TRANSITION:
+                t_val = t[1].val
+                conditional = self.pipeline.conditionals[table_name]
                 context.set_source_info(conditional.source_info)
-                assert (transition_name == True) or (transition_name == False)
-                expected_result = BoolVal(transition_name)
+                assert (t_val == True) or (t_val == False)
+                expected_result = BoolVal(t_val)
                 sym_expr = self.type_value_to_smt(context,
                                                   conditional.expression)
                 constraints.append(sym_expr == expected_result)
             else:
-                action_transition = t[1]
+                assert transition.transition_type == TransitionType.ACTION_TRANSITION
+                assert table_name in self.pipeline.tables
 
-                assert table_name in pipeline.tables
-                assert action_transition.get_name() in hlir.actions
-
-                table = pipeline.tables[table_name]
+                table = self.pipeline.tables[table_name]
                 context.set_source_info(table.source_info)
 
                 if table.match_type in ['exact', 'lpm', 'ternary', 'range']:
@@ -593,7 +609,7 @@ class Translator:
                     context.set_table_values(table_name, sym_key_elems)
 
                     self.action_to_smt(context, table_name,
-                                       action_transition.action)
+                                       transition.action)
                 else:
                     raise Exception('Match type {} not supported!'.format(
                         table.match_type))
@@ -619,20 +635,20 @@ class Translator:
             table_configs = []
             for t in control_path:
                 table_name = t[0]
-                transition_name = t[1]
-                if table_name in pipeline.tables and context.has_table_values(
+                transition = t[1]
+                if table_name in self.pipeline.tables and context.has_table_values(
                         table_name):
                     runtime_data_values = []
                     for i, runtime_param in enumerate(
-                            transition_name.action.runtime_data):
+                            transition.action.runtime_data):
                         runtime_data_values.append(
                             model[context.get_runtime_data_for_table_action(
-                                table_name, transition_name.action.name,
+                                table_name, transition.action.name,
                                 runtime_param.name, i)])
                     sym_table_values = context.get_table_values(
                         model, table_name)
 
-                    table = pipeline.tables[table_name]
+                    table = self.pipeline.tables[table_name]
                     table_values_strs = []
                     table_entry_priority = None
                     for table_key, sym_table_value in zip(
@@ -677,7 +693,7 @@ class Translator:
                         pass
                     else:
                         table_configs.append(
-                            (table_name, transition_name.action.name,
+                            (table_name, transition.get_name(),
                              table_values_strs, runtime_data_values,
                              table_entry_priority))
 

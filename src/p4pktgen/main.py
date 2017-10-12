@@ -153,13 +153,13 @@ def process_json_file(input_file, debug=False):
     count = [0]
     results = {}
     stats = defaultdict(int)
-    translator = Translator(input_file)
+    translator = Translator(input_file, hlir, in_pipeline)
     for path in paths:
 
         def eval_control_path(control_path, is_complete_control_path):
             count[0] += 1
             expected_path, result = translator.generate_constraints(
-                hlir, in_pipeline, path + [('sink', None)], control_path,
+                path + [('sink', None)], control_path,
                 source_info_to_node_name, count[0], is_complete_control_path)
             record_result = (is_complete_control_path
                              or (result != TestPathResult.SUCCESS))

@@ -47,7 +47,10 @@ class Context:
     def set_field_value(self, header_name, header_field, sym_val):
         var_name = '{}.{}'.format(header_name, header_field)
         # XXX: clean up
-        if header_field != '$valid$' and ('{}.{}'.format(header_name, '$valid$') in self.sym_vars) and simplify(self.get_header_field(header_name, '$valid$')) == BitVecVal(0, 1):
+        if header_field != '$valid$' and ('{}.{}'.format(
+                header_name, '$valid$') in self.sym_vars) and simplify(
+                    self.get_header_field(header_name,
+                                          '$valid$')) == BitVecVal(0, 1):
             self.uninitialized_writes.append((var_name, self.source_info))
 
         self.sym_vars[var_name] = sym_val
@@ -71,7 +74,7 @@ class Context:
     def remove_header_fields(self, header_name):
         # XXX: hacky
         for k in list(self.sym_vars.keys()):
-            if k.startswith(header_name + '.') and not(k.endswith('$valid$')):
+            if k.startswith(header_name + '.') and not (k.endswith('$valid$')):
                 del self.sym_vars[k]
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
