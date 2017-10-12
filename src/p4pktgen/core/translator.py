@@ -19,7 +19,7 @@ from p4pktgen.core.packet import Packet
 from p4pktgen.switch.simple_switch import SimpleSwitch
 
 TestPathResult = Enum('TestPathResult',
-                      'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')
+                      'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ UNINITIALIZED_WRITE')
 
 
 def min_bits_for_uint(uint):
@@ -368,14 +368,13 @@ class Translator:
                 # Dropping the packet does not modify the context. However we
                 # should eventually adapt the expected path.
                 pass
-            elif (primitive.op == 'add_header'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'remove_header'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
+            elif primitive.op == 'add_header':
+                header_name = primitive.parameters[0].header_name
+                context.set_field_value(header_name, '$valid$', BitVecVal(1, 1))
+            elif primitive.op == 'remove_header':
+                header_name = primitive.parameters[0].header_name
+                context.set_field_value(header_name, '$valid$', BitVecVal(0, 1))
+                context.remove_header_fields(header_name)
             elif (primitive.op == 'modify_field_rng_uniform'
                   and Config().get_allow_unimplemented_primitives()):
                 logging.warning('Primitive op {} allowed but treated as no-op'.
@@ -699,6 +698,12 @@ class Translator:
                     logging.error('Uninitialized read of {} at {}'.format(
                         var_name, source_info))
                     result = TestPathResult.UNINITIALIZED_READ
+            elif len(context.uninitialized_writes) != 0:
+                for uninitialized_write in context.uninitialized_writes:
+                    var_name, source_info = uninitialized_write
+                    logging.error('Uninitialized write of {} at {}'.format(
+                        var_name, source_info))
+                    result = TestPathResult.UNINITIALIZED_WRITE
             # XXX: Is 14 the correct number here? Is it possible to construct
             # shorter, invalid packets?
             elif len(payload) >= 14:
