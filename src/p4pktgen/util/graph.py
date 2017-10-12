@@ -48,7 +48,14 @@ class Graph:
                 path_so_far.append((node, transition_name) + t[2:])
                 go_deeper = True
                 if callback is not None:
-                    go_deeper = callback(copy.copy(path_so_far), False)
+                    # The recursive generate_all_paths_() call below
+                    # will call the callback() method with second
+                    # argument True, if neighbor == v_end.  In this
+                    # special case, it is redundant to call callback()
+                    # with the same path_so_far and second argument
+                    # False here.  Avoid doing that.
+                    if neighbor != v_end:
+                        go_deeper = callback(copy.copy(path_so_far), False)
                 logging.debug("generate_all_paths: %2d %s node %s to %s"
                               " go_deeper %s"
                               "" % (len(path_so_far), path_so_far, node,
