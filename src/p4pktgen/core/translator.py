@@ -19,7 +19,7 @@ from p4pktgen.core.packet import Packet
 from p4pktgen.switch.simple_switch import SimpleSwitch
 
 TestPathResult = Enum('TestPathResult',
-                      'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ')
+                      'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ UNINITIALIZED_WRITE')
 
 
 def min_bits_for_uint(uint):
@@ -275,7 +275,8 @@ class Translator:
 
     # XXX: "fail" probably needs to be more detailed
     # XXX: pos/new_pos should be part of the context
-    def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos, new_pos):
+    def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos,
+                         new_pos):
         op = parser_op.op
         if op == p4_parser_ops_enum.extract:
             # Extract expects one parameter
@@ -289,9 +290,8 @@ class Translator:
                 # XXX: deal with valid flags
                 if field.name != '$valid$':
                     context.insert(field,
-                                   sym_packet.extract(
-                                       pos + extract_offset,
-                                       field.size))
+                                   sym_packet.extract(pos + extract_offset,
+                                                      field.size))
                     extract_offset += BitVecVal(field.size, 32)
                 else:
                     # Even though the P4_16 isValid() method
@@ -311,8 +311,7 @@ class Translator:
             #logging.debug("jdbg parser_op %s .value %s"
             #              "" % (parser_op, parser_op.value))
             context.insert(parser_op.value[0],
-                           self.p4_expr_to_sym(context,
-                                               parser_op.value[1]))
+                           self.p4_expr_to_sym(context, parser_op.value[1]))
             return new_pos
         elif op == p4_parser_ops_enum.extract_VL:
             assert len(parser_op.value) == 2
@@ -326,9 +325,8 @@ class Translator:
                 # XXX: deal with valid flags
                 if field.name != '$valid$':
                     context.insert(field,
-                                   sym_packet.extract(
-                                       pos + extract_offset,
-                                       field.size))
+                                   sym_packet.extract(pos + extract_offset,
+                                                      field.size))
                     extract_offset += BitVecVal(field.size, 32)
 
             return new_pos + extract_offset
@@ -370,14 +368,13 @@ class Translator:
                 # Dropping the packet does not modify the context. However we
                 # should eventually adapt the expected path.
                 pass
-            elif (primitive.op == 'add_header'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'remove_header'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
+            elif primitive.op == 'add_header':
+                header_name = primitive.parameters[0].header_name
+                context.set_field_value(header_name, '$valid$', BitVecVal(1, 1))
+            elif primitive.op == 'remove_header':
+                header_name = primitive.parameters[0].header_name
+                context.set_field_value(header_name, '$valid$', BitVecVal(0, 1))
+                context.remove_header_fields(header_name)
             elif (primitive.op == 'modify_field_rng_uniform'
                   and Config().get_allow_unimplemented_primitives()):
                 logging.warning('Primitive op {} allowed but treated as no-op'.
@@ -519,7 +516,8 @@ class Translator:
                 ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
                     fail = True
 
-                new_pos = self.parser_op_to_smt(context, sym_packet, parser_op, fail, pos, new_pos)
+                new_pos = self.parser_op_to_smt(context, sym_packet, parser_op,
+                                                fail, pos, new_pos)
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
                 # Packet needs to be at least one byte too short
@@ -567,7 +565,7 @@ class Translator:
         for t in control_path:
             table_name = t[0]
             if table_name in pipeline.conditionals:
-                transition_name, _ = t[1]
+                transition_name = t[1].val
                 conditional = pipeline.conditionals[table_name]
                 context.set_source_info(conditional.source_info)
                 assert (transition_name == True) or (transition_name == False)
@@ -576,10 +574,10 @@ class Translator:
                                                   conditional.expression)
                 constraints.append(sym_expr == expected_result)
             else:
-                transition_name = t[1]
+                action_transition = t[1]
 
                 assert table_name in pipeline.tables
-                assert transition_name in hlir.actions
+                assert action_transition.get_name() in hlir.actions
 
                 table = pipeline.tables[table_name]
                 context.set_source_info(table.source_info)
@@ -595,7 +593,7 @@ class Translator:
                     context.set_table_values(table_name, sym_key_elems)
 
                     self.action_to_smt(context, table_name,
-                                       hlir.actions[transition_name])
+                                       action_transition.action)
                 else:
                     raise Exception('Match type {} not supported!'.format(
                         table.match_type))
@@ -626,10 +624,10 @@ class Translator:
                         table_name):
                     runtime_data_values = []
                     for i, runtime_param in enumerate(
-                            hlir.actions[transition_name].runtime_data):
+                            transition_name.action.runtime_data):
                         runtime_data_values.append(
                             model[context.get_runtime_data_for_table_action(
-                                table_name, transition_name,
+                                table_name, transition_name.action.name,
                                 runtime_param.name, i)])
                     sym_table_values = context.get_table_values(
                         model, table_name)
@@ -679,8 +677,9 @@ class Translator:
                         pass
                     else:
                         table_configs.append(
-                            (table_name, transition_name, table_values_strs,
-                             runtime_data_values, table_entry_priority))
+                            (table_name, transition_name.action.name,
+                             table_values_strs, runtime_data_values,
+                             table_entry_priority))
 
             # Print table configuration
             for table, action, values, params, priority in table_configs:
@@ -699,6 +698,12 @@ class Translator:
                     logging.error('Uninitialized read of {} at {}'.format(
                         var_name, source_info))
                     result = TestPathResult.UNINITIALIZED_READ
+            elif len(context.uninitialized_writes) != 0:
+                for uninitialized_write in context.uninitialized_writes:
+                    var_name, source_info = uninitialized_write
+                    logging.error('Uninitialized write of {} at {}'.format(
+                        var_name, source_info))
+                    result = TestPathResult.UNINITIALIZED_WRITE
             # XXX: Is 14 the correct number here? Is it possible to construct
             # shorter, invalid packets?
             elif len(payload) >= 14:
