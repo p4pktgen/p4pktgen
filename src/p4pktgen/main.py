@@ -62,6 +62,13 @@ def main():
         default='json',
         help='The format of the input (currently supported: json, p4)')
     parser.add_argument(
+        '-t',
+        '--dump-test-case',
+        dest='dump_test_case',
+        action='store_true',
+        default=False,
+        help='Prints test case information')
+    parser.add_argument(
         '-au',
         '--allow-uninitialized-reads',
         dest='allow_uninitialized_reads',
@@ -183,7 +190,12 @@ def process_json_file(input_file, debug=False):
     for result, count in stats.items():
         logging.info('{}: {}'.format(result, count))
 
-    print(results)
+    if Config().get_dump_test_case():
+        str_items = []
+        for k, v in results.items():
+            str_items.append('{}: {}'.format(k, v))
+        print('{{ {} }}'.format(', '.join(str_items)))
+
     return results
     """
     paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))

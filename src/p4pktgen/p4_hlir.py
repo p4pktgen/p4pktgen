@@ -700,6 +700,9 @@ class SourceInfo:
         return '{}:{},{} : {}'.format(self.filename, self.line, column_str,
                                       self.source_fragment)
 
+    def __str__(self):
+        return str((self.filename, self.line, self.source_fragment))
+
     def __hash__(self):
         return hash((self.filename, self.line, self.source_fragment))
 

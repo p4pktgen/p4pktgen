@@ -30,7 +30,7 @@ class ActionTransition(Transition):
 
     def __repr__(self):
         # XXX: better output (will need to change test cases)
-        return self.action.name
+        return 'u\'{}\''.format(self.action.name)
 
     def __eq__(self, other):
         return self.action.name == str(other)
