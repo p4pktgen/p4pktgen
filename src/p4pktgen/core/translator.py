@@ -3,21 +3,23 @@
 # - Position is a 32-bit integer right now. Smaller/larger?
 # - Move to smt-switch
 
+import copy
+import logging
 import math
 import time
-import logging
 
 from enum import Enum
 from scapy.all import *
 from z3 import *
 
-from p4pktgen.p4_hlir import *
-from p4pktgen.hlir.type_value import *
-from p4pktgen.hlir.transition import *
 from p4pktgen.config import Config
 from p4pktgen.core.context import Context
 from p4pktgen.core.packet import Packet
+from p4pktgen.hlir.transition import *
+from p4pktgen.hlir.type_value import *
+from p4pktgen.p4_hlir import *
 from p4pktgen.switch.simple_switch import SimpleSwitch
+from p4pktgen.util.statistics import Timer
 
 TestPathResult = Enum(
     'TestPathResult',
@@ -37,18 +39,19 @@ class Translator:
     def __init__(self, json_file, hlir, pipeline):
         self.switch = SimpleSwitch(json_file)
         self.solver = Solver()
-        self.context = Context()
-        self.sym_packet = Packet()
+        self.solver.push()
+        self.context = None
         self.hlir = hlir
         self.pipeline = pipeline
+        self.context_history = []  # XXX: implement better mechanism
 
     def push(self):
         self.solver.push()
-        self.context.push()
+        self.context_history.append(copy.deepcopy(self.context))
 
     def pop(self):
         self.solver.pop()
-        self.context.pop()
+        self.context = self.context_history.pop()
 
     def cleanup(self):
         self.switch.shutdown()
@@ -478,12 +481,8 @@ class Translator:
             constraint = sym_transition_keys[0] == bitvecs[0]
         return constraint
 
-    def generate_constraints(self, path, control_path,
-                             source_info_to_node_name, count,
-                             is_complete_control_path):
-        constraints = []
+    def init_context(self):
         context = Context()
-        sym_packet = Packet()
 
         # Register the fields of all headers in the context
         for header_name, header in self.hlir.headers.items():
@@ -494,23 +493,25 @@ class Translator:
                 else:
                     context.register_field(field)
 
-        # XXX: This is very hacky right now
-        expected_path = [
-            n[0] for n in path if not isinstance(n[1], ParserOpTransition)
-        ] + control_path
-        logging.info("")
-        logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
-                     "" % (count, len(path), len(control_path),
-                           len(path) + len(control_path),
-                           is_complete_control_path, expected_path))
+        return context
 
-        time1 = time.time()
+    def generate_parser_constraints(self, parser_path):
+        parser_constraints_gen_timer = Timer('parser_constraints_gen')
+
+        self.solver.pop()
+        self.solver.push()
+
+        self.context = self.init_context()
+        self.sym_packet = Packet()
+        constraints = []
+
         # XXX: make this work for multiple parsers
         parser = self.hlir.parsers['parser']
         pos = BitVecVal(0, 32)
-        logging.info(
-            'path = {}'.format(' -> '.join([str(n) for n in list(path)])))
-        for (node, path_transition), (next_node, _) in zip(path, path[1:]):
+        logging.info('path = {}'.format(' -> '.join(
+            [str(n) for n in list(parser_path)])))
+        for (node, path_transition), (next_node, _) in zip(
+                parser_path, parser_path[1:]):
             logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
@@ -533,18 +534,19 @@ class Translator:
                 ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
                     fail = True
 
-                new_pos = self.parser_op_to_smt(context, sym_packet, parser_op,
-                                                fail, pos, new_pos)
+                new_pos = self.parser_op_to_smt(self.context, self.sym_packet,
+                                                parser_op, fail, pos, new_pos)
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
                 # Packet needs to be at least one byte too short
-                sym_packet.set_max_length(simplify(new_pos - 8))
+                self.sym_packet.set_max_length(simplify(new_pos - 8))
                 break
 
             sym_transition_key = []
             for transition_key_elem in parse_state.transition_key:
                 if isinstance(transition_key_elem, P4_HLIR.HLIR_Field):
-                    sym_transition_key.append(context.get(transition_key_elem))
+                    sym_transition_key.append(
+                        self.context.get(transition_key_elem))
                 else:
                     raise Exception('Transition key type not supported: {}'.
                                     format(transition_key_elem.__class__))
@@ -572,27 +574,46 @@ class Translator:
             logging.debug(sym_transition_key)
             pos = simplify(new_pos)
 
-        time2 = time.time()
         # XXX: workaround
-        constraints.append(sym_packet.get_length_constraint())
+        constraints.append(self.sym_packet.get_length_constraint())
+
+        self.solver.add(And(constraints))
+
+        parser_constraints_gen_timer.stop()
+        logging.info('Generate parser constraints: %.3f sec' %
+                     (parser_constraints_gen_timer.get_time()))
+
+    def generate_constraints(self, path, control_path,
+                             source_info_to_node_name, count,
+                             is_complete_control_path):
+        # XXX: This is very hacky right now
+        expected_path = [
+            n[0] for n in path if not isinstance(n[1], ParserOpTransition)
+        ] + control_path
+        logging.info("")
+        logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
+                     "" % (count.counter, len(path), len(control_path),
+                           len(path) + len(control_path),
+                           is_complete_control_path, expected_path))
+
+        context = self.context
+        constraints = []
+
+        time2 = time.time()
 
         # XXX: very ugly to split parsing/control like that, need better solution
         logging.info('control_path = {}'.format(control_path))
 
-        for t in control_path:
-            table_name = t[0]
-            transition = t[1]
+        for table_name, transition in control_path:
             if transition.transition_type == TransitionType.BOOL_TRANSITION:
-                t_val = t[1].val
+                t_val = transition.val
                 conditional = self.pipeline.conditionals[table_name]
                 context.set_source_info(conditional.source_info)
-                assert (t_val == True) or (t_val == False)
                 expected_result = BoolVal(t_val)
                 sym_expr = self.type_value_to_smt(context,
                                                   conditional.expression)
                 constraints.append(sym_expr == expected_result)
-            else:
-                assert transition.transition_type == TransitionType.ACTION_TRANSITION
+            elif transition.transition_type == TransitionType.ACTION_TRANSITION:
                 assert table_name in self.pipeline.tables
 
                 table = self.pipeline.tables[table_name]
@@ -608,11 +629,13 @@ class Translator:
 
                     context.set_table_values(table_name, sym_key_elems)
 
-                    self.action_to_smt(context, table_name,
-                                       transition.action)
+                    self.action_to_smt(context, table_name, transition.action)
                 else:
                     raise Exception('Match type {} not supported!'.format(
                         table.match_type))
+            else:
+                raise Exception('Transition type {} not supported!'.format(
+                    transition.transition_type))
 
             context.unset_source_info()
 
@@ -621,15 +644,14 @@ class Translator:
 
         # Construct and test the packet
         logging.debug(And(constraints))
-        s = Solver()
-        s.add(And(constraints))
-        smt_result = s.check()
+        self.solver.add(And(constraints))
+        smt_result = self.solver.check()
         time4 = time.time()
         result = None
         if smt_result != unsat:
-            model = s.model()
+            model = self.solver.model()
             context.log_model(model)
-            payload = sym_packet.get_payload_from_model(model)
+            payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations
             table_configs = []
@@ -767,14 +789,13 @@ class Translator:
         time5 = time.time()
         logging.info("END   %d Exp path (len %d+%d=%d)"
                      " complete_path %s %s: %s"
-                     "" % (count, len(path), len(control_path),
+                     "" % (count.counter, len(path), len(control_path),
                            len(path) + len(control_path),
                            is_complete_control_path, result, expected_path))
-        logging.info("%.3f sec = %.3f gen parser constraints"
-                     " + %.3f gen ingress constraints"
+        logging.info("%.3f sec = %.3f gen ingress constraints"
                      " + %.3f solve + %.3f gen pkt, table entries, sim packet"
-                     "" % (time5 - time1, time2 - time1, time3 - time2,
-                           time4 - time3, time5 - time4))
+                     "" % (time5 - time2, time3 - time2, time4 - time3,
+                           time5 - time4))
 
         return (expected_path, result)
 

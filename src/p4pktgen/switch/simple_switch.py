@@ -5,6 +5,7 @@ import time
 
 from scapy.all import *
 
+from p4pktgen.p4_hlir import P4_HLIR
 from p4pktgen.config import Config
 from p4pktgen.switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, load_json_config
 from p4pktgen.p4_hlir import SourceInfo

@@ -28,6 +28,7 @@ from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
 from p4pktgen.core.translator import TestPathResult
+from p4pktgen.util.statistics import Counter
 
 
 def main():
@@ -137,12 +138,12 @@ def process_json_file(input_file, debug=False):
     return
     """
 
-    paths = parser_graph.generate_all_paths(hlir.parsers['parser'].init_state,
-                                            'sink')
+    parser_paths = parser_graph.generate_all_paths(
+        hlir.parsers['parser'].init_state, 'sink')
     # paths = [[n[0] for n in path] + ['sink'] for path in paths]
-    max_path_len = max([len(p) for p in paths])
+    max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
-                 "" % (len(paths), max_path_len))
+                 "" % (len(parser_paths), max_path_len))
 
     num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d control paths" % (num_control_paths))
@@ -150,21 +151,25 @@ def process_json_file(input_file, debug=False):
     # count is a list of 1 element just to make it more
     # straightforward in Python 2 to modify it within def
     # eval_control_path below.
-    count = [0]
+    count = Counter('path_count')
     results = {}
     stats = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
-    for path in paths:
+    for parser_path in parser_paths:
+        translator.generate_parser_constraints(parser_path + [('sink', None)])
 
         def eval_control_path(control_path, is_complete_control_path):
-            count[0] += 1
+            count.inc()
+            translator.push()
             expected_path, result = translator.generate_constraints(
-                path + [('sink', None)], control_path,
-                source_info_to_node_name, count[0], is_complete_control_path)
+                parser_path + [('sink', None)], control_path,
+                source_info_to_node_name, count, is_complete_control_path)
+            translator.pop()
             record_result = (is_complete_control_path
                              or (result != TestPathResult.SUCCESS))
             if record_result:
-                result_path = [n[0] for n in path] + ['sink'] + control_path
+                result_path = [n[0]
+                               for n in parser_path] + ['sink'] + control_path
                 results[tuple(result_path)] = result
                 stats[result] += 1
 

@@ -43,6 +43,7 @@ class BoolTransition(Transition):
     def __init__(self, src, dest, val, source_info):
         super(BoolTransition, self).__init__(TransitionType.BOOL_TRANSITION,
                                              src, dest)
+        assert isinstance(val, bool)
         self.val = val
         self.source_info = source_info
 
