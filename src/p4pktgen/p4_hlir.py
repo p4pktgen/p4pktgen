@@ -602,8 +602,12 @@ class Pipeline:
     def generate_CFG(self):
         graph = Graph()
         queue = [self.init_table_name]
-        visited = set(self.init_table_name)
         source_info_to_node_name = {}
+        # Handle special case of empty pipeline, e.g. an ingress or
+        # egress control block with no statements at all.
+        if self.init_table_name is None:
+            return graph, source_info_to_node_name
+        visited = set(self.init_table_name)
         while len(queue) != 0:
             table_name = queue[0]
             queue = queue[1:]
