@@ -84,10 +84,20 @@ class Translator:
                 assert lhs is not None and rhs is not None
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs ^ rhs
+            elif expr.op == '~':
+                assert lhs is None
+                assert rhs is not None
+                return ~rhs
             elif expr.op == 'd2b':
                 return If(rhs == 1, BoolVal(True), BoolVal(False))
             elif expr.op == 'b2d':
                 return If(rhs, 1, 0)
+            elif expr.op == 'and':
+                assert lhs is not None and rhs is not None
+                return And(lhs, rhs)
+            elif expr.op == 'or':
+                assert lhs is not None and rhs is not None
+                return Or(lhs, rhs)
             elif expr.op == '==':
                 assert lhs is not None and rhs is not None
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
