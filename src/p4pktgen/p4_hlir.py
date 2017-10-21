@@ -127,7 +127,7 @@ class P4_HLIR(P4_Obj):
                 if self.var_length else '', 'True' if self.signed else 'False')
 
         def __str__(self):
-            return __repr__(self)
+            return self.__repr__()
 
     class HLIR_Headers(P4_Obj):
         """Class to represent a header instance"""

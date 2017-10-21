@@ -6,6 +6,7 @@
 import copy
 import logging
 import math
+import pprint as pp
 import time
 
 from enum import Enum
@@ -27,12 +28,57 @@ TestPathResult = Enum(
 )
 
 
+def min_bits_for_uint_maybe_slower(uint):
+    if uint == 0:
+        return 1
+    width = 1
+    max_value_of_width = ((1 << width) - 1)
+    while uint > max_value_of_width:
+        width += 1
+        max_value_of_width = ((1 << width) - 1)
+    return width
+
+
 def min_bits_for_uint(uint):
     # The fewest number of bits needed to represent an unsigned
     # integer in binary.
     if uint == 0:
         return 1
-    return int(math.log(uint, 2)) + 1
+    assert isinstance(uint, int) or isinstance(uint, long)
+    assert uint > 0
+
+    # This expression returns correct values up to somewhere near ((1
+    # << 48) - 1), but somewhere around that magnitude of integer it
+    # returns values that are too large by 1.
+    #return int(math.log(uint, 2)) + 1
+
+    min_width = 1
+    cur_width = 32
+    max_value_of_cur_width = ((1 << cur_width) - 1)
+    if uint > max_value_of_cur_width:
+        while uint > max_value_of_cur_width:
+            min_width = cur_width
+            cur_width += 32
+            max_value_of_cur_width = ((1 << cur_width) - 1)
+        max_width = cur_width
+    else:
+        max_width = cur_width
+
+    while min_width < max_width:
+        cur_width = (min_width + max_width) / 2
+        max_value_of_cur_width = ((1 << cur_width) - 1)
+        if uint <= max_value_of_cur_width:
+            max_width = cur_width
+        else:
+            min_width = cur_width + 1
+    cur_width = min_width
+    #other_val = min_bits_for_uint_maybe_slower(uint)
+    #if cur_width != other_val:
+    #    logging.debug("cur_width %d other_val %d uint %d"
+    #                  "" % (cur_width, other_val, uint))
+    #assert cur_width == other_val
+
+    return cur_width
 
 
 class Translator:
@@ -148,13 +194,14 @@ class Translator:
             return context.get(expr)
         elif isinstance(expr, bool):
             return expr
-        elif isinstance(expr, int):
+        elif isinstance(expr, int) or isinstance(expr, long):
             size = min_bits_for_uint(expr)
             #logging.debug("jdbg expr %s size %s" % (expr, size))
             return BitVecVal(expr, size)
         else:
             # XXX: implement other operators
-            logging.error(expr.__class__)
+            raise Exception('expr type not supported: {}'.format(
+                expr.__class__))
 
     def p4_value_to_bv(self, value, size):
         # XXX: Support values that are not simple hexstrs
@@ -337,10 +384,27 @@ class Translator:
         elif op == p4_parser_ops_enum.set:
             assert len(parser_op.value) == 2
             assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
+            dest_size = parser_op.value[0].size
+            rhs_expr = self.p4_expr_to_sym(context, parser_op.value[1])
             #logging.debug("jdbg parser_op %s .value %s"
-            #              "" % (parser_op, parser_op.value))
-            context.insert(parser_op.value[0],
-                           self.p4_expr_to_sym(context, parser_op.value[1]))
+            #              #" .value[0] %s"
+            #              " .value[0].size %s"
+            #              " rhs_expr.size() %s"
+            #              "" % (parser_op, parser_op.value
+            #                    #, parser_op.value[0]
+            #                    , parser_op.value[0].size
+            #                    , rhs_expr.size()
+            #              ))
+            if dest_size != rhs_expr.size():
+                logging.debug("parser op 'set' lhs/rhs width mismatch"
+                              " (%d != %d bits) lhs %s"
+                              "" % (dest_size, rhs_expr.size(),
+                                    parser_op.value[0]))
+                if dest_size > rhs_expr.size():
+                    rhs_expr = ZeroExt(dest_size - rhs_expr.size(), rhs_expr)
+                else:
+                    rhs_expr = Extract(dest_size - 1, 0, rhs_expr)
+            context.insert(parser_op.value[0], rhs_expr)
             return new_pos
         elif op == p4_parser_ops_enum.extract_VL:
             assert len(parser_op.value) == 2
@@ -391,6 +455,19 @@ class Translator:
                 value = self.type_value_to_smt(context,
                                                primitive.parameters[1])
                 field = primitive.parameters[0]
+                fld_info = self.hlir.headers[field.header_name].fields[field.header_field]
+                dest_size = fld_info.size
+                if dest_size != value.size():
+                    logging.debug("primitive op '%s' lhs/rhs width mismatch"
+                                  " (%d != %d bits) lhs %s source_info %s"
+                                  "" % (primitive.op, dest_size,
+                                        value.size(), field,
+                                        primitive.source_info))
+                    logging.debug("    value %s" % (value))
+                    if dest_size > value.size():
+                        value = ZeroExt(dest_size - value.size(), value)
+                    else:
+                        value = Extract(dest_size - 1, 0, value)
                 context.set_field_value(field.header_name, field.header_field,
                                         value)
             elif primitive.op == 'drop':
