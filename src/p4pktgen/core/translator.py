@@ -352,7 +352,7 @@ class Translator:
     # XXX: "fail" probably needs to be more detailed
     # XXX: pos/new_pos should be part of the context
     def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos,
-                         new_pos):
+                         new_pos, constraints):
         op = parser_op.op
         if op == p4_parser_ops_enum.extract:
             # Extract expects one parameter
@@ -427,6 +427,7 @@ class Translator:
             expected_result = BoolVal(False) if fail else BoolVal(True)
             sym_cond = self.p4_expr_to_sym(context, parser_op.value[0])
             constraints.append(sym_cond == expected_result)
+            return new_pos
         elif op == p4_parser_ops_enum.primitive:
             logging.warning('Primitive not supported')
             return new_pos
@@ -622,7 +623,7 @@ class Translator:
                     fail = True
 
                 new_pos = self.parser_op_to_smt(self.context, self.sym_packet,
-                                                parser_op, fail, pos, new_pos)
+                                                parser_op, fail, pos, new_pos, constraints)
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
                 # Packet needs to be at least one byte too short

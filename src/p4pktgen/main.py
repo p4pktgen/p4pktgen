@@ -155,17 +155,16 @@ def process_json_file(input_file, debug=False):
     num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d control paths" % (num_control_paths))
 
-    # count is a list of 1 element just to make it more
-    # straightforward in Python 2 to modify it within def
-    # eval_control_path below.
     count = Counter('path_count')
     results = {}
     stats = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
+    old_control_path = [[]]
     for parser_path in parser_paths:
         translator.generate_parser_constraints(parser_path + [('sink', None)])
 
         def eval_control_path(control_path, is_complete_control_path):
+            print([x for x, y in zip(old_control_path, control_path) if x == y])
             count.inc()
             translator.push()
             expected_path, result = translator.generate_constraints(
@@ -181,6 +180,7 @@ def process_json_file(input_file, debug=False):
                 stats[result] += 1
 
             go_deeper = (result == TestPathResult.SUCCESS)
+            old_control_path[0] = control_path
             return go_deeper
 
         graph.generate_all_paths(
