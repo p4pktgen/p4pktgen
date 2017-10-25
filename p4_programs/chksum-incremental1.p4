@@ -91,7 +91,7 @@ parser IngressParserImpl(packet_in buffer,
         bit<16> word08 = hdr.ipv4.dstAddr[31:16];
         bit<16> word09 = hdr.ipv4.dstAddr[15:0];
 
-        bit<32> tmp01 = (
+        bit<32> tmp1a = (
             (((bit<32>) word00) & 0xffff) +
             (((bit<32>) word01) & 0xffff) +
             (((bit<32>) word02) & 0xffff) +
@@ -102,8 +102,8 @@ parser IngressParserImpl(packet_in buffer,
             (((bit<32>) word07) & 0xffff) +
             (((bit<32>) word08) & 0xffff) +
             (((bit<32>) word09) & 0xffff));
-        bit<16> adder01 = tmp01[15:0] + tmp01[31:16];
-        user_meta.fwd_metadata.ipv4_hdr_correct_checksum = ~adder01;
+        bit<32> tmp1b = (((bit<32>) tmp1a[15:0]) & 0xffff) + (((bit<32>) tmp1a[31:16]) & 0xffff);
+        user_meta.fwd_metadata.ipv4_hdr_correct_checksum = ~(tmp1b[15:0] + tmp1b[31:16]);
 
         // See Note 1
         //ck.clear();
@@ -117,14 +117,15 @@ parser IngressParserImpl(packet_in buffer,
 
         // remove them from ck_sum by adding ~ of each using one's
         // complement sum
-        bit<32> tmp = (
+        bit<32> tmp2a = (
             (((bit<32>) ck_sum) & 0xffff) +
             (((bit<32>) word0) & 0xffff) +
             (((bit<32>) word1) & 0xffff) +
             (((bit<32>) word2) & 0xffff) +
             (((bit<32>) word3) & 0xffff) +
             (((bit<32>) word4) & 0xffff));
-        ck_sum = tmp[15:0] + tmp[31:16];
+        bit<32> tmp2b = (((bit<32>) tmp2a[15:0]) & 0xffff) + (((bit<32>) tmp2a[31:16]) & 0xffff);
+        ck_sum = tmp2b[15:0] + tmp2b[31:16];
         user_meta.fwd_metadata.incremental_checksum = ck_sum;
 
         transition accept;
@@ -149,6 +150,7 @@ control ingress(inout headers hdr,
         actions = {
             forward_v4;
         }
+        default_action = forward_v4(0, 1, 1);
     }
     table debug_table_0 {
         key = {
@@ -159,6 +161,7 @@ control ingress(inout headers hdr,
             hdr.ipv4.dstAddr : exact;
             hdr.ipv4.hdrChecksum : exact;
             user_meta.fwd_metadata.new_ipv4_checksum_from_scratch : exact;
+            hdr.ethernet.dstAddr : exact;
         }
         actions = {
             NoAction;
@@ -173,6 +176,22 @@ control ingress(inout headers hdr,
             hdr.ipv4.dstAddr : exact;
             hdr.ipv4.hdrChecksum : exact;
             user_meta.fwd_metadata.new_ipv4_checksum_from_scratch : exact;
+            hdr.ethernet.dstAddr : exact;
+        }
+        actions = {
+            NoAction;
+        }
+    }
+    table debug_table_2 {
+        key = {
+            user_meta.fwd_metadata.received_ipv4_hdr_checksum : exact;
+            user_meta.fwd_metadata.ipv4_hdr_correct_checksum : exact;
+            user_meta.fwd_metadata.incremental_checksum : exact;
+            hdr.ipv4.srcAddr : exact;
+            hdr.ipv4.dstAddr : exact;
+            hdr.ipv4.hdrChecksum : exact;
+            user_meta.fwd_metadata.new_ipv4_checksum_from_scratch : exact;
+            hdr.ethernet.dstAddr : exact;
         }
         actions = {
             NoAction;
@@ -187,6 +206,7 @@ control ingress(inout headers hdr,
         if (hdr.ipv4.isValid()) {
             if (! (hdr.ipv4.version == 4 &&
                     hdr.ipv4.ihl == 5 &&
+                    hdr.ipv4.totalLen == 20 &&
 //                    ((hdr.ipv4.protocol == 6 && hdr.ipv4.totalLen == 20+20) ||
 //                        (hdr.ipv4.protocol == 17 && hdr.ipv4.totalLen == 20+8)) &&
                     hdr.ipv4.flags == 0 &&
@@ -241,9 +261,16 @@ control ingress(inout headers hdr,
         user_meta.fwd_metadata.new_ipv4_checksum_from_scratch = ~ck_sum;
 
         debug_table_1.apply();
-        if (hdr.ipv4.hdrChecksum != user_meta.fwd_metadata.new_ipv4_checksum_from_scratch) {
-            exit;
+        // The "& 0xffff" parts of the next condition should be
+        // redundant in a correct P4_16 implementation.  They are
+        // there in hopes that they work around issue #983, assuming
+        // that may be causing problems here.
+        if ((hdr.ipv4.hdrChecksum & 0xffff) != (user_meta.fwd_metadata.new_ipv4_checksum_from_scratch & 0xffff)) {
+            hdr.ethernet.dstAddr = 0xffffffffffff;
+        } else {
+            hdr.ethernet.dstAddr = 0xc001c001c001;
         }
+        debug_table_2.apply();
     }
 }
 

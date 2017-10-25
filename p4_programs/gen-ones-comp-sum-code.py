@@ -17,8 +17,10 @@ control %s(out bit<16> sum,"""
             after_str = ")"
         print("    in bit<16> word%d%s" % (i, after_str))
     print("""{
+    bit<32> large_sum1;
+    bit<32> large_sum2;
     apply {
-        bit<32> large_sum = (""")
+        large_sum1 = (""")
     for i in range(n):
         after_str = " +"
         if i == n-1:
@@ -32,7 +34,8 @@ control %s(out bit<16> sum,"""
         print("            (((bit<32>) word%d) & 0xffff)%s" % (i, after_str))
 
     print("            );")
-    print("        sum = large_sum[15:0] + large_sum[31:16];")
+    print("        large_sum2 = (((bit<32>) large_sum1[15:0]) & 0xffff) + (((bit<32>) large_sum1[31:16]) & 0xffff);")
+    print("        sum = large_sum2[15:0] + large_sum2[31:16];")
     print("""    }
 }""")
     
@@ -44,8 +47,10 @@ def print_fn_for_bitvec_with_16n_bits(n):
 
 control %s(out bit<16> sum, in bit<%d> data)
 {
+    bit<32> large_sum1;
+    bit<32> large_sum2;
     apply {
-        bit<32> large_sum = ("""
+        large_sum1 = ("""
           % (fn_name, nbits))
     for i in range(n):
         after_str = " +"
@@ -62,7 +67,9 @@ control %s(out bit<16> sum, in bit<%d> data)
         print("            (((bit<32>) data[0x%02x:0x%02x]) & 0xffff)%s"
               "" % (lsb+15, lsb, after_str))
     print("            );")
-    print("""        sum = large_sum[15:0] + large_sum[31:16];
+    print("        large_sum2 = (((bit<32>) large_sum1[15:0]) & 0xffff) + (((bit<32>) large_sum1[31:16]) & 0xffff);")
+    print("        sum = large_sum2[15:0] + large_sum2[31:16];")
+    print("""
     }
 }""")
 
