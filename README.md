@@ -57,7 +57,7 @@ Starting from a default Ubuntu 16.04 installation, the only additional
 packages required may be installed with the command below:
 
 ```bash
-% sudo apt-get install --yes python-tk
+% sudo apt-get install --yes python-tk graphviz
 ```
 
 
