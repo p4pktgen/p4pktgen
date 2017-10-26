@@ -82,16 +82,15 @@ parser IngressParserImpl(packet_in buffer,
 
         // To make the equations smaller, and perhaps easier to debug
         // if there are problems there, pretend that the IPv4 header
-        // checksum is only calculated over the second 16 bits of the
-        // IPv4 header, and the least significant 16 bits of the
-        // source address.
+        // checksum is only calculated over some of the 16-bit words
+        // of the IPv4 header, not all of them.
         //bit<16> word00 = (hdr.ipv4.version ++ hdr.ipv4.ihl ++ hdr.ipv4.diffserv);
         bit<16> word01 = hdr.ipv4.totalLen;
-        //bit<16> word02 = hdr.ipv4.identification;
+        bit<16> word02 = hdr.ipv4.identification;
         //bit<16> word03 = (hdr.ipv4.flags ++ hdr.ipv4.fragOffset);
         //bit<16> word04 = (hdr.ipv4.ttl ++ hdr.ipv4.protocol);
         //bit<16> word05 = hdr.ipv4.hdrChecksum;
-        //bit<16> word06 = hdr.ipv4.srcAddr[31:16];
+        bit<16> word06 = hdr.ipv4.srcAddr[31:16];
         bit<16> word07 = hdr.ipv4.srcAddr[15:0];
         //bit<16> word08 = hdr.ipv4.dstAddr[31:16];
         //bit<16> word09 = hdr.ipv4.dstAddr[15:0];
@@ -99,11 +98,11 @@ parser IngressParserImpl(packet_in buffer,
         bit<32> tmp1a = (
             //(((bit<32>) word00) & 0xffff) +
             (((bit<32>) word01) & 0xffff) +
-            //(((bit<32>) word02) & 0xffff) +
+            (((bit<32>) word02) & 0xffff) +
             //(((bit<32>) word03) & 0xffff) +
             //(((bit<32>) word04) & 0xffff) +
             // (((bit<32>) word05) & 0xffff) +
-            //(((bit<32>) word06) & 0xffff) +
+            (((bit<32>) word06) & 0xffff) +
             (((bit<32>) word07) & 0xffff)
             //(((bit<32>) word08) & 0xffff) +
             //(((bit<32>) word09) & 0xffff)
@@ -115,7 +114,7 @@ parser IngressParserImpl(packet_in buffer,
         //ck.clear();
         ck_sum = 0;
         //ck.remove({hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.ipv4.hdrChecksum});
-        //bit<16> word0 = ~hdr.ipv4.srcAddr[31:16];
+        bit<16> word0 = ~hdr.ipv4.srcAddr[31:16];
         bit<16> word1 = ~hdr.ipv4.srcAddr[15:0];
         //bit<16> word2 = ~hdr.ipv4.dstAddr[31:16];
         //bit<16> word3 = ~hdr.ipv4.dstAddr[15:0];
@@ -125,7 +124,7 @@ parser IngressParserImpl(packet_in buffer,
         // complement sum
         bit<32> tmp2a = (
             (((bit<32>) ck_sum) & 0xffff) +
-            //(((bit<32>) word0) & 0xffff) +
+            (((bit<32>) word0) & 0xffff) +
             (((bit<32>) word1) & 0xffff) +
             //(((bit<32>) word2) & 0xffff) +
             //(((bit<32>) word3) & 0xffff) +
@@ -225,11 +224,6 @@ control ingress(inout headers hdr,
                 exit;
             }
             nat_v4.apply();
-            // In this cut-down version, don't allow the only bytes
-            // over which the checksum is calculated to be all 0s.
-            if (hdr.ipv4.srcAddr[15:0] == 0) {
-                exit;
-            }
         }
 
         // Do an incremental calculation of the outgoing IPv4 header
@@ -239,9 +233,9 @@ control ingress(inout headers hdr,
         // addresses, and original hdr checksum.
         ck_sum = user_meta.fwd_metadata.incremental_checksum;
         // Add in effect of new src and dst IPv4 addresses.
-        ones_comp_sum_b32.apply(ck_sum,
+        ones_comp_sum_b48.apply(ck_sum,
             //ck_sum ++ hdr.ipv4.srcAddr ++ hdr.ipv4.dstAddr);
-            ck_sum ++ hdr.ipv4.srcAddr[15:0]);
+            ck_sum ++ hdr.ipv4.srcAddr);
         hdr.ipv4.hdrChecksum = ~ck_sum;
         
 
@@ -259,16 +253,15 @@ control ingress(inout headers hdr,
             hdr.ipv4.srcAddr,
             hdr.ipv4.dstAddr });
 */
-        ones_comp_sum_b48.apply(ck_sum,
+        ones_comp_sum_b80.apply(ck_sum,
             ck_sum ++
             //hdr.ipv4.version ++ hdr.ipv4.ihl ++ hdr.ipv4.diffserv ++
             hdr.ipv4.totalLen ++
-            //hdr.ipv4.identification ++
+            hdr.ipv4.identification ++
             //hdr.ipv4.flags ++ hdr.ipv4.fragOffset ++
             //hdr.ipv4.ttl ++ hdr.ipv4.protocol ++
             //hdr.ipv4.hdrChecksum ++ // intentionally leave this out
-            //hdr.ipv4.srcAddr ++
-            hdr.ipv4.srcAddr[15:0]
+            hdr.ipv4.srcAddr
             //hdr.ipv4.dstAddr
             );
         //hdr.ipv4.hdrChecksum = ck.get();
