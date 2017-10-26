@@ -280,9 +280,18 @@ control ingress(inout headers hdr,
         // there in hopes that they work around issue #983, assuming
         // that may be causing problems here.
         if ((hdr.ipv4.hdrChecksum & 0xffff) != (user_meta.fwd_metadata.new_ipv4_checksum_from_scratch & 0xffff)) {
-            hdr.ethernet.dstAddr = 0xffffffffffff;
+            hdr.ethernet.dstAddr = 0xbad1bad1bad1;
         } else {
-            hdr.ethernet.dstAddr = 0xc001c001c001;
+            if ((hdr.ipv4.hdrChecksum & 0xffff) == 0xffff) {
+                // This should be impossible
+                hdr.ethernet.dstAddr = 0xbad2bad2bad2;
+            } else if ((hdr.ipv4.hdrChecksum & 0xffff) == 0x0000) {
+                // This should be possible
+                hdr.ethernet.dstAddr = 0xc000c000c000;
+            } else {
+                // This is the common case
+                hdr.ethernet.dstAddr = 0xc001c001c001;
+            }
         }
         debug_table_2.apply();
     }
@@ -302,7 +311,7 @@ control DeparserImpl(packet_out packet, in headers hdr) {
     }
 }
 
-control verifyChecksum(in headers hdr, inout metadata meta) {
+control verifyChecksum(inout headers hdr, inout metadata meta) {
     apply { }
 }
 
