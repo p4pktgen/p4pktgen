@@ -127,7 +127,7 @@ class P4_HLIR(P4_Obj):
                 if self.var_length else '', 'True' if self.signed else 'False')
 
         def __str__(self):
-            return __repr__(self)
+            return self.__repr__()
 
     class HLIR_Headers(P4_Obj):
         """Class to represent a header instance"""
@@ -602,8 +602,12 @@ class Pipeline:
     def generate_CFG(self):
         graph = Graph()
         queue = [self.init_table_name]
-        visited = set(self.init_table_name)
         source_info_to_node_name = {}
+        # Handle special case of empty pipeline, e.g. an ingress or
+        # egress control block with no statements at all.
+        if self.init_table_name is None:
+            return graph, source_info_to_node_name
+        visited = set(self.init_table_name)
         while len(queue) != 0:
             table_name = queue[0]
             queue = queue[1:]
