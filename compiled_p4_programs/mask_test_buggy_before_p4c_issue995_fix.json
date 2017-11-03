@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/mask_test2.p4",
+  "program" : "p4_programs/mask_test.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -14,9 +14,10 @@
       "name" : "ethernet_t",
       "id" : 1,
       "fields" : [
-        ["dstAddr", 48, false],
-        ["srcAddr", 48, false],
-        ["etherType", 16, false]
+        ["dstAddr", 47, false],
+        ["srcAddr", 47, false],
+        ["etherType", 16, false],
+        ["_padding", 2, false]
       ]
     },
     {
@@ -38,8 +39,64 @@
       ]
     },
     {
-      "name" : "standard_metadata",
+      "name" : "ipv6_t",
       "id" : 3,
+      "fields" : [
+        ["version", 4, false],
+        ["trafficClass", 8, false],
+        ["flowLabel", 20, false],
+        ["payloadLen", 16, false],
+        ["nextHdr", 8, false],
+        ["hopLimit", 8, false],
+        ["srcAddr", 128, false],
+        ["dstAddr", 128, false]
+      ]
+    },
+    {
+      "name" : "tcp_t",
+      "id" : 4,
+      "fields" : [
+        ["srcPort", 16, false],
+        ["dstPort", 16, false],
+        ["seqNo", 32, false],
+        ["ackNo", 32, false],
+        ["dataOffset", 4, false],
+        ["res", 4, false],
+        ["flags", 8, false],
+        ["window", 16, false],
+        ["checksum", 16, false],
+        ["urgentPtr", 16, false]
+      ]
+    },
+    {
+      "name" : "udp_t",
+      "id" : 5,
+      "fields" : [
+        ["srcPort", 16, false],
+        ["dstPort", 16, false],
+        ["length", 16, false],
+        ["checksum", 16, false]
+      ]
+    },
+    {
+      "name" : "fwd_metadata_t",
+      "id" : 6,
+      "fields" : [
+        ["l2ptr", 24, false],
+        ["out_bd", 24, false]
+      ]
+    },
+    {
+      "name" : "l3_metadata_t",
+      "id" : 7,
+      "fields" : [
+        ["lkp_outer_l4_sport", 16, false],
+        ["lkp_outer_l4_dport", 16, false]
+      ]
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 8,
       "fields" : [
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
@@ -58,8 +115,7 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 1, false],
         ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
-        ["_padding", 4, false]
+        ["_padding_0", 5, false]
       ]
     }
   ],
@@ -90,6 +146,41 @@
       "id" : 3,
       "header_type" : "ipv4_t",
       "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ipv6",
+      "id" : 4,
+      "header_type" : "ipv6_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "tcp",
+      "id" : 5,
+      "header_type" : "tcp_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "udp",
+      "id" : 6,
+      "header_type" : "udp_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "fwd_metadata",
+      "id" : 7,
+      "header_type" : "fwd_metadata_t",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "l3_metadata",
+      "id" : 8,
+      "header_type" : "l3_metadata_t",
+      "metadata" : true,
       "pi_omit" : true
     }
   ],
@@ -130,23 +221,23 @@
           "transitions" : [
             {
               "value" : "0x00000000012f000000000456",
-              "mask" : null,
-              "next_state" : "a1"
+              "mask" : "0x00000000000f000000c00000",
+              "next_state" : "good1"
             },
             {
-              "value" : "0x00000000012f000000000456",
-              "mask" : "0x00000000ffffffffffffffff",
-              "next_state" : "a2"
+              "value" : "0x00000000012f000000400123",
+              "mask" : "0x0000000000fc000000f00000",
+              "next_state" : "good2"
             },
             {
-              "value" : "0x00000000012f000000000456",
-              "mask" : "0xffffffffffff000000000fff",
-              "next_state" : "a3"
+              "value" : "0x00000000012f000000600456",
+              "mask" : "0x000000000000000000c00000",
+              "next_state" : "good3"
             },
             {
-              "value" : "0x00000000012f000000000456",
-              "mask" : "0x00000000ffff000000000fff",
-              "next_state" : "a4"
+              "value" : "0x00000000012f0000006000ff",
+              "mask" : "0x000000000000000000c000ff",
+              "next_state" : "bad"
             },
             {
               "value" : "default",
@@ -166,7 +257,7 @@
           ]
         },
         {
-          "name" : "a1",
+          "name" : "good1",
           "id" : 1,
           "parser_ops" : [
             {
@@ -186,10 +277,15 @@
               "next_state" : null
             }
           ],
-          "transition_key" : []
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "version"]
+            }
+          ]
         },
         {
-          "name" : "a2",
+          "name" : "good2",
           "id" : 2,
           "parser_ops" : [
             {
@@ -209,10 +305,15 @@
               "next_state" : null
             }
           ],
-          "transition_key" : []
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "version"]
+            }
+          ]
         },
         {
-          "name" : "a3",
+          "name" : "good3",
           "id" : 3,
           "parser_ops" : [
             {
@@ -232,10 +333,15 @@
               "next_state" : null
             }
           ],
-          "transition_key" : []
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "version"]
+            }
+          ]
         },
         {
-          "name" : "a4",
+          "name" : "bad",
           "id" : 4,
           "parser_ops" : [
             {
@@ -255,7 +361,12 @@
               "next_state" : null
             }
           ],
-          "transition_key" : []
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ipv4", "version"]
+            }
+          ]
         }
       ]
     }
@@ -265,12 +376,12 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/mask_test2.p4",
-        "line" : 76,
+        "filename" : "p4_programs/mask_test.p4",
+        "line" : 185,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
-      "order" : ["ethernet", "ipv4"]
+      "order" : ["ethernet", "ipv4", "tcp"]
     }
   ],
   "meter_arrays" : [],
@@ -313,15 +424,15 @@
                   },
                   "right" : {
                     "type" : "hexstr",
-                    "value" : "0xffffffffffff"
+                    "value" : "0x7fffffffffff"
                   }
                 }
               }
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/mask_test2.p4",
-            "line" : 72,
+            "filename" : "p4_programs/mask_test.p4",
+            "line" : 181,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 1"
           }
@@ -334,8 +445,8 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/mask_test2.p4",
-        "line" : 70,
+        "filename" : "p4_programs/mask_test.p4",
+        "line" : 179,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -372,8 +483,8 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/mask_test2.p4",
-        "line" : 65,
+        "filename" : "p4_programs/mask_test.p4",
+        "line" : 174,
         "column" : 8,
         "source_fragment" : "egress"
       },

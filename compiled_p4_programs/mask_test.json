@@ -115,7 +115,8 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 1, false],
         ["egress_rid", 16, false],
-        ["_padding_0", 5, false]
+        ["checksum_error", 1, false],
+        ["_padding_0", 4, false]
       ]
     }
   ],
@@ -231,12 +232,12 @@
             },
             {
               "value" : "0x00000000012f000000600456",
-              "mask" : "0x000000000000000000c00000",
+              "mask" : "0x7fffffffffff000000c00000",
               "next_state" : "good3"
             },
             {
               "value" : "0x00000000012f0000006000ff",
-              "mask" : "0x000000000000000000c000ff",
+              "mask" : "0x7fffffffffff000000c000ff",
               "next_state" : "bad"
             },
             {
