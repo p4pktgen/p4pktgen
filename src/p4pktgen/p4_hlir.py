@@ -230,7 +230,7 @@ class P4_HLIR(P4_Obj):
                     return isinstance(other, HLIR_Parser_Transition) and (
                         self.type_ == other.type_
                     ) and (self.next_state_name == other.next_state_name) and (
-                        self.mask == other.maks) and (
+                        self.mask == other.mask) and (
                             self.value == other.value)
 
                 @classmethod
