@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/mask_test2.p4",
+  "program" : "mask_test2.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -135,12 +135,12 @@
             },
             {
               "value" : "0x00000000012f000000000456",
-              "mask" : "0x00000000ffffffffffffffff",
+              "mask" : "0x00000000000000000000ffff",
               "next_state" : "a2"
             },
             {
               "value" : "0x00000000012f000000000456",
-              "mask" : "0xffffffffffff000000000fff",
+              "mask" : "0x000000000000000000000fff",
               "next_state" : "a3"
             },
             {
@@ -265,7 +265,7 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/mask_test2.p4",
+        "filename" : "mask_test2.p4",
         "line" : 76,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -320,7 +320,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/mask_test2.p4",
+            "filename" : "mask_test2.p4",
             "line" : 72,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 1"
@@ -334,7 +334,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/mask_test2.p4",
+        "filename" : "mask_test2.p4",
         "line" : 70,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -372,7 +372,7 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/mask_test2.p4",
+        "filename" : "mask_test2.p4",
         "line" : 65,
         "column" : 8,
         "source_fragment" : "egress"
