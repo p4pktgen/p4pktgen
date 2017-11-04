@@ -378,10 +378,43 @@ class P4_HLIR(P4_Obj):
 
                     p4ps.parser_ops.append(parser_op)
 
+                # Subtlety warning: If two transitions have exactly
+                # the same value and mask, then the later transition
+                # is impossible to be taken, regardless of what its
+                # next_state might be.  Any packet would always match
+                # the earlier one.
+                #
+                # Some code in translator.py that generates SMT
+                # constraints currently relies upon no two transitions
+                # being identical in the same parser state.  By
+                # eliminating these redundant transitions, which we
+                # have confirmed that p4c-bm2-ss can create in the
+                # JSON file, we work around that limitation in the
+                # constraint generation code.
+                set_of_value_mask_tuples = set()
                 for k in parse_state['transitions']:
                     transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(
                         k)
-                    p4ps.transitions.append(transition)
+                    value_mask_tuple = (transition.value, transition.mask)
+                    if value_mask_tuple in set_of_value_mask_tuples:
+                        if isinstance(transition.value, int) or isinstance(transition.value, long):
+                            show_value = "0x%x" % (transition.value)
+                        else:
+                            show_value = str(transition.value)
+                        if isinstance(transition.mask, int) or isinstance(transition.mask, long):
+                            show_mask = "0x%x" % (transition.mask)
+                        else:
+                            show_mask = str(transition.mask)
+
+                        logging.warning(
+                            "Parser state %s contained multiple transitions"
+                            " with the same value %s and mask %s."
+                            "  Removing all but the first, as the later"
+                            " ones cannot be matched."
+                            "" % (p4ps.name, show_value, show_mask))
+                    else:
+                        set_of_value_mask_tuples.add(value_mask_tuple)
+                        p4ps.transitions.append(transition)
                 for k in parse_state['transition_key']:
                     p4ps.transition_key.append(self.parse_p4_value(k))
                 parser.parse_states[p4ps.name] = p4ps
