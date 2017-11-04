@@ -223,8 +223,15 @@ class P4_HLIR(P4_Obj):
                     self.type_ = type_
                     self.next_state_name = next_state_name
                     self.next_state = next_state
-                    self.maks = mask
+                    self.mask = mask
                     self.value = value
+
+                def __eq__(self, other):
+                    return isinstance(other, HLIR_Parser_Transition) and (
+                        self.type_ == other.type_
+                    ) and (self.next_state_name == other.next_state_name) and (
+                        self.mask == other.maks) and (
+                            self.value == other.value)
 
                 @classmethod
                 def from_json(cls, json_obj):
@@ -235,10 +242,15 @@ class P4_HLIR(P4_Obj):
                         value = None
                     else:
                         value = int(json_obj['value'], 16)
+
+                    if json_obj['mask'] is None:
+                        mask = None
+                    else:
+                        mask = int(json_obj['mask'], 16)
                     return cls(
                         type_=type_,
                         next_state_name=json_obj['next_state'],
-                        mask=json_obj['mask'],
+                        mask=mask,
                         value=value)
 
             # Init for parse states class

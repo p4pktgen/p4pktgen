@@ -200,8 +200,8 @@ class Translator:
             return BitVecVal(expr, size)
         else:
             # XXX: implement other operators
-            raise Exception('expr type not supported: {}'.format(
-                expr.__class__))
+            raise Exception(
+                'expr type not supported: {}'.format(expr.__class__))
 
     def p4_value_to_bv(self, value, size):
         # XXX: Support values that are not simple hexstrs
@@ -456,14 +456,14 @@ class Translator:
                 value = self.type_value_to_smt(context,
                                                primitive.parameters[1])
                 field = primitive.parameters[0]
-                fld_info = self.hlir.headers[field.header_name].fields[field.header_field]
+                fld_info = self.hlir.headers[field.header_name].fields[
+                    field.header_field]
                 dest_size = fld_info.size
                 if dest_size != value.size():
                     logging.debug("primitive op '%s' lhs/rhs width mismatch"
                                   " (%d != %d bits) lhs %s source_info %s"
-                                  "" % (primitive.op, dest_size,
-                                        value.size(), field,
-                                        primitive.source_info))
+                                  "" % (primitive.op, dest_size, value.size(),
+                                        field, primitive.source_info))
                     logging.debug("    value %s" % (value))
                     if dest_size > value.size():
                         value = ZeroExt(dest_size - value.size(), value)
@@ -544,29 +544,25 @@ class Translator:
         # See https://github.com/p4lang/behavioral-model/issues/441 for a
         # reference to the relevant part of the behavioral-model JSON
         # spec.
-        assert mask is None
+        assert mask is None or isinstance(mask, int) or isinstance(mask, long)
         assert len(sym_transition_keys) >= 1
-        keys_rev = copy.copy(sym_transition_keys)
-        keys_rev.reverse()
         bitvecs = []
-        for k in keys_rev:
+        sz_total = 0
+        for k in sym_transition_keys:
             sz_bits = k.size()
             sz_bytes = (sz_bits + 7) / 8
-            mask = (1 << (8 * sz_bytes)) - 1
-            v = value & mask
-            bitvec = self.p4_value_to_bv(v, sz_bits)
-            bitvecs.append(bitvec)
+            sz_total += 8 * sz_bytes
+            bitvecs.append(ZeroExt(8 * sz_bytes - sz_bits, k))
 
-            value >>= (8 * sz_bytes)
-            #mask >>= (8 * sz_bytes)
+        bv_value = BitVecVal(value, sz_total)
+        bv_mask = BitVecVal(mask if mask is not None else -1, sz_total)
 
-        bitvecs.reverse()
-        logging.debug("sym_transition_keys %s bitvecs %s"
-                      "" % (sym_transition_keys, bitvecs))
+        logging.debug(
+            "bitvecs {} value {} mask {}".format(bitvecs, bv_value, bv_mask))
         if len(sym_transition_keys) > 1:
-            constraint = Concat(sym_transition_keys) == Concat(bitvecs)
+            constraint = (Concat(bitvecs) & bv_mask) == (bv_value & bv_mask)
         else:
-            constraint = sym_transition_keys[0] == bitvecs[0]
+            constraint = (bitvecs[0] & bv_mask) == (bv_value & bv_mask)
         return constraint
 
     def init_context(self):
@@ -608,6 +604,8 @@ class Translator:
             # XXX: decide what to do with sink
             transition = None
             for current_transition in parse_state.transitions:
+                # XXX: this only really works if there are not two
+                # transitions to the same state
                 if current_transition.next_state_name == next_node or (
                         current_transition.next_state_name is None
                         and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
@@ -623,7 +621,8 @@ class Translator:
                     fail = True
 
                 new_pos = self.parser_op_to_smt(self.context, self.sym_packet,
-                                                parser_op, fail, pos, new_pos, constraints)
+                                                parser_op, fail, pos, new_pos,
+                                                constraints)
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
                 # Packet needs to be at least one byte too short
@@ -639,25 +638,29 @@ class Translator:
                     raise Exception('Transition key type not supported: {}'.
                                     format(transition_key_elem.__class__))
 
-            # XXX: support key types other than hexstr
-            if transition.value is not None:
-                constraint = self.parser_transition_key_constraint(
-                    sym_transition_key, transition.value, None)
-                constraints.append(constraint)
-            elif len(sym_transition_key) > 0:
-                # XXX: check that default is last option
-                other_values = []
+            # XXX: is this check really necessary?
+            if len(sym_transition_key) > 0:
+                # Make sure that we are not hitting any of the cases before the
+                # case that we care about
+                other_constraints = []
                 for current_transition in parse_state.transitions:
-                    if current_transition.value is not None:
-                        other_values.append(current_transition.value)
-                logging.debug("other_values %s" % (other_values))
+                    if current_transition != transition:
+                        other_constraints.append(
+                            self.parser_transition_key_constraint(
+                                sym_transition_key, current_transition.value,
+                                current_transition.mask))
+                    else:
+                        break
 
-                other_constraints = [
-                    self.parser_transition_key_constraint(
-                        sym_transition_key, value, None)
-                    for value in other_values
-                ]
                 constraints.append(Not(Or(other_constraints)))
+                logging.debug(
+                    "Other constraints: {}".format(other_constraints))
+
+                # The constraint for the case that we are interested in
+                if transition.value is not None:
+                    constraint = self.parser_transition_key_constraint(
+                        sym_transition_key, transition.value, transition.mask)
+                    constraints.append(constraint)
 
             logging.debug(sym_transition_key)
             pos = simplify(new_pos)
