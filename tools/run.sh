@@ -133,7 +133,7 @@ set -x
 #p4pktgen ${OPTS} $HOME/p4-docs/test-p4-programs/p4c-issue-950-variant1.json
 
 # Looking better!
-p4pktgen ${OPTS} compiled_p4_programs/chksum.json
+#p4pktgen ${OPTS} compiled_p4_programs/chksum.json
 
 #p4pktgen ${OPTS} compiled_p4_programs/chksum2.json
 #p4pktgen ${OPTS} compiled_p4_programs/chksum3.json
@@ -146,3 +146,5 @@ p4pktgen ${OPTS} compiled_p4_programs/chksum.json
 
 #p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1.json
 #p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1-small.json
+
+p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp.json
