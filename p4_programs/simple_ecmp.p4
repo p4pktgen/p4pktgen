@@ -59,6 +59,10 @@ struct headers {
     ipv4_t     ipv4;
 }
 
+error {
+    BadIPv4Header
+}
+
 action my_drop() {
     mark_to_drop();
 }
@@ -80,33 +84,10 @@ parser ParserImpl(packet_in packet,
     }
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
+        verify(hdr.ipv4.version == 4 && hdr.ipv4.ihl == 5 &&
+            hdr.ipv4.totalLen >= 20 && hdr.ipv4.ttl != 0,
+            error.BadIPv4Header);
         transition accept;
-    }
-}
-
-//#include "ones-comp-code.p4"
-#include "ones-comp-code-issue983-workaround.p4"
-
-control ipv4_sanity_checks(in ipv4_t ipv4) {
-    bit<16> correctChecksum;
-    apply {
-        ones_comp_sum_b144.apply(correctChecksum,
-            ipv4.version ++ ipv4.ihl ++ ipv4.diffserv ++
-            ipv4.totalLen ++ ipv4.identification ++
-            ipv4.flags ++ ipv4.fragOffset ++
-            ipv4.ttl ++ ipv4.protocol ++
-            ipv4.srcAddr ++ ipv4.dstAddr);
-        correctChecksum = ~correctChecksum;
-        if (ipv4.version != 4 ||
-            ipv4.ihl != 5 ||
-            ipv4.totalLen < 20 ||
-            ipv4.ttl == 0 ||
-            // & 0xffff on next line are to work around p4c issue #983
-            (ipv4.hdrChecksum & 0xffff) != (correctChecksum & 0xffff))
-        {
-            mark_to_drop();
-            exit;
-        }
     }
 }
 
@@ -171,7 +152,6 @@ control ingress(inout headers hdr,
 
     apply {
         if (hdr.ipv4.isValid()) {
-            ipv4_sanity_checks.apply(hdr.ipv4);
             compute_ipv4_hashes.apply(meta.hash1, hdr);
             switch (ipv4_da_lpm.apply().action_run) {
                 ipv4_da_lpm_drop: { exit; }
