@@ -90,6 +90,11 @@ class TypeValueMeterArray(TypeValue):
     def __repr__(self):
         return 'MeterArray<{}>'.format(self.counter_meter_name)
 
+class TypeValueRegular(TypeValue):
+    def __init__(self, json_obj):
+        self.header_name = json_obj
+
+
 def parse_type_value(json_obj):
     p4_type_str = json_obj['type']
     value = json_obj['value']
@@ -124,5 +129,7 @@ def parse_type_value(json_obj):
         return TypeValueCounterArray(value)
     elif p4_type_str == 'meter_array':
         return TypeValueMeterArray(value)
+    elif p4_type_str == 'regular':
+        return TypeValueRegular(value)
     else:
         raise Exception('{} not supported'.format(p4_type_str))

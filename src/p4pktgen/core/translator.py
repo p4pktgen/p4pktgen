@@ -109,100 +109,6 @@ class Translator:
             if bv.size() != target_size else bv for bv in bvs
         ]
 
-    def p4_expr_to_sym(self, context, expr):
-        if isinstance(expr, P4_HLIR.P4_Expression):
-            lhs = self.p4_expr_to_sym(
-                context, expr.left) if expr.left is not None else None
-            rhs = self.p4_expr_to_sym(
-                context, expr.right) if expr.right is not None else None
-            # TBD: Is there a strong reason why this implementation of
-            # various operators is separate from the implementation in
-            # method type_value_to_smt()?
-            if expr.op == '&':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs & rhs
-            elif expr.op == '|':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs | rhs
-            elif expr.op == '^':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs ^ rhs
-            elif expr.op == '~':
-                assert lhs is None
-                assert rhs is not None
-                return ~rhs
-            elif expr.op == 'd2b':
-                return If(rhs == 1, BoolVal(True), BoolVal(False))
-            elif expr.op == 'b2d':
-                return If(rhs, BitVecVal(1, 1), BitVecVal(0, 1))
-            elif expr.op == 'and':
-                assert lhs is not None and rhs is not None
-                return And(lhs, rhs)
-            elif expr.op == 'or':
-                assert lhs is not None and rhs is not None
-                return Or(lhs, rhs)
-            elif expr.op == '==':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs == rhs
-            elif expr.op == '!=':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs != rhs
-            elif expr.op == '>':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                # XXX: signed/unsigned?
-                return UGT(lhs, rhs)
-            elif expr.op == '<':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                # XXX: signed/unsigned?
-                return ULT(lhs, rhs)
-            elif expr.op == '>=':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                # XXX: signed/unsigned?
-                return UGE(lhs, rhs)
-            elif expr.op == '<=':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                # XXX: signed/unsigned?
-                return ULE(lhs, rhs)
-            elif expr.op == '<<':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs << rhs
-            elif expr.op == '>>':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs >> rhs
-            elif expr.op == '+':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs + rhs
-            elif expr.op == '-':
-                assert lhs is not None and rhs is not None
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs + rhs
-            else:
-                logging.warning('Unsupported operation %s', expr.op)
-        elif isinstance(expr, P4_HLIR.HLIR_Field):
-            return context.get(expr)
-        elif isinstance(expr, bool):
-            return expr
-        elif isinstance(expr, int) or isinstance(expr, long):
-            size = min_bits_for_uint(expr)
-            #logging.debug("jdbg expr %s size %s" % (expr, size))
-            return BitVecVal(expr, size)
-        else:
-            # XXX: implement other operators
-            raise Exception(
-                'expr type not supported: {}'.format(expr.__class__))
-
     def p4_value_to_bv(self, value, size):
         # XXX: Support values that are not simple hexstrs
         if True:
@@ -357,10 +263,10 @@ class Translator:
         if op == p4_parser_ops_enum.extract:
             # Extract expects one parameter
             assert len(parser_op.value) == 1
-            assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Headers)
+            assert isinstance(parser_op.value[0], TypeValueRegular)
 
             # Map bits from packet to context
-            extract_header = parser_op.value[0]
+            extract_header = self.hlir.headers[parser_op.value[0].header_name]
             extract_offset = BitVecVal(0, 32)
             for name, field in extract_header.fields.items():
                 # XXX: deal with valid flags
@@ -383,9 +289,10 @@ class Translator:
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.set:
             assert len(parser_op.value) == 2
-            assert isinstance(parser_op.value[0], P4_HLIR.HLIR_Field)
-            dest_size = parser_op.value[0].size
-            rhs_expr = self.p4_expr_to_sym(context, parser_op.value[1])
+            assert isinstance(parser_op.value[0], TypeValueField)
+            dest_field = self.hlir.get_field(parser_op.value[0])
+            dest_size = dest_field.size
+            rhs_expr = self.type_value_to_smt(context, parser_op.value[1])
             #logging.debug("jdbg parser_op %s .value %s"
             #              #" .value[0] %s"
             #              " .value[0].size %s"
@@ -398,20 +305,19 @@ class Translator:
             if dest_size != rhs_expr.size():
                 logging.debug("parser op 'set' lhs/rhs width mismatch"
                               " (%d != %d bits) lhs %s"
-                              "" % (dest_size, rhs_expr.size(),
-                                    parser_op.value[0]))
+                              "" % (dest_size, rhs_expr.size(), dest_field))
                 if dest_size > rhs_expr.size():
                     rhs_expr = ZeroExt(dest_size - rhs_expr.size(), rhs_expr)
                 else:
                     rhs_expr = Extract(dest_size - 1, 0, rhs_expr)
-            context.insert(parser_op.value[0], rhs_expr)
+            context.insert(dest_field, rhs_expr)
             return new_pos
         elif op == p4_parser_ops_enum.extract_VL:
             assert len(parser_op.value) == 2
             assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
 
             # XXX: Take sym_size into account
-            sym_size = self.p4_expr_to_sym(context, parser_op.value[1])
+            sym_size = self.type_value_to_smt(context, parser_op.value[1])
             extract_header = parser_op.value[0]
             extract_offset = 0
             for name, field in extract_header.fields.items():
@@ -425,7 +331,7 @@ class Translator:
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.verify:
             expected_result = BoolVal(False) if fail else BoolVal(True)
-            sym_cond = self.p4_expr_to_sym(context, parser_op.value[0])
+            sym_cond = self.type_value_to_smt(context, parser_op.value[0])
             constraints.append(sym_cond == expected_result)
             return new_pos
         elif op == p4_parser_ops_enum.primitive:
@@ -630,9 +536,11 @@ class Translator:
 
             sym_transition_key = []
             for transition_key_elem in parse_state.transition_key:
-                if isinstance(transition_key_elem, P4_HLIR.HLIR_Field):
+                if isinstance(transition_key_elem, TypeValueField):
                     sym_transition_key.append(
-                        self.context.get(transition_key_elem))
+                        self.context.get_header_field(
+                            transition_key_elem.header_name,
+                            transition_key_elem.header_field))
                 else:
                     raise Exception('Transition key type not supported: {}'.
                                     format(transition_key_elem.__class__))
