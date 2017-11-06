@@ -137,7 +137,7 @@ class Translator:
             elif expr.op == 'd2b':
                 return If(rhs == 1, BoolVal(True), BoolVal(False))
             elif expr.op == 'b2d':
-                return If(rhs, 1, 0)
+                return If(rhs, BitVecVal(1, 1), BitVecVal(0, 1))
             elif expr.op == 'and':
                 assert lhs is not None and rhs is not None
                 return And(lhs, rhs)
