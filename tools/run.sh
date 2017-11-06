@@ -147,4 +147,5 @@ set -x
 #p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1.json
 #p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1-small.json
 
-p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp.json
+#p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp.json
+p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp_no_verify.json
