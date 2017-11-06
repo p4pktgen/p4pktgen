@@ -45,17 +45,13 @@ const bit<2> NEXTHOP_TYPE_DROP           = 0;
 const bit<2> NEXTHOP_TYPE_L2PTR          = 1;
 const bit<2> NEXTHOP_TYPE_ECMP_GROUP_IDX = 2;
 
-struct fwd_metadata_t {
+struct metadata {
     bit<16> hash1;
     bit<2>  nexthop_type;
     bit<10> ecmp_group_idx;
     bit<8>  ecmp_path_selector;
     bit<32> l2ptr;
     bit<24> out_bd;
-}
-
-struct metadata {
-    fwd_metadata_t fwd_metadata;
 }
 
 struct headers {
@@ -96,18 +92,11 @@ control ipv4_sanity_checks(in ipv4_t ipv4) {
     apply {
         ones_comp_sum_b144.apply(correctChecksum,
             ipv4.version ++ ipv4.ihl ++ ipv4.diffserv ++
-            ipv4.totalLen ++
-            ipv4.identification ++
+            ipv4.totalLen ++ ipv4.identification ++
             ipv4.flags ++ ipv4.fragOffset ++
             ipv4.ttl ++ ipv4.protocol ++
-            //ipv4.hdrChecksum ++ // intentionally leave this out
-            ipv4.srcAddr ++
-            ipv4.dstAddr);
-        // Correct IPv4 header checksum is one's complement
-        // (i.e. bit-wise negation) _of_ the one's complement sum
-        // calculated above.
+            ipv4.srcAddr ++ ipv4.dstAddr);
         correctChecksum = ~correctChecksum;
-
         if (ipv4.version != 4 ||
             ipv4.ihl != 5 ||
             ipv4.totalLen < 20 ||
@@ -123,14 +112,7 @@ control ipv4_sanity_checks(in ipv4_t ipv4) {
 
 control compute_ipv4_hashes(out bit<16> hash1, in headers hdr) {
     apply {
-//        hash(hash1, HashAlgorithm.crc16,
-//             (bit<16>) 0, { hdr.ipv4.srcAddr,
-//                            hdr.ipv4.dstAddr,
-//                            hdr.ipv4.protocol },
-//             (bit<32>) 65536);
-        // Use a hash function that is not as high quality as
-        // something like a CRC, but is simple to calculate with a
-        // small P4_16 arithmetic expression.
+        // Cheap, but not high quality, hash function
         hash1 = (hdr.ipv4.srcAddr[31:16] + hdr.ipv4.srcAddr[15:0] +
                  hdr.ipv4.dstAddr[31:16] + hdr.ipv4.dstAddr[15:0] +
                  (bit<16>) hdr.ipv4.protocol);
@@ -141,83 +123,62 @@ control ingress(inout headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
     action set_l2ptr(bit<32> l2ptr) {
-        meta.fwd_metadata.nexthop_type = NEXTHOP_TYPE_L2PTR;
-        meta.fwd_metadata.l2ptr = l2ptr;
+        meta.nexthop_type = NEXTHOP_TYPE_L2PTR;
+        meta.l2ptr = l2ptr;
     }
     action set_ecmp_group_idx(bit<10> ecmp_group_idx) {
-        meta.fwd_metadata.nexthop_type = NEXTHOP_TYPE_ECMP_GROUP_IDX;
-        meta.fwd_metadata.ecmp_group_idx = ecmp_group_idx;
+        meta.nexthop_type = NEXTHOP_TYPE_ECMP_GROUP_IDX;
+        meta.ecmp_group_idx = ecmp_group_idx;
     }
     action ipv4_da_lpm_drop() {
-        meta.fwd_metadata.nexthop_type = NEXTHOP_TYPE_DROP;
+        meta.nexthop_type = NEXTHOP_TYPE_DROP;
         my_drop();
     }
     table ipv4_da_lpm {
-        key = {
-            hdr.ipv4.dstAddr: lpm;
-        }
-        actions = {
-            set_l2ptr;
-            set_ecmp_group_idx;
-            ipv4_da_lpm_drop;
-        }
+        key = { hdr.ipv4.dstAddr: lpm; }
+        actions = { set_l2ptr; set_ecmp_group_idx; ipv4_da_lpm_drop; }
         default_action = ipv4_da_lpm_drop;
     }
 
     action set_ecmp_path_idx(bit<8> num_paths_mask) {
-//        hash(meta.fwd_metadata.ecmp_path_selector, HashAlgorithm.identity,
-//             (bit<16>) 0, { meta.fwd_metadata.hash1 }, (bit<32>)num_paths);
-        meta.fwd_metadata.ecmp_path_selector =
-            ((meta.fwd_metadata.hash1[15:8] ^ meta.fwd_metadata.hash1[7:0]) &
-             num_paths_mask);
+        meta.ecmp_path_selector =
+            ((meta.hash1[15:8] ^ meta.hash1[7:0]) & num_paths_mask);
     }
     table ecmp_group {
-        key = {
-            meta.fwd_metadata.ecmp_group_idx: exact;
-        }
-        actions = {
-            set_ecmp_path_idx;
-            set_l2ptr;
-        }
+        key = { meta.ecmp_group_idx: exact; }
+        actions = { set_ecmp_path_idx; set_l2ptr; }
     }
 
     table ecmp_path {
         key = {
-            meta.fwd_metadata.ecmp_group_idx    : exact;
-            meta.fwd_metadata.ecmp_path_selector: exact;
+            meta.ecmp_group_idx    : exact;
+            meta.ecmp_path_selector: exact;
         }
-        actions = {
-            set_l2ptr;
-        }
+        actions = { set_l2ptr; }
     }
 
     action set_bd_dmac_intf(bit<24> bd, bit<48> dmac, bit<9> intf) {
-        meta.fwd_metadata.out_bd = bd;
+        meta.out_bd = bd;
         hdr.ethernet.dstAddr = dmac;
         standard_metadata.egress_spec = intf;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     table mac_da {
-        key = {
-            meta.fwd_metadata.l2ptr: exact;
-        }
-        actions = {
-            set_bd_dmac_intf;
-            my_drop;
-        }
+        key = { meta.l2ptr: exact; }
+        actions = { set_bd_dmac_intf; my_drop; }
         default_action = my_drop;
     }
 
     apply {
         if (hdr.ipv4.isValid()) {
             ipv4_sanity_checks.apply(hdr.ipv4);
-            compute_ipv4_hashes.apply(meta.fwd_metadata.hash1, hdr);
+            compute_ipv4_hashes.apply(meta.hash1, hdr);
             switch (ipv4_da_lpm.apply().action_run) {
                 ipv4_da_lpm_drop: { exit; }
             }
-            if (meta.fwd_metadata.nexthop_type != NEXTHOP_TYPE_L2PTR) {
+            if (meta.nexthop_type != NEXTHOP_TYPE_L2PTR) {
                 ecmp_group.apply();
-                if (meta.fwd_metadata.nexthop_type != NEXTHOP_TYPE_L2PTR) {
+                if (meta.nexthop_type != NEXTHOP_TYPE_L2PTR) {
                     ecmp_path.apply();
                 }
             }
@@ -235,7 +196,7 @@ control egress(inout headers hdr,
     }
     table send_frame {
         key = {
-            meta.fwd_metadata.out_bd: exact;
+            meta.out_bd: exact;
         }
         actions = {
             rewrite_mac;
