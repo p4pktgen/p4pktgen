@@ -314,19 +314,44 @@ class Translator:
             return new_pos
         elif op == p4_parser_ops_enum.extract_VL:
             assert len(parser_op.value) == 2
-            assert isinstance(parser_op.value[0], P4_HLIR.P4_Headers)
+            assert isinstance(parser_op.value[0], TypeValueRegular)
 
             # XXX: Take sym_size into account
             sym_size = self.type_value_to_smt(context, parser_op.value[1])
-            extract_header = parser_op.value[0]
-            extract_offset = 0
+
+            # Length of variable length field needs to be divisible by 8
+            constraints.append(sym_size & BitVecVal(0x7, sym_size.size()) == BitVecVal(0x0, sym_size.size()))
+            print((sym_size & BitVecVal(0x7, sym_size.size())) == BitVecVal(0x0, sym_size.size()))
+            extract_header = self.hlir.headers[parser_op.value[0].header_name]
+            extract_offset = BitVecVal(0, 32)
+
             for name, field in extract_header.fields.items():
                 # XXX: deal with valid flags
                 if field.name != '$valid$':
-                    context.insert(field,
-                                   sym_packet.extract(pos + extract_offset,
-                                                      field.size))
-                    extract_offset += BitVecVal(field.size, 32)
+                    if field.var_length:
+                        field_val = sym_packet.extract(pos + extract_offset, field.size)
+                        ones = BitVecVal(-1, field.size)
+                        assert ones.size() >= sym_size.size()
+                        field_size_c = BitVecVal(field.size, sym_size.size())
+                        ones, shift_bits = self.equalize_bv_size([ones, field_size_c - sym_size])
+                        context.insert(field, field_val & (LShR(ones, shift_bits)))
+
+                        constraints.append(ULE(sym_size, field_size_c))
+                    else:
+                        context.insert(field,
+                                       sym_packet.extract(pos + extract_offset,
+                                                          field.size))
+                        extract_offset += BitVecVal(field.size, 32)
+                else:
+                    # Even though the P4_16 isValid() method
+                    # returns a boolean value, it appears that
+                    # when p4c-bm2-ss compiles expressions like
+                    # "if (ipv4.isValid())" into a JSON file, it
+                    # compares the "ipv4.$valid$" field to a bit
+                    # vector value of 1 with the == operator, thus
+                    # effectively treating the "ipv4.$valid$" as
+                    # if it is a bit<1> type.
+                    context.insert(field, BitVecVal(1, 1))
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.verify:
@@ -335,8 +360,16 @@ class Translator:
             constraints.append(sym_cond == expected_result)
             return new_pos
         elif op == p4_parser_ops_enum.primitive:
+            primitive = parser_op.value[0]
+            # XXX: merge with action_to_smt
+            if primitive.op == 'add_header':
+                header_name = primitive.parameters[0].header_name
+                context.set_field_value(header_name, '$valid$', BitVecVal(
+                    1, 1))
+                return new_pos
+            else:
+                raise Exception('Primitive not supported: {}'.format(primitive.op))
             logging.warning('Primitive not supported')
-            return new_pos
         else:
             raise Exception('Parser op not supported: {}'.format(op))
 

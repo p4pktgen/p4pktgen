@@ -230,10 +230,10 @@ def process_json_file(input_file, debug=False):
     graph, source_info_to_node_name = in_pipeline.generate_CFG()
     logging.debug(graph)
     # Graphviz visualization
-    generate_graphviz_graph(in_pipeline, graph)
+    """generate_graphviz_graph(in_pipeline, graph)
     eg_pipeline = hlir.pipelines['egress']
     eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
-    generate_graphviz_graph(eg_pipeline, eg_graph)
+    generate_graphviz_graph(eg_pipeline, eg_graph)"""
 
     parser_paths = parser_graph.generate_all_paths(
         hlir.parsers['parser'].init_state, 'sink')
