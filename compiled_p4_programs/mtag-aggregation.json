@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/mtag/mtag-edge.p4",
+  "program" : "p4_programs/mtag/mtag-aggregation.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -9,9 +9,7 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["tmp", 32, false],
-        ["tmp_0", 1, false],
-        ["_padding_0", 7, false]
+        ["tmp", 32, false]
       ]
     },
     {
@@ -653,30 +651,8 @@
       "order" : ["ethernet", "vlan", "mtag", "ipv4"]
     }
   ],
-  "meter_arrays" : [
-    {
-      "name" : "per_dest_by_source",
-      "id" : 0,
-      "is_direct" : false,
-      "size" : 4096,
-      "rate_count" : 2,
-      "type" : "bytes"
-    }
-  ],
-  "counter_arrays" : [
-    {
-      "name" : "bytes_by_dest",
-      "id" : 0,
-      "is_direct" : true,
-      "binding" : "mTag_table"
-    },
-    {
-      "name" : "per_color_drops",
-      "id" : 1,
-      "is_direct" : true,
-      "binding" : "meter_policy"
-    }
-  ],
+  "meter_arrays" : [],
+  "counter_arrays" : [],
   "register_arrays" : [],
   "calculations" : [],
   "learn_lists" : [],
@@ -787,216 +763,8 @@
       ]
     },
     {
-      "name" : "no_op",
-      "id" : 4,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "no_op",
-      "id" : 5,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "meter_pkt",
-      "id" : 6,
-      "runtime_data" : [
-        {
-          "name" : "meter_idx",
-          "bitwidth" : 32
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "execute_meter",
-          "parameters" : [
-            {
-              "type" : "meter_array",
-              "value" : "per_dest_by_source"
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            },
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "color"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 158,
-            "column" : 4,
-            "source_fragment" : "execute_meter(per_dest_by_source, meter_idx, local_metadata.color)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "drop",
-      "id" : 7,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/actions.p4",
-            "line" : 28,
-            "column" : 16,
-            "source_fragment" : "drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "no_op",
-      "id" : 8,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "act",
-      "id" : 9,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_0"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : true
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "act_0",
-      "id" : 10,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_0"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : false
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "NoAction",
-      "id" : 11,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "NoAction",
-      "id" : 12,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "NoAction",
-      "id" : 13,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "NoAction",
-      "id" : 14,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "common_set_port_type",
-      "id" : 15,
-      "runtime_data" : [
-        {
-          "name" : "port_type",
-          "bitwidth" : 4
-        },
-        {
-          "name" : "ingress_error",
-          "bitwidth" : 1
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "port_type"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/actions.p4",
-            "line" : 46,
-            "column" : 28,
-            "source_fragment" : "port_type, ingress_error) { ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "ingress_error"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 1
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/actions.p4",
-            "line" : 46,
-            "column" : 39,
-            "source_fragment" : "ingress_error) { ..."
-          }
-        }
-      ]
-    },
-    {
       "name" : "common_drop_pkt",
-      "id" : 16,
+      "id" : 4,
       "runtime_data" : [
         {
           "name" : "do_copy",
@@ -1082,283 +850,8 @@
       ]
     },
     {
-      "name" : "no_op",
-      "id" : 17,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "no_op",
-      "id" : 18,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "no_op",
-      "id" : 19,
-      "runtime_data" : [],
-      "primitives" : []
-    },
-    {
-      "name" : "set_egress",
-      "id" : 20,
-      "runtime_data" : [
-        {
-          "name" : "egress_spec",
-          "bitwidth" : 9
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "egress_spec"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 74,
-            "column" : 18,
-            "source_fragment" : "egress_spec) { ..."
-          }
-        }
-      ]
-    },
-    {
-      "name" : "_strip_mtag",
-      "id" : 21,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "remove_header",
-          "parameters" : [
-            {
-              "type" : "header",
-              "value" : "mtag"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 42,
-            "column" : 4,
-            "source_fragment" : "remove_header(mtag)"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["local_metadata", "was_mtagged"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x01"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 44,
-            "column" : 4,
-            "source_fragment" : "modify_field(local_metadata.was_mtagged, 1)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "add_mTag",
-      "id" : 22,
-      "runtime_data" : [
-        {
-          "name" : "up1",
-          "bitwidth" : 9
-        },
-        {
-          "name" : "up2",
-          "bitwidth" : 8
-        },
-        {
-          "name" : "down1",
-          "bitwidth" : 8
-        },
-        {
-          "name" : "down2",
-          "bitwidth" : 8
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "add_header",
-          "parameters" : [
-            {
-              "type" : "header",
-              "value" : "mtag"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 92,
-            "column" : 4,
-            "source_fragment" : "add_header(mtag)"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["mtag", "ethertype"]
-            },
-            {
-              "type" : "field",
-              "value" : ["vlan", "ethertype"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 94,
-            "column" : 4,
-            "source_fragment" : "modify_field(mtag.ethertype, vlan.ethertype)"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["vlan", "ethertype"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0xaaaa"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 97,
-            "column" : 4,
-            "source_fragment" : "modify_field(vlan.ethertype, 0xaaaa)"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["mtag", "up1"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "&",
-                  "left" : {
-                    "type" : "local",
-                    "value" : 0
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0xff"
-                  }
-                }
-              }
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 91,
-            "column" : 16,
-            "source_fragment" : "up1, up2, down1, down2) { ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["mtag", "up2"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 1
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 91,
-            "column" : 21,
-            "source_fragment" : "up2, down1, down2) { ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["mtag", "down1"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 2
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 91,
-            "column" : 26,
-            "source_fragment" : "down1, down2) { ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["mtag", "down2"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 3
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 91,
-            "column" : 33,
-            "source_fragment" : "down2) { ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "egress_spec"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 91,
-            "column" : 16,
-            "source_fragment" : "up1, up2, down1, down2) { ..."
-          }
-        }
-      ]
-    },
-    {
       "name" : "common_copy_pkt_to_cpu",
-      "id" : 23,
+      "id" : 5,
       "runtime_data" : [
         {
           "name" : "cpu_code",
@@ -1431,25 +924,247 @@
     },
     {
       "name" : "no_op",
-      "id" : 24,
+      "id" : 6,
       "runtime_data" : [],
       "primitives" : []
+    },
+    {
+      "name" : "no_op",
+      "id" : 7,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "no_op",
+      "id" : 8,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "common_set_port_type",
+      "id" : 9,
+      "runtime_data" : [
+        {
+          "name" : "port_type",
+          "bitwidth" : 4
+        },
+        {
+          "name" : "ingress_error",
+          "bitwidth" : 1
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "port_type"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/mtag/actions.p4",
+            "line" : 46,
+            "column" : 28,
+            "source_fragment" : "port_type, ingress_error) { ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["local_metadata", "ingress_error"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 1
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/mtag/actions.p4",
+            "line" : 46,
+            "column" : 39,
+            "source_fragment" : "ingress_error) { ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "use_mtag_up1",
+      "id" : 10,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["mtag", "up1"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0x01ff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 73,
+            "column" : 4,
+            "source_fragment" : "modify_field(standard_metadata.egress_spec, mtag.up1)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "use_mtag_up2",
+      "id" : 11,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["mtag", "up2"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0x01ff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 76,
+            "column" : 4,
+            "source_fragment" : "modify_field(standard_metadata.egress_spec, mtag.up2)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "use_mtag_down1",
+      "id" : 12,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["mtag", "down1"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0x01ff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 79,
+            "column" : 4,
+            "source_fragment" : "modify_field(standard_metadata.egress_spec, mtag.down1)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "use_mtag_down2",
+      "id" : 13,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "egress_spec"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["mtag", "down2"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0x01ff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 82,
+            "column" : 4,
+            "source_fragment" : "modify_field(standard_metadata.egress_spec, mtag.down2)"
+          }
+        }
+      ]
     }
   ],
   "pipelines" : [
     {
       "name" : "ingress",
       "id" : 0,
-      "init_table" : "strip_mtag",
+      "init_table" : "check_mtag",
       "tables" : [
         {
-          "name" : "strip_mtag",
+          "name" : "check_mtag",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 48,
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 42,
             "column" : 0,
-            "source_fragment" : "table strip_mtag { ..."
+            "source_fragment" : "table check_mtag { ..."
           },
           "key" : [
             {
@@ -1460,20 +1175,21 @@
           ],
           "match_type" : "exact",
           "type" : "simple",
-          "max_size" : 1024,
+          "max_size" : 1,
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [21, 19, 14],
-          "actions" : ["_strip_mtag", "no_op", "NoAction"],
+          "action_ids" : [3, 5, 6, 0],
+          "actions" : ["common_drop_pkt", "common_copy_pkt_to_cpu", "no_op", "NoAction"],
           "base_default_next" : "identify_port",
           "next_tables" : {
-            "_strip_mtag" : "identify_port",
+            "common_drop_pkt" : "identify_port",
+            "common_copy_pkt_to_cpu" : "identify_port",
             "no_op" : "identify_port",
             "NoAction" : "identify_port"
           },
           "default_entry" : {
-            "action_id" : 14,
+            "action_id" : 0,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1483,8 +1199,8 @@
           "name" : "identify_port",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 61,
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 57,
             "column" : 0,
             "source_fragment" : "table identify_port { ..."
           },
@@ -1501,244 +1217,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [15, 16, 17, 11],
+          "action_ids" : [9, 4, 7, 1],
           "actions" : ["common_set_port_type", "common_drop_pkt", "no_op", "NoAction"],
-          "base_default_next" : "node_4",
+          "base_default_next" : "select_output_port",
           "next_tables" : {
-            "common_set_port_type" : "node_4",
-            "common_drop_pkt" : "node_4",
-            "no_op" : "node_4",
-            "NoAction" : "node_4"
-          },
-          "default_entry" : {
-            "action_id" : 11,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "local_switching",
-          "id" : 2,
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 79,
-            "column" : 0,
-            "source_fragment" : "table local_switching { ..."
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "target" : ["vlan", "vid"],
-              "mask" : null
-            },
-            {
-              "match_type" : "exact",
-              "target" : ["ipv4", "dstAddr"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [20, 18, 12],
-          "actions" : ["set_egress", "no_op", "NoAction"],
-          "base_default_next" : "node_6",
-          "next_tables" : {
-            "set_egress" : "node_6",
-            "no_op" : "node_6",
-            "NoAction" : "node_6"
-          },
-          "default_entry" : {
-            "action_id" : 12,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "mTag_table",
-          "id" : 3,
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 121,
-            "column" : 0,
-            "source_fragment" : "table mTag_table { ..."
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "target" : ["ethernet", "dst_addr"],
-              "mask" : null
-            },
-            {
-              "match_type" : "exact",
-              "target" : ["vlan", "vid"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : true,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [22, 23, 24, 13],
-          "actions" : ["add_mTag", "common_copy_pkt_to_cpu", "no_op", "NoAction"],
-          "base_default_next" : null,
-          "next_tables" : {
-            "add_mTag" : null,
-            "common_copy_pkt_to_cpu" : null,
-            "no_op" : null,
-            "NoAction" : null
-          },
-          "default_entry" : {
-            "action_id" : 13,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        }
-      ],
-      "action_profiles" : [],
-      "conditionals" : [
-        {
-          "name" : "node_4",
-          "id" : 0,
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 205,
-            "column" : 37,
-            "source_fragment" : "=="
-          },
-          "expression" : {
-            "type" : "expression",
-            "value" : {
-              "op" : "==",
-              "left" : {
-                "type" : "field",
-                "value" : ["local_metadata", "ingress_error"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x00"
-              }
-            }
-          },
-          "false_next" : null,
-          "true_next" : "local_switching"
-        },
-        {
-          "name" : "node_6",
-          "id" : 1,
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 210,
-            "column" : 42,
-            "source_fragment" : "=="
-          },
-          "expression" : {
-            "type" : "expression",
-            "value" : {
-              "op" : "==",
-              "left" : {
-                "type" : "field",
-                "value" : ["standard_metadata", "egress_spec"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x0000"
-              }
-            }
-          },
-          "false_next" : null,
-          "true_next" : "mTag_table"
-        }
-      ]
-    },
-    {
-      "name" : "egress",
-      "id" : 1,
-      "init_table" : "egress_check",
-      "tables" : [
-        {
-          "name" : "egress_check",
-          "id" : 4,
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 135,
-            "column" : 0,
-            "source_fragment" : "table egress_check { ..."
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "target" : ["standard_metadata", "ingress_port"],
-              "mask" : null
-            },
-            {
-              "match_type" : "exact",
-              "target" : ["local_metadata", "was_mtagged"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [3, 4, 0],
-          "actions" : ["common_drop_pkt", "no_op", "NoAction"],
-          "base_default_next" : "egress_meter",
-          "next_tables" : {
-            "common_drop_pkt" : "egress_meter",
-            "no_op" : "egress_meter",
-            "NoAction" : "egress_meter"
-          },
-          "default_entry" : {
-            "action_id" : 0,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "egress_meter",
-          "id" : 5,
-          "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 162,
-            "column" : 0,
-            "source_fragment" : "table egress_meter { ..."
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "target" : ["standard_metadata", "ingress_port"],
-              "mask" : null
-            },
-            {
-              "match_type" : "exact",
-              "target" : ["mtag", "up1"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 4096,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [6, 5, 1],
-          "actions" : ["meter_pkt", "no_op", "NoAction"],
-          "base_default_next" : null,
-          "next_tables" : {
-            "__HIT__" : "tbl_act",
-            "__MISS__" : "tbl_act_0"
+            "common_set_port_type" : "select_output_port",
+            "common_drop_pkt" : "select_output_port",
+            "no_op" : "select_output_port",
+            "NoAction" : "select_output_port"
           },
           "default_entry" : {
             "action_id" : 1,
@@ -1748,78 +1234,35 @@
           }
         },
         {
-          "name" : "tbl_act",
-          "id" : 6,
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [9],
-          "actions" : ["act"],
-          "base_default_next" : "node_14",
-          "next_tables" : {
-            "act" : "node_14"
-          },
-          "default_entry" : {
-            "action_id" : 9,
-            "action_const" : true,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "tbl_act_0",
-          "id" : 7,
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [10],
-          "actions" : ["act_0"],
-          "base_default_next" : "node_14",
-          "next_tables" : {
-            "act_0" : "node_14"
-          },
-          "default_entry" : {
-            "action_id" : 10,
-            "action_const" : true,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "meter_policy",
-          "id" : 8,
+          "name" : "select_output_port",
+          "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/mtag/mtag-edge.p4",
-            "line" : 180,
+            "filename" : "p4_programs/mtag/mtag-aggregation.p4",
+            "line" : 86,
             "column" : 0,
-            "source_fragment" : "table meter_policy { ..."
+            "source_fragment" : "table select_output_port { ..."
           },
           "key" : [
             {
               "match_type" : "exact",
-              "target" : ["local_metadata", "color"],
+              "target" : ["local_metadata", "port_type"],
               "mask" : null
             }
           ],
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
+          "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7, 8, 2],
-          "actions" : ["drop", "no_op", "NoAction"],
+          "action_ids" : [10, 11, 12, 13, 8, 2],
+          "actions" : ["use_mtag_up1", "use_mtag_up2", "use_mtag_down1", "use_mtag_down2", "no_op", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
-            "drop" : null,
+            "use_mtag_up1" : null,
+            "use_mtag_up2" : null,
+            "use_mtag_down1" : null,
+            "use_mtag_down2" : null,
             "no_op" : null,
             "NoAction" : null
           },
@@ -1832,25 +1275,15 @@
         }
       ],
       "action_profiles" : [],
-      "conditionals" : [
-        {
-          "name" : "node_14",
-          "id" : 2,
-          "expression" : {
-            "type" : "expression",
-            "value" : {
-              "op" : "d2b",
-              "left" : null,
-              "right" : {
-                "type" : "field",
-                "value" : ["scalars", "tmp_0"]
-              }
-            }
-          },
-          "false_next" : null,
-          "true_next" : "meter_policy"
-        }
-      ]
+      "conditionals" : []
+    },
+    {
+      "name" : "egress",
+      "id" : 1,
+      "init_table" : null,
+      "tables" : [],
+      "action_profiles" : [],
+      "conditionals" : []
     }
   ],
   "checksums" : [],
