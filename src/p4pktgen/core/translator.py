@@ -531,8 +531,7 @@ class Translator:
     def parser_transition_key_constraint(self, sym_transition_keys, value,
                                          mask):
         # value should be int
-        # mask should be int or None
-        # XXX: Handle masks on transition keys
+        # mask should be int, long, or None
 
         # In the JSON file, if there are multiple fields in the
         # transition_key, then the values are packed in a particular
@@ -674,12 +673,18 @@ class Translator:
         logging.info('Generate parser constraints: %.3f sec' %
                      (parser_constraints_gen_timer.get_time()))
 
+    def parser_op_trans_to_str(self, op_trans):
+        # XXX: after unifying type value representations
+        # assert isinstance(op_trans.op.value[1], TypeValueHexstr)
+        return self.hlir.id_to_errors[op_trans.op.value[1]]
+
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
         # XXX: This is very hacky right now
         expected_path = [
-            n[0] for n in path if not isinstance(n[1], ParserOpTransition)
+            n[0] if not isinstance(n[1], ParserOpTransition) else
+            self.parser_op_trans_to_str(n[1]) for n in path
         ] + control_path
         logging.info("")
         logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
@@ -857,10 +862,8 @@ class Translator:
                     else:
                         len1 = len(expected_path)
                         len2 = len(extracted_path)
-                        # I can't think of any reason that this condition
-                        # would be false.
-                        assert len1 <= len2
-                        match = (expected_path == extracted_path[0:len1])
+                        match = (expected_path == extracted_path[0:len1]
+                                 ) and len1 <= len2
                     if match:
                         logging.info(
                             'Test successful: {}'.format(expected_path))

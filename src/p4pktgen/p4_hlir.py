@@ -372,7 +372,7 @@ class P4_HLIR(P4_Obj):
 
                     if parser_op.op == p4_parser_ops_enum.verify:
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(i, 'sink')])
+                            [ParserOpTransition(parser_op, i, 'sink')])
                     else:
                         p4ps.parser_ops_transitions.append([])
 
@@ -442,7 +442,11 @@ class P4_HLIR(P4_Obj):
         self.hdr_union_types = None
         self.hdr_unions = None
         self.hdr_union_stacks = None
-        self.errors = None
+
+        self.id_to_errors = {}
+        for error in json_obj['errors']:
+            self.id_to_errors[int(error[1])] = error[0]
+
         self.enums = None
 
         self.parse_vsets = None

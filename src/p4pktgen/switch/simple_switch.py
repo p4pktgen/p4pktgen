@@ -99,6 +99,11 @@ class SimpleSwitch:
                 extracted_path.append((table_name, m.group(1)))
                 prev_match = 'action'
                 continue
+            m = re.search(r'Exception while parsing: ([0-9a-zA-Z_]*)$', line)
+            if m is not None:
+                extracted_path.append(m.group(1))
+                prev_match = 'parse_exception'
+                continue
             m = re.search(
                 r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" is (.*)', line)
             if m is not None:
