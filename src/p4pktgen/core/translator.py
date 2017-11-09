@@ -90,6 +90,8 @@ class Translator:
         self.hlir = hlir
         self.pipeline = pipeline
         self.context_history = []  # XXX: implement better mechanism
+        self.total_solver_time = 0.0
+        self.total_switch_time = 0.0
 
     def push(self):
         self.solver.push()
@@ -122,7 +124,8 @@ class Translator:
             raise Exception('Transition value type not supported: {}'.format(
                 value.__class__))
 
-    def type_value_to_smt(self, context, type_value):
+    def type_value_to_smt(self, context, type_value, sym_packet=None,
+                          pos=None):
         if isinstance(type_value, TypeValueHexstr):
             size = min_bits_for_uint(type_value.value)
             return BitVecVal(type_value.value, size)
@@ -131,6 +134,10 @@ class Translator:
             raise Exception('?')
         if isinstance(type_value, TypeValueBool):
             return BoolVal(type_value.value)
+        if isinstance(type_value, TypeValueLookahead):
+            assert sym_packet is not None and pos is not None
+            offset = BitVecVal(type_value.offset, pos.size())
+            return sym_packet.extract(pos + offset, type_value.size)
         if isinstance(type_value, TypeValueField):
             return context.get_header_field(type_value.header_name,
                                             type_value.header_field)
@@ -138,22 +145,30 @@ class Translator:
             return context.get_runtime_data(type_value.index)
         if isinstance(type_value, TypeValueExpression):
             if type_value.op == 'not':
-                return Not(self.type_value_to_smt(context, type_value.right))
+                return Not(
+                    self.type_value_to_smt(context, type_value.right,
+                                           sym_packet, pos))
             elif type_value.op == 'and':
                 return And(
-                    self.type_value_to_smt(context, type_value.left),
-                    self.type_value_to_smt(context, type_value.right))
+                    self.type_value_to_smt(context, type_value.left,
+                                           sym_packet, pos),
+                    self.type_value_to_smt(context, type_value.right,
+                                           sym_packet, pos))
             elif type_value.op == 'or':
                 return Or(
-                    self.type_value_to_smt(context, type_value.left),
-                    self.type_value_to_smt(context, type_value.right))
+                    self.type_value_to_smt(context, type_value.left,
+                                           sym_packet, pos),
+                    self.type_value_to_smt(context, type_value.right,
+                                           sym_packet, pos))
             elif type_value.op == 'd2b':
                 return If(
-                    self.type_value_to_smt(context, type_value.right) == 1,
+                    self.type_value_to_smt(context, type_value.right,
+                                           sym_packet, pos) == 1,
                     BoolVal(True), BoolVal(False))
             elif type_value.op == 'b2d':
                 return If(
-                    self.type_value_to_smt(context, type_value.right),
+                    self.type_value_to_smt(context, type_value.right,
+                                           sym_packet, pos),
                     BitVecVal(1, 1), BitVecVal(0, 1))
             elif type_value.op == 'valid':
                 assert isinstance(type_value.right, TypeValueHeader)
@@ -162,46 +177,63 @@ class Translator:
                                              '$valid$') == BitVecVal(1, 1),
                     BoolVal(True), BoolVal(False))
             elif type_value.op == '==':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs == rhs
             elif type_value.op == '!=':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs != rhs
             elif type_value.op == '&':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs & rhs
             elif type_value.op == '|':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs | rhs
             elif type_value.op == '^':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs ^ rhs
             elif type_value.op == '~':
-                rhs = self.type_value_to_smt(context, type_value.right)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 return ~rhs
             elif type_value.op == '+':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs + rhs
             elif type_value.op == '-':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs - rhs
             elif type_value.op == '*':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs * rhs
             # P4_16 operators '/' and '%' give errors during compilation
@@ -210,39 +242,51 @@ class Translator:
             # constant in the JSON file.
             elif type_value.op == '>':
                 # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return UGT(lhs, rhs)
             elif type_value.op == '<':
                 # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return ULT(lhs, rhs)
             elif type_value.op == '>=':
                 # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return UGE(lhs, rhs)
             elif type_value.op == '<=':
                 # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return ULE(lhs, rhs)
             elif type_value.op == '<<':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 # P4_16 does not require that lhs and rhs of << operator
                 # be equal bit widths, but I believe that the Z3 SMT
                 # solver does.
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs << rhs
             elif type_value.op == '>>':
-                lhs = self.type_value_to_smt(context, type_value.left)
-                rhs = self.type_value_to_smt(context, type_value.right)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
                 # P4_16 does not require that lhs and rhs of >> operator
                 # be equal bit widths, but I believe that the Z3 SMT
                 # solver does.
@@ -255,7 +299,7 @@ class Translator:
             # XXX: implement other operators
             raise Exception('Type value {} not supported'.format(type_value))
 
-    # XXX: "fail" probably needs to be more detailed
+    # XXX: "fail" should not be a string
     # XXX: pos/new_pos should be part of the context
     def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos,
                          new_pos, constraints):
@@ -264,15 +308,26 @@ class Translator:
             # Extract expects one parameter
             assert len(parser_op.value) == 1
             assert isinstance(parser_op.value[0], TypeValueRegular)
+            extract_header = self.hlir.headers[parser_op.value[0].header_name]
+
+            if fail == 'PacketTooShort':
+                # XXX: precalculate extract_offset in HLIR
+                extract_offset = sum([
+                    BitVecVal(field.size, 32)
+                    for _, field in extract_header.fields.items()
+                    if field.name != '$valid$'
+                ])
+                self.sym_packet.set_max_length(
+                    simplify(new_pos + extract_offset - 8))
+                return new_pos
 
             # Map bits from packet to context
-            extract_header = self.hlir.headers[parser_op.value[0].header_name]
             extract_offset = BitVecVal(0, 32)
             for name, field in extract_header.fields.items():
                 # XXX: deal with valid flags
                 if field.name != '$valid$':
                     context.insert(field,
-                                   sym_packet.extract(pos + extract_offset,
+                                   sym_packet.extract(new_pos + extract_offset,
                                                       field.size))
                     extract_offset += BitVecVal(field.size, 32)
                 else:
@@ -292,7 +347,8 @@ class Translator:
             assert isinstance(parser_op.value[0], TypeValueField)
             dest_field = self.hlir.get_field(parser_op.value[0])
             dest_size = dest_field.size
-            rhs_expr = self.type_value_to_smt(context, parser_op.value[1])
+            rhs_expr = self.type_value_to_smt(context, parser_op.value[1],
+                                              sym_packet, new_pos)
             #logging.debug("jdbg parser_op %s .value %s"
             #              #" .value[0] %s"
             #              " .value[0].size %s"
@@ -317,30 +373,74 @@ class Translator:
             assert isinstance(parser_op.value[0], TypeValueRegular)
 
             # XXX: Take sym_size into account
-            sym_size = self.type_value_to_smt(context, parser_op.value[1])
+            sym_size = self.type_value_to_smt(context, parser_op.value[1],
+                                              sym_packet, pos)
 
             # Length of variable length field needs to be divisible by 8
-            constraints.append(sym_size & BitVecVal(0x7, sym_size.size()) == BitVecVal(0x0, sym_size.size()))
-            print((sym_size & BitVecVal(0x7, sym_size.size())) == BitVecVal(0x0, sym_size.size()))
+            constraints.append(
+                sym_size & BitVecVal(0x7, sym_size.size()) == BitVecVal(
+                    0x0, sym_size.size()))
             extract_header = self.hlir.headers[parser_op.value[0].header_name]
             extract_offset = BitVecVal(0, 32)
+
+            if fail == 'PacketTooShort':
+                # XXX: Merge size calculation
+                header_size = BitVecVal(0, 32)
+                for name, field in extract_header.fields.items():
+                    # XXX: deal with valid flags
+                    if field.name != '$valid$':
+                        if field.var_length:
+                            header_size += sym_size
+                        else:
+                            header_size += BitVecVal(field.size, 32)
+
+                self.sym_packet.set_max_length(
+                    simplify(new_pos + header_size - 8))
+                return new_pos
+            elif fail == 'HeaderTooShort':
+                header_size = BitVecVal(0, 32)
+                for name, field in extract_header.fields.items():
+                    if field.var_length:
+                        field_size_c = BitVecVal(field.size, sym_size.size())
+
+                        # The variable length field should be larger than
+                        # the maximum field length but still fit in the
+                        # maximum packet size
+                        c_packet_size = new_pos + header_size
+                        constraints.append(
+                            And(
+                                UGT(sym_size, field_size_c),
+                                ULT(sym_size,
+                                    BitVecVal(sym_packet.max_packet_size, 32) -
+                                    c_packet_size)))
+                        sym_packet.update_packet_size(c_packet_size + sym_size)
+                        return new_pos
+
+                    if field.name != '$valid$':
+                        header_size += BitVecVal(field.size, 32)
+                assert False
 
             for name, field in extract_header.fields.items():
                 # XXX: deal with valid flags
                 if field.name != '$valid$':
                     if field.var_length:
-                        field_val = sym_packet.extract(pos + extract_offset, field.size)
+                        # This messes up the packet size somewhat
+                        field_val = sym_packet.extract(new_pos + extract_offset,
+                                                       field.size)
                         ones = BitVecVal(-1, field.size)
                         assert ones.size() >= sym_size.size()
                         field_size_c = BitVecVal(field.size, sym_size.size())
-                        ones, shift_bits = self.equalize_bv_size([ones, field_size_c - sym_size])
-                        context.insert(field, field_val & (LShR(ones, shift_bits)))
-
+                        ones, shift_bits = self.equalize_bv_size(
+                            [ones, field_size_c - sym_size])
+                        context.insert(field,
+                                       field_val & (LShR(ones, shift_bits)))
                         constraints.append(ULE(sym_size, field_size_c))
+
+                        extract_offset += sym_size
                     else:
                         context.insert(field,
-                                       sym_packet.extract(pos + extract_offset,
-                                                          field.size))
+                                       sym_packet.extract(
+                                           new_pos + extract_offset, field.size))
                         extract_offset += BitVecVal(field.size, 32)
                 else:
                     # Even though the P4_16 isValid() method
@@ -355,8 +455,9 @@ class Translator:
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.verify:
-            expected_result = BoolVal(False) if fail else BoolVal(True)
-            sym_cond = self.type_value_to_smt(context, parser_op.value[0])
+            expected_result = BoolVal(False) if fail != '' else BoolVal(True)
+            sym_cond = self.type_value_to_smt(context, parser_op.value[0],
+                                              sym_packet, pos)
             constraints.append(sym_cond == expected_result)
             return new_pos
         elif op == p4_parser_ops_enum.primitive:
@@ -368,7 +469,8 @@ class Translator:
                     1, 1))
                 return new_pos
             else:
-                raise Exception('Primitive not supported: {}'.format(primitive.op))
+                raise Exception(
+                    'Primitive not supported: {}'.format(primitive.op))
             logging.warning('Primitive not supported')
         else:
             raise Exception('Parser op not supported: {}'.format(op))
@@ -413,6 +515,8 @@ class Translator:
             elif primitive.op == 'drop':
                 # Dropping the packet does not modify the context. However we
                 # should eventually adapt the expected path.
+                context.set_field_value('standard_metadata', 'egress_spec',
+                                        BitVecVal(511, 9))
                 pass
             elif primitive.op == 'add_header':
                 header_name = primitive.parameters[0].header_name
@@ -551,61 +655,71 @@ class Translator:
 
             assert transition is not None
 
+            skip_select = False
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
-                fail = False
+                fail = ''
                 if isinstance(
                         path_transition, ParserOpTransition
                 ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
-                    fail = True
+                    fail = path_transition.error_str
+                    skip_select = True
 
                 new_pos = self.parser_op_to_smt(self.context, self.sym_packet,
                                                 parser_op, fail, pos, new_pos,
                                                 constraints)
+
+                if skip_select:
+                    break
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
                 # Packet needs to be at least one byte too short
                 self.sym_packet.set_max_length(simplify(new_pos - 8))
                 break
 
-            sym_transition_key = []
-            for transition_key_elem in parse_state.transition_key:
-                if isinstance(transition_key_elem, TypeValueField):
-                    sym_transition_key.append(
-                        self.context.get_header_field(
-                            transition_key_elem.header_name,
-                            transition_key_elem.header_field))
-                else:
-                    raise Exception('Transition key type not supported: {}'.
-                                    format(transition_key_elem.__class__))
-
-            # XXX: is this check really necessary?
-            if len(sym_transition_key) > 0:
-                # Make sure that we are not hitting any of the cases before the
-                # case that we care about
-                other_constraints = []
-                for current_transition in parse_state.transitions:
-                    if current_transition != transition:
-                        other_constraints.append(
-                            self.parser_transition_key_constraint(
-                                sym_transition_key, current_transition.value,
-                                current_transition.mask))
+            if not skip_select:
+                sym_transition_key = []
+                for transition_key_elem in parse_state.transition_key:
+                    if isinstance(transition_key_elem, TypeValueField):
+                        sym_transition_key.append(
+                            self.context.get_header_field(
+                                transition_key_elem.header_name,
+                                transition_key_elem.header_field))
                     else:
-                        break
+                        raise Exception(
+                            'Transition key type not supported: {}'.format(
+                                transition_key_elem.__class__))
 
-                constraints.append(Not(Or(other_constraints)))
-                logging.debug(
-                    "Other constraints: {}".format(other_constraints))
+                # XXX: is this check really necessary?
+                if len(sym_transition_key) > 0:
+                    # Make sure that we are not hitting any of the cases before the
+                    # case that we care about
+                    other_constraints = []
+                    for current_transition in parse_state.transitions:
+                        if current_transition != transition:
+                            other_constraints.append(
+                                self.parser_transition_key_constraint(
+                                    sym_transition_key, current_transition.
+                                    value, current_transition.mask))
+                        else:
+                            break
 
-                # The constraint for the case that we are interested in
-                if transition.value is not None:
-                    constraint = self.parser_transition_key_constraint(
-                        sym_transition_key, transition.value, transition.mask)
-                    constraints.append(constraint)
+                    constraints.append(Not(Or(other_constraints)))
+                    logging.debug(
+                        "Other constraints: {}".format(other_constraints))
 
-            logging.debug(sym_transition_key)
-            pos = simplify(new_pos)
+                    # The constraint for the case that we are interested in
+                    if transition.value is not None:
+                        constraint = self.parser_transition_key_constraint(
+                            sym_transition_key, transition.value,
+                            transition.mask)
+                        constraints.append(constraint)
+
+                logging.debug(sym_transition_key)
+                pos = simplify(new_pos)
 
         # XXX: workaround
+        self.context.set_field_value('meta_meta', 'packet_len',
+                                     self.sym_packet.packet_size_var)
         constraints.append(self.sym_packet.get_length_constraint())
 
         self.solver.add(And(constraints))
@@ -617,7 +731,7 @@ class Translator:
     def parser_op_trans_to_str(self, op_trans):
         # XXX: after unifying type value representations
         # assert isinstance(op_trans.op.value[1], TypeValueHexstr)
-        return self.hlir.id_to_errors[op_trans.op.value[1]]
+        return op_trans.error_str
 
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
@@ -677,13 +791,17 @@ class Translator:
             context.unset_source_info()
 
         constraints += context.get_name_constraints()
+
         time3 = time.time()
 
         # Construct and test the packet
-        logging.debug(And(constraints))
+        # logging.debug(And(constraints))
         self.solver.add(And(constraints))
         smt_result = self.solver.check()
+
         time4 = time.time()
+        self.total_solver_time += time4 - time3
+
         result = None
         if smt_result != unsat:
             model = self.solver.model()
@@ -786,35 +904,22 @@ class Translator:
                 extracted_path = self.test_packet(packet, table_configs,
                                                   source_info_to_node_name)
 
-                if expected_path[-1] == P4_HLIR.PACKET_TOO_SHORT:
-                    if (extracted_path[-1] != P4_HLIR.PACKET_TOO_SHORT
-                            or expected_path[:-2] != extracted_path[:-1]):
-                        # XXX: This is a workaround for simple_switch printing
-                        # the state only when the packet leaves a state.
-                        logging.error('Expected and actual path differ')
-                        logging.error('Expected: {}'.format(expected_path))
-                        logging.error('Actual:   {}'.format(extracted_path))
-                    else:
-                        logging.info(
-                            'Test successful ({})'.format(extracted_path))
+                if is_complete_control_path:
+                    match = (expected_path == extracted_path)
                 else:
-                    if is_complete_control_path:
-                        match = (expected_path == extracted_path)
-                    else:
-                        len1 = len(expected_path)
-                        len2 = len(extracted_path)
-                        match = (expected_path == extracted_path[0:len1]
-                                 ) and len1 <= len2
-                    if match:
-                        logging.info(
-                            'Test successful: {}'.format(expected_path))
-                        result = TestPathResult.SUCCESS
-                    else:
-                        logging.error('Expected and actual path differ')
-                        logging.error('Expected: {}'.format(expected_path))
-                        logging.error('Actual:   {}'.format(extracted_path))
-                        # assert False
-                        result = TestPathResult.TEST_FAILED
+                    len1 = len(expected_path)
+                    len2 = len(extracted_path)
+                    match = (expected_path == extracted_path[0:len1]
+                             ) and len1 <= len2
+                if match:
+                    logging.info('Test successful: {}'.format(expected_path))
+                    result = TestPathResult.SUCCESS
+                else:
+                    logging.error('Expected and actual path differ')
+                    logging.error('Expected: {}'.format(expected_path))
+                    logging.error('Actual:   {}'.format(extracted_path))
+                    result = TestPathResult.TEST_FAILED
+                    assert False
             else:
                 logging.warning('Packet not sent (too short)')
         else:
@@ -822,6 +927,8 @@ class Translator:
                 'Unable to find packet for path: {}'.format(expected_path))
             result = TestPathResult.NO_PACKET_FOUND
         time5 = time.time()
+        self.total_switch_time += time5 - time4
+
         logging.info("END   %d Exp path (len %d+%d=%d)"
                      " complete_path %s %s: %s"
                      "" % (count.counter, len(path), len(control_path),

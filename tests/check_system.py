@@ -5,7 +5,7 @@ from p4pktgen.core.translator import TestPathResult
 
 class CheckSystem:
     def check_demo1b(self):
-        Config().load_defaults()
+        Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/demo1b.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()')))):
@@ -34,7 +34,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo1(self):
-        Config().load_defaults()
+        Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/demo1-action-names-uniquified.p4_16.json')
         expected_results = {
             ('start', 'sink', (u'ipv4_da_lpm', u'set_l2ptr')):
@@ -53,7 +53,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo9b(self):
-        Config().load_defaults()
+        Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/demo9b.json')
         expected_results = {
             ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
@@ -94,7 +94,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_config_table(self):
-        Config().load_defaults()
+        Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/config-table.json')
         expected_results = {
             ('start', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'set_bd_dmac_intf')):
@@ -117,7 +117,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo1_rm_header(self):
-        Config().load_defaults()
+        Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/demo1_rm_header.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act')):
@@ -128,7 +128,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_add_remove_header(self):
-        Config().load_defaults()
+        Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/add-remove-header.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):

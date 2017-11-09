@@ -12,12 +12,13 @@ class Transition(object):
 
 
 class ParserOpTransition(Transition):
-    def __init__(self, op, op_idx, next_state):
+    def __init__(self, op, op_idx, next_state, error_str):
         super(ParserOpTransition,
               self).__init__(TransitionType.PARSER_OP_TRANSITION, None, None)
         self.op = op
         self.op_idx = op_idx
         self.next_state = next_state
+        self.error_str = error_str
 
 
 class ActionTransition(Transition):

@@ -1,34 +1,18 @@
-# Added support
 from __future__ import print_function
-"""main.py: P4 Packet Gen API"""
-
-__author__ = "Colin Burgin"
-__copyright__ = "Copyright 2017, Virginia Tech"
-__credits__ = [""]
-__license__ = "MIT"
-__version__ = "1.0"
-__maintainer__ = ""
-__email__ = "cburgin@vt.edu"
-__status__ = "in progress"
-
-# Standard Python Libraries
 import argparse
 import logging
 from collections import defaultdict
+import time
 
-# Installed Packages/Libraries
 import matplotlib.pyplot as plt
 from graphviz import Digraph
 
-# P4 Specfic Libraries
-
-# Local API Libraries
 from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
 from p4pktgen.core.translator import TestPathResult
-from p4pktgen.util.statistics import Counter
+from p4pktgen.util.statistics import Counter, Average
 from p4pktgen.hlir.transition import TransitionType
 
 
@@ -48,6 +32,12 @@ def main():
         action='store_true',
         default=False,
         help='Print debug information')
+    parser.add_argument(
+        '--silent',
+        dest='silent',
+        action='store_true',
+        default=False,
+        help='Only print error messages')
     parser.add_argument(
         '-i',
         '--interface',
@@ -78,6 +68,20 @@ def main():
         help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
     )
     parser.add_argument(
+        '--allow-uninitialized-writes',
+        dest='allow_uninitialized_writes',
+        action='store_true',
+        default=False,
+        help='Treat uninitialized writes as no-op'
+    )
+    parser.add_argument(
+        '--record-statistics',
+        dest='record_statistics',
+        action='store_true',
+        default=False,
+        help='Record statistics',
+    )
+    parser.add_argument(
         '--allow-unimplemented-primitives',
         dest='allow_unimplemented_primitives',
         action='store_true',
@@ -100,6 +104,8 @@ def main():
         format='%(levelname)s: %(message)s', level=logging.INFO)
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
+    elif args.silent:
+        logging.getLogger().setLevel(logging.ERROR)
 
     # Build the IR
     assert args.format in ['json', 'p4']
@@ -245,6 +251,15 @@ def process_json_file(input_file, debug=False):
     num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d control paths" % (num_control_paths))
 
+    timing_file = None
+    if Config().get_record_statistics():
+        timing_file = open('timing.log', 'w')
+        breakdown_file = open('breakdown.log', 'w')
+
+    avg_full_path_len = Average('full_path_len')
+    avg_unsat_path_len = Average('unsat_path_len')
+
+    start_time = time.time()
     count = Counter('path_count')
     results = {}
     stats = defaultdict(int)
@@ -261,6 +276,21 @@ def process_json_file(input_file, debug=False):
                 parser_path + [('sink', None)], control_path,
                 source_info_to_node_name, count, is_complete_control_path)
             translator.pop()
+
+            if result == TestPathResult.SUCCESS and is_complete_control_path:
+                avg_full_path_len.record(len(parser_path + control_path))
+            if result == TestPathResult.NO_PACKET_FOUND:
+                avg_unsat_path_len.record(len(parser_path + control_path))
+
+            if Config().get_record_statistics():
+                current_time = time.time()
+                if is_complete_control_path:
+                    timing_file.write('{},{}\n'.format(result, current_time - start_time))
+                    timing_file.flush()
+                if count.counter % 100 == 0:
+                    breakdown_file.write('{},{},{},{},{}\n'.format(current_time - start_time, translator.total_solver_time, translator.total_switch_time, avg_full_path_len.get_avg(), avg_unsat_path_len.get_avg()))
+                    breakdown_file.flush()
+
             record_result = (is_complete_control_path
                              or (result != TestPathResult.SUCCESS))
             if record_result:
@@ -277,8 +307,11 @@ def process_json_file(input_file, debug=False):
             in_pipeline.init_table_name, None, callback=eval_control_path)
     translator.cleanup()
 
+    if timing_file is not None:
+        timing_file.close()
+
     for result, count in stats.items():
-        logging.info('{}: {}'.format(result, count))
+        print('{}: {}'.format(result, count))
 
     if Config().get_dump_test_case():
         str_items = []

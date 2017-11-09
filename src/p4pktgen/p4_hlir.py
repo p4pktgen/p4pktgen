@@ -26,6 +26,7 @@ from p4_utils import p4_parser_ops_enum
 from p4pktgen.hlir.type_value import *
 from p4pktgen.hlir.transition import *
 from p4pktgen.util.graph import Graph
+from p4pktgen.config import Config
 
 
 class P4_HLIR(P4_Obj):
@@ -104,7 +105,7 @@ class P4_HLIR(P4_Obj):
             # Set max_length, it is optional
             if json_obj.has_key(
                     'max_length') and json_obj['max_length'] != None:
-                self.max_length = int(json_obj['max_length'])
+                self.max_length = int(json_obj['max_length']) * 8
 
                 for field_name, field in self.fields.iteritems():
                     if field.var_length:
@@ -352,6 +353,11 @@ class P4_HLIR(P4_Obj):
 
             self.headers[curr_hdr.name] = curr_hdr
 
+        # Get the mapping of error ids to error strings
+        self.id_to_errors = {}
+        for error in json_obj['errors']:
+            self.id_to_errors[int(error[1])] = error[0]
+
         self.parsers = OrderedDict()
         for p in json_obj['parsers']:
             parser = P4_HLIR.HLIR_Parser(p)
@@ -369,8 +375,17 @@ class P4_HLIR(P4_Obj):
                             parser_op.value.append(parse_type_value(pair))
 
                     if parser_op.op == p4_parser_ops_enum.verify:
+                        error_str = self.id_to_errors[parser_op.value[1].value]
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(parser_op, i, 'sink')])
+                            [ParserOpTransition(parser_op, i, 'sink', error_str)])
+                    elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract:
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(parser_op, i, 'sink', 'PacketTooShort')])
+                    elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract_VL:
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(parser_op, i, 'sink', 'PacketTooShort')])
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(parser_op, i, 'sink', 'HeaderTooShort')])
                     else:
                         p4ps.parser_ops_transitions.append([])
 
@@ -444,10 +459,6 @@ class P4_HLIR(P4_Obj):
         self.hdr_union_types = None
         self.hdr_unions = None
         self.hdr_union_stacks = None
-
-        self.id_to_errors = {}
-        for error in json_obj['errors']:
-            self.id_to_errors[int(error[1])] = error[0]
 
         self.enums = None
 

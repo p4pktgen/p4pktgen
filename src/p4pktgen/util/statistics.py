@@ -28,3 +28,19 @@ class Timer(Statistic):
 class StatisticsRegistry:
     def __init__(self):
         pass
+
+class Average(Statistic):
+    def __init__(self, name):
+        super(Average, self).__init__(name)
+        self.sum = 0.0
+        self.counter = 0
+
+    def record(self, val):
+        self.sum += val
+        self.counter += 1
+
+    def get_avg(self):
+        if self.counter == 0:
+            return None
+        else:
+            return self.sum / self.counter

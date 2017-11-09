@@ -36,7 +36,7 @@
       "fields" : [
         ["options", "*"]
       ],
-      "max_length" : 320
+      "max_length" : 40
     },
     {
       "name" : "ethernet_t",
@@ -65,7 +65,7 @@
         ["dstAddr", 32, false],
         ["options", "*"]
       ],
-      "max_length" : 480
+      "max_length" : 60
     },
     {
       "name" : "mTag_t",
