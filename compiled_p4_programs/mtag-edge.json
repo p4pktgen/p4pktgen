@@ -38,7 +38,7 @@
       "fields" : [
         ["options", "*"]
       ],
-      "max_length" : 320
+      "max_length" : 40
     },
     {
       "name" : "ethernet_t",
@@ -67,7 +67,7 @@
         ["dstAddr", 32, false],
         ["options", "*"]
       ],
-      "max_length" : 480
+      "max_length" : 60
     },
     {
       "name" : "mTag_t",
@@ -124,7 +124,8 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 1, false],
         ["egress_rid", 16, false],
-        ["_padding", 5, false]
+        ["checksum_error", 1, false],
+        ["_padding", 4, false]
       ]
     }
   ],
@@ -668,13 +669,13 @@
       "name" : "bytes_by_dest",
       "id" : 0,
       "is_direct" : true,
-      "binding" : "mTag_table"
+      "binding" : ".mTag_table"
     },
     {
       "name" : "per_color_drops",
       "id" : 1,
       "is_direct" : true,
-      "binding" : "meter_policy"
+      "binding" : ".meter_policy"
     }
   ],
   "register_arrays" : [],
@@ -1583,7 +1584,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [22, 23, 24, 13],
@@ -1812,7 +1812,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [7, 8, 2],
