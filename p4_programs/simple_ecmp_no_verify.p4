@@ -84,9 +84,6 @@ parser ParserImpl(packet_in packet,
     }
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
-//        verify(hdr.ipv4.version == 4 && hdr.ipv4.ihl == 5 &&
-//            hdr.ipv4.totalLen >= 20 && hdr.ipv4.ttl != 0,
-//            error.BadIPv4Header);
         transition accept;
     }
 }
@@ -152,14 +149,6 @@ control ingress(inout headers hdr,
 
     apply {
         if (hdr.ipv4.isValid()) {
-            if (hdr.ipv4.version != 4 ||
-                hdr.ipv4.ihl != 5 ||
-                hdr.ipv4.totalLen < 20 ||
-                hdr.ipv4.ttl == 0)
-            {
-                mark_to_drop();
-                exit;
-            }
             compute_ipv4_hashes.apply(meta.hash1, hdr);
             switch (ipv4_da_lpm.apply().action_run) {
                 ipv4_da_lpm_drop: { exit; }
