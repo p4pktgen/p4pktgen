@@ -501,11 +501,12 @@ class Translator:
                     field.header_field]
                 dest_size = fld_info.size
                 if dest_size != value.size():
-                    logging.debug("primitive op '%s' lhs/rhs width mismatch"
-                                  " (%d != %d bits) lhs %s source_info %s"
-                                  "" % (primitive.op, dest_size, value.size(),
-                                        field, primitive.source_info))
-                    logging.debug("    value %s" % (value))
+                    if Config().get_debug():
+                        logging.debug("primitive op '%s' lhs/rhs width mismatch"
+                                      " (%d != %d bits) lhs %s source_info %s"
+                                      "" % (primitive.op, dest_size, value.size(),
+                                            field, primitive.source_info))
+                        logging.debug("    value %s" % (value))
                     if dest_size > value.size():
                         value = ZeroExt(dest_size - value.size(), value)
                     else:
@@ -805,7 +806,8 @@ class Translator:
         result = None
         if smt_result != unsat:
             model = self.solver.model()
-            context.log_model(model)
+            if not Config().get_silent():
+                context.log_model(model)
             payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations
@@ -919,7 +921,6 @@ class Translator:
                     logging.error('Expected: {}'.format(expected_path))
                     logging.error('Actual:   {}'.format(extracted_path))
                     result = TestPathResult.TEST_FAILED
-                    assert False
             else:
                 logging.warning('Packet not sent (too short)')
         else:
