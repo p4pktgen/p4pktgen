@@ -21,11 +21,15 @@ https://github.com/p4lang/p4c by Andy Fingerhut
 (andy.fingerhut@gmail.com).  That earlier version also appears in
 the P4_16 v1.0.0 specification document.
 
-As of 2017-Jul-08, the P4_16 compiler 'p4test' in
-https://github.com/p4lang/p4c compiles this program without any
-errors, but 'p4c-bm2-ss' gives an error that Tcp_option_h is not a
-header type.  This is because as of that date p4c-bm2-ss's bmv2
-backend code does not yet handle header_union's.
+As of 2017-Jul-08, both the `p4test` and `p4c-bm2-ss` compiler can
+handle this program, because it does not use the 'header_union'
+feature of the language.  Note that it also does not correctly parse
+TCP options, either, so don't try to use it for parsing them in
+production code.  It was created purely to exercise some other P4
+compilers and tools with a parser that initializes and modifies a
+local variable, and does a 'transition select' statement on the value
+of that local variable, as opposed to the much more common case of a
+value directly copied from a packet header field.
 */
 
 #include <core.p4>
@@ -244,6 +248,7 @@ parser ParserImpl(packet_in packet,
         packet.extract(hdr.tcp);
         Tcp_option_parser.apply(packet, hdr.tcp.dataOffset,
                                 hdr.tcp_options_vec, hdr.tcp_options_padding);
+        transition accept;
     }
 }
 
@@ -269,7 +274,7 @@ control ingress(inout headers hdr,
         default_action = my_drop;
     }
 
-    action set_bd_dmac_intf(bit<24> bd, bit<1> unused1, bit<1> unused2, bit<1> unused3, bit<48> dmac, bit<9> intf) {
+    action set_bd_dmac_intf(bit<24> bd, bit<48> dmac, bit<9> intf) {
         meta.fwd_metadata.out_bd = bd;
         hdr.ethernet.dstAddr = dmac;
         standard_metadata.egress_spec = intf;
@@ -325,45 +330,13 @@ control DeparserImpl(packet_out packet, in headers hdr) {
     }
 }
 
-control verifyChecksum(in headers hdr, inout metadata meta) {
-    Checksum16() ipv4_checksum;
+control verifyChecksum(inout headers hdr, inout metadata meta) {
     apply {
-        if ((hdr.ipv4.ihl == 5) &&
-            (hdr.ipv4.hdrChecksum ==
-             ipv4_checksum.get({ hdr.ipv4.version,
-                         hdr.ipv4.ihl,
-                         hdr.ipv4.diffserv,
-                         hdr.ipv4.totalLen,
-                         hdr.ipv4.identification,
-                         hdr.ipv4.flags,
-                         hdr.ipv4.fragOffset,
-                         hdr.ipv4.ttl,
-                         hdr.ipv4.protocol,
-                         hdr.ipv4.srcAddr,
-                         hdr.ipv4.dstAddr })))
-        {
-            mark_to_drop();
-        }
     }
 }
 
 control computeChecksum(inout headers hdr, inout metadata meta) {
-    Checksum16() ipv4_checksum;
     apply {
-        if (hdr.ipv4.ihl == 5) {
-            hdr.ipv4.hdrChecksum =
-                ipv4_checksum.get({ hdr.ipv4.version,
-                            hdr.ipv4.ihl,
-                            hdr.ipv4.diffserv,
-                            hdr.ipv4.totalLen,
-                            hdr.ipv4.identification,
-                            hdr.ipv4.flags,
-                            hdr.ipv4.fragOffset,
-                            hdr.ipv4.ttl,
-                            hdr.ipv4.protocol,
-                            hdr.ipv4.srcAddr,
-                            hdr.ipv4.dstAddr });
-        }
     }
 }
 
