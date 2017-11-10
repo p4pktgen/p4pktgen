@@ -9,26 +9,21 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["tmp_8", 4, false],
+        ["tmp_0", 4, false],
         ["tmp", 4, false],
-        ["tmp_0", 16, false],
         ["tmp_1", 16, false],
         ["tmp_2", 16, false],
         ["tmp_3", 16, false],
         ["tmp_4", 16, false],
         ["tmp_5", 16, false],
         ["tmp_6", 16, false],
-        ["tmp_7", 32, false],
-        ["tmp_11", 32, false],
-        ["tmp_14", 16, false],
-        ["tmp_17", 48, false],
-        ["tmp_18", 16, false],
-        ["tmp_19", 32, false],
-        ["tmp_9", 1, false],
+        ["tmp_7", 16, false],
+        ["tmp_8", 32, false],
+        ["tmp_9", 32, false],
         ["tmp_10", 16, false],
-        ["tmp_12", 1, false],
-        ["tmp_13", 16, false],
-        ["_padding_18", 6, false]
+        ["tmp_11", 48, false],
+        ["tmp_12", 16, false],
+        ["tmp_13", 32, false]
       ]
     },
     {
@@ -941,7 +936,8 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 1, false],
         ["egress_rid", 16, false],
-        ["_padding_17", 5, false]
+        ["checksum_error", 1, false],
+        ["_padding_17", 4, false]
       ]
     }
   ],
@@ -1828,7 +1824,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_0"]
+          "value" : ["scalars", "tmp_1"]
         }
       ]
     },
@@ -1842,7 +1838,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_1"]
+          "value" : ["scalars", "tmp_2"]
         }
       ]
     },
@@ -1856,7 +1852,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_2"]
+          "value" : ["scalars", "tmp_3"]
         }
       ]
     },
@@ -1886,7 +1882,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_3"]
+          "value" : ["scalars", "tmp_4"]
         },
         {
           "type" : "field",
@@ -1904,7 +1900,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_4"]
+          "value" : ["scalars", "tmp_5"]
         }
       ]
     },
@@ -1918,7 +1914,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_5"]
+          "value" : ["scalars", "tmp_6"]
         }
       ]
     },
@@ -1932,7 +1928,7 @@
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_6"]
+          "value" : ["scalars", "tmp_7"]
         }
       ]
     },
@@ -3588,7 +3584,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_8"]
+                  "value" : ["scalars", "tmp_0"]
                 },
                 {
                   "type" : "lookahead",
@@ -3611,7 +3607,7 @@
                       "op" : "&",
                       "left" : {
                         "type" : "field",
-                        "value" : ["scalars", "tmp_8"]
+                        "value" : ["scalars", "tmp_0"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -4410,47 +4406,41 @@
       "name" : "sflow_ingress_session_pkt_counter",
       "id" : 0,
       "is_direct" : true,
-      "binding" : "sflow_ingress"
+      "binding" : ".sflow_ingress"
     },
     {
       "name" : "ipv4_multicast_route_s_g_stats",
       "id" : 1,
       "is_direct" : true,
-      "binding" : "ipv4_multicast_route"
+      "binding" : ".ipv4_multicast_route"
     },
     {
       "name" : "ipv4_multicast_route_star_g_stats",
       "id" : 2,
       "is_direct" : true,
-      "binding" : "ipv4_multicast_route_star_g"
+      "binding" : ".ipv4_multicast_route_star_g"
     },
     {
       "name" : "ipv6_multicast_route_s_g_stats",
       "id" : 3,
       "is_direct" : true,
-      "binding" : "ipv6_multicast_route"
+      "binding" : ".ipv6_multicast_route"
     },
     {
       "name" : "ipv6_multicast_route_star_g_stats",
       "id" : 4,
       "is_direct" : true,
-      "binding" : "ipv6_multicast_route_star_g"
+      "binding" : ".ipv6_multicast_route_star_g"
     },
     {
       "name" : "meter_stats",
       "id" : 5,
       "is_direct" : true,
-      "binding" : "meter_action"
-    },
-    {
-      "name" : "storm_control_stats",
-      "id" : 6,
-      "is_direct" : true,
-      "binding" : "storm_control_stats"
+      "binding" : ".meter_action"
     },
     {
       "name" : "ingress_bd_stats",
-      "id" : 7,
+      "id" : 6,
       "source_info" : {
         "filename" : "p4_programs/switch-p416.p4",
         "line" : 5788,
@@ -4462,7 +4452,7 @@
     },
     {
       "name" : "acl_stats",
-      "id" : 8,
+      "id" : 7,
       "source_info" : {
         "filename" : "p4_programs/switch-p416.p4",
         "line" : 5804,
@@ -4471,6 +4461,12 @@
       },
       "size" : 1024,
       "is_direct" : false
+    },
+    {
+      "name" : "storm_control_stats",
+      "id" : 8,
+      "is_direct" : true,
+      "binding" : ".storm_control_stats"
     },
     {
       "name" : "drop_stats",
@@ -4500,7 +4496,7 @@
       "name" : "egress_bd_stats",
       "id" : 11,
       "is_direct" : true,
-      "binding" : "egress_bd_stats"
+      "binding" : ".egress_bd_stats"
     }
   ],
   "register_arrays" : [],
@@ -4657,9 +4653,9 @@
       "id" : 5,
       "source_info" : {
         "filename" : "p4_programs/switch-p416.p4",
-        "line" : 6438,
-        "column" : 41,
-        "source_fragment" : "inner_ipv4_checksum.get({ hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr })"
+        "line" : 6424,
+        "column" : 8,
+        "source_fragment" : "verify_checksum(hdr.inner_ipv4.ihl == 4w5, { hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr }, hdr.inner_ipv4.hdrChecksum, HashAlgorithm.csum16)"
       },
       "algo" : "csum16",
       "input" : [
@@ -4714,9 +4710,123 @@
       "id" : 6,
       "source_info" : {
         "filename" : "p4_programs/switch-p416.p4",
-        "line" : 6440,
-        "column" : 35,
-        "source_fragment" : "ipv4_checksum.get({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr })"
+        "line" : 6425,
+        "column" : 8,
+        "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16)"
+      },
+      "algo" : "csum16",
+      "input" : [
+        {
+          "type" : "field",
+          "value" : ["ipv4", "version"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "ihl"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "diffserv"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "totalLen"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "identification"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "flags"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "fragOffset"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "ttl"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "protocol"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "srcAddr"]
+        },
+        {
+          "type" : "field",
+          "value" : ["ipv4", "dstAddr"]
+        }
+      ]
+    },
+    {
+      "name" : "calc_6",
+      "id" : 7,
+      "source_info" : {
+        "filename" : "p4_programs/switch-p416.p4",
+        "line" : 6431,
+        "column" : 8,
+        "source_fragment" : "update_checksum(hdr.inner_ipv4.ihl == 4w5, { hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr }, hdr.inner_ipv4.hdrChecksum, HashAlgorithm.csum16)"
+      },
+      "algo" : "csum16",
+      "input" : [
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "version"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "ihl"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "diffserv"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "totalLen"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "identification"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "flags"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "fragOffset"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "ttl"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "protocol"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "srcAddr"]
+        },
+        {
+          "type" : "field",
+          "value" : ["inner_ipv4", "dstAddr"]
+        }
+      ]
+    },
+    {
+      "name" : "calc_7",
+      "id" : 8,
+      "source_info" : {
+        "filename" : "p4_programs/switch-p416.p4",
+        "line" : 6432,
+        "column" : 8,
+        "source_fragment" : "update_checksum(hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16)"
       },
       "algo" : "csum16",
       "input" : [
@@ -4774,15 +4884,15 @@
       "elements" : [
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_14"]
+          "value" : ["scalars", "tmp_10"]
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_17"]
+          "value" : ["scalars", "tmp_11"]
         },
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_18"]
+          "value" : ["scalars", "tmp_12"]
         }
       ]
     }
@@ -25309,7 +25419,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_0"]
+              "value" : ["scalars", "tmp_1"]
             },
             {
               "type" : "expression",
@@ -25392,7 +25502,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_1"]
+              "value" : ["scalars", "tmp_2"]
             },
             {
               "type" : "expression",
@@ -28601,7 +28711,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_2"]
+              "value" : ["scalars", "tmp_3"]
             },
             {
               "type" : "expression",
@@ -29091,7 +29201,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_3"]
+              "value" : ["scalars", "tmp_4"]
             },
             {
               "type" : "expression",
@@ -35957,7 +36067,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_4"]
+              "value" : ["scalars", "tmp_5"]
             },
             {
               "type" : "expression",
@@ -37824,7 +37934,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_5"]
+              "value" : ["scalars", "tmp_6"]
             },
             {
               "type" : "expression",
@@ -38045,7 +38155,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_6"]
+              "value" : ["scalars", "tmp_7"]
             },
             {
               "type" : "expression",
@@ -42139,7 +42249,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_7"]
+              "value" : ["scalars", "tmp_8"]
             },
             {
               "type" : "expression",
@@ -42169,7 +42279,7 @@
             },
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_7"]
+              "value" : ["scalars", "tmp_8"]
             }
           ],
           "source_info" : {
@@ -42191,7 +42301,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_11"]
+              "value" : ["scalars", "tmp_9"]
             },
             {
               "type" : "expression",
@@ -42221,7 +42331,7 @@
             },
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_11"]
+              "value" : ["scalars", "tmp_9"]
             }
           ],
           "source_info" : {
@@ -43833,7 +43943,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_14"]
+              "value" : ["scalars", "tmp_10"]
             },
             {
               "type" : "field",
@@ -43846,7 +43956,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_17"]
+              "value" : ["scalars", "tmp_11"]
             },
             {
               "type" : "field",
@@ -43859,7 +43969,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_18"]
+              "value" : ["scalars", "tmp_12"]
             },
             {
               "type" : "field",
@@ -44082,7 +44192,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_19"]
+              "value" : ["scalars", "tmp_13"]
             },
             {
               "type" : "expression",
@@ -44112,7 +44222,7 @@
             },
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_19"]
+              "value" : ["scalars", "tmp_13"]
             }
           ],
           "source_info" : {
@@ -45541,7 +45651,6 @@
           "match_type" : "ternary",
           "type" : "simple",
           "max_size" : 512,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [395, 396, 281],
@@ -47527,7 +47636,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [532, 533, 320],
@@ -47569,7 +47677,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [534, 535, 536, 321],
@@ -47706,7 +47813,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [541, 542, 324],
@@ -47748,7 +47854,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [543, 544, 545, 325],
@@ -48202,7 +48307,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [562, 563, 335],
@@ -48304,7 +48408,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [566, 338],
@@ -51990,7 +52093,6 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
-          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [178, 22],
@@ -53826,6 +53928,20 @@
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
       "calculation" : "calc_5"
+    },
+    {
+      "name" : "cksum_1",
+      "id" : 2,
+      "target" : ["inner_ipv4", "hdrChecksum"],
+      "type" : "generic",
+      "calculation" : "calc_6"
+    },
+    {
+      "name" : "cksum_2",
+      "id" : 3,
+      "target" : ["ipv4", "hdrChecksum"],
+      "type" : "generic",
+      "calculation" : "calc_7"
     }
   ],
   "force_arith" : [],
