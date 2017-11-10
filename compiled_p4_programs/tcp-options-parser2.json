@@ -1,5 +1,5 @@
 {
-  "program" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
+  "program" : "p4_programs/tcp-options-parser2.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -9,24 +9,21 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["tmp", 4, false],
         ["tcp_hdr_data_offset", 4, false],
         ["Tcp_option_parser_tcp_hdr_bytes_left_0", 7, false],
         ["Tcp_option_parser_n_sack_bytes_0", 8, false],
         ["Tcp_option_parser_tmp_1", 8, false],
-        ["tmp_1", 16, false],
-        ["tmp_2", 1, false],
+        ["tmp", 16, false],
+        ["tmp_0", 1, false],
+        ["tmp_1", 1, false],
+        ["tmp_2", 32, false],
         ["tmp_3", 1, false],
-        ["tmp_4", 32, false],
+        ["tmp_4", 1, false],
         ["tmp_5", 1, false],
         ["tmp_6", 1, false],
         ["tmp_7", 1, false],
-        ["tmp_11", 1, false],
-        ["tmp_13", 1, false],
-        ["tmp_14", 32, false],
-        ["tmp_9", 1, false],
-        ["tmp_10", 16, false],
-        ["_padding_0", 1, false]
+        ["tmp_8", 32, false],
+        ["_padding_0", 6, false]
       ]
     },
     {
@@ -37,7 +34,7 @@
         ["length", 8, false],
         ["variable_stuff", "*"]
       ],
-      "max_length" : 272
+      "max_length" : 34
     },
     {
       "name" : "Tcp_option_padding_h",
@@ -45,7 +42,7 @@
       "fields" : [
         ["padding", "*"]
       ],
-      "max_length" : 256
+      "max_length" : 32
     },
     {
       "name" : "Tcp_option_sack_top",
@@ -128,287 +125,211 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 1, false],
         ["egress_rid", 16, false],
-        ["_padding", 5, false]
+        ["checksum_error", 1, false],
+        ["_padding", 4, false]
       ]
     }
   ],
   "headers" : [
     {
-      "name" : "tmp_0[0]",
+      "name" : "vec[0]",
       "id" : 0,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[1]",
+      "name" : "vec[1]",
       "id" : 1,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[2]",
+      "name" : "vec[2]",
       "id" : 2,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[3]",
+      "name" : "vec[3]",
       "id" : 3,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[4]",
+      "name" : "vec[4]",
       "id" : 4,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[5]",
+      "name" : "vec[5]",
       "id" : 5,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[6]",
+      "name" : "vec[6]",
       "id" : 6,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[7]",
+      "name" : "vec[7]",
       "id" : 7,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[8]",
+      "name" : "vec[8]",
       "id" : 8,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_0[9]",
+      "name" : "vec[9]",
       "id" : 9,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "tmp_8",
+      "name" : "padding_1",
       "id" : 10,
       "header_type" : "Tcp_option_padding_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "vec[0]",
-      "id" : 11,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[1]",
-      "id" : 12,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[2]",
-      "id" : 13,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[3]",
-      "id" : 14,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[4]",
-      "id" : 15,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[5]",
-      "id" : 16,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[6]",
-      "id" : 17,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[7]",
-      "id" : 18,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[8]",
-      "id" : 19,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "vec[9]",
-      "id" : 20,
-      "header_type" : "Tcp_faked_option_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "padding_1",
-      "id" : 21,
-      "header_type" : "Tcp_option_padding_h",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
       "name" : "Tcp_option_parser_tmp_2",
-      "id" : 22,
+      "id" : 11,
       "header_type" : "Tcp_option_sack_top",
       "metadata" : true,
       "pi_omit" : true
     },
     {
       "name" : "scalars",
-      "id" : 23,
+      "id" : 12,
       "header_type" : "scalars_0",
       "metadata" : true,
       "pi_omit" : true
     },
     {
       "name" : "standard_metadata",
-      "id" : 24,
+      "id" : 13,
       "header_type" : "standard_metadata",
       "metadata" : true,
       "pi_omit" : true
     },
     {
       "name" : "ethernet",
-      "id" : 25,
+      "id" : 14,
       "header_type" : "ethernet_t",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "ipv4",
-      "id" : 26,
+      "id" : 15,
       "header_type" : "ipv4_t",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp",
-      "id" : 27,
+      "id" : 16,
       "header_type" : "tcp_t",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_padding",
-      "id" : 28,
+      "id" : 17,
       "header_type" : "Tcp_option_padding_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[0]",
-      "id" : 29,
+      "id" : 18,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[1]",
-      "id" : 30,
+      "id" : 19,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[2]",
-      "id" : 31,
+      "id" : 20,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[3]",
-      "id" : 32,
+      "id" : 21,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[4]",
-      "id" : 33,
+      "id" : 22,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[5]",
-      "id" : 34,
+      "id" : 23,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[6]",
-      "id" : 35,
+      "id" : 24,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[7]",
-      "id" : 36,
+      "id" : 25,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[8]",
-      "id" : 37,
+      "id" : 26,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "tcp_options_vec[9]",
-      "id" : 38,
+      "id" : 27,
       "header_type" : "Tcp_faked_option_h",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "fwd_metadata",
-      "id" : 39,
+      "id" : 28,
       "header_type" : "fwd_metadata_t",
       "metadata" : true,
       "pi_omit" : true
@@ -416,25 +337,18 @@
   ],
   "header_stacks" : [
     {
-      "name" : "tmp_0",
+      "name" : "vec",
       "id" : 0,
       "header_type" : "Tcp_faked_option_h",
       "size" : 10,
       "header_ids" : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     },
     {
-      "name" : "vec",
+      "name" : "tcp_options_vec",
       "id" : 1,
       "header_type" : "Tcp_faked_option_h",
       "size" : 10,
-      "header_ids" : [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-    },
-    {
-      "name" : "tcp_options_vec",
-      "id" : 2,
-      "header_type" : "Tcp_faked_option_h",
-      "size" : 10,
-      "header_ids" : [29, 30, 31, 32, 33, 34, 35, 36, 37, 38]
+      "header_ids" : [18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
     }
   ],
   "header_union_types" : [],
@@ -542,24 +456,11 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp"]
-                },
-                {
-                  "type" : "field",
-                  "value" : ["tcp", "dataOffset"]
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
                   "value" : ["scalars", "tcp_hdr_data_offset"]
                 },
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp"]
+                  "value" : ["tcp", "dataOffset"]
                 }
               ],
               "op" : "set"
@@ -722,7 +623,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_2"]
+                  "value" : ["scalars", "tmp_0"]
                 },
                 {
                   "type" : "expression",
@@ -760,7 +661,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_2"]
+                      "value" : ["scalars", "tmp_0"]
                     }
                   }
                 },
@@ -853,7 +754,7 @@
           "parser_ops" : [],
           "transitions" : [
             {
-              "value" : "0x0",
+              "value" : "0x00",
               "mask" : null,
               "next_state" : "parse_tcp_0"
             },
@@ -925,6 +826,197 @@
         {
           "name" : "Tcp_option_parser_parse_tcp_option_end",
           "id" : 5,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "tmp_1"]
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "b2d",
+                      "left" : null,
+                      "right" : {
+                        "type" : "expression",
+                        "value" : {
+                          "op" : ">=",
+                          "left" : {
+                            "type" : "field",
+                            "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
+                          },
+                          "right" : {
+                            "type" : "hexstr",
+                            "value" : "0x02"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "op" : "d2b",
+                    "left" : null,
+                    "right" : {
+                      "type" : "field",
+                      "value" : ["scalars", "tmp_1"]
+                    }
+                  }
+                },
+                {
+                  "type" : "hexstr",
+                  "value" : "8"
+                }
+              ],
+              "op" : "verify"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "&",
+                      "left" : {
+                        "type" : "expression",
+                        "value" : {
+                          "op" : "+",
+                          "left" : {
+                            "type" : "field",
+                            "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
+                          },
+                          "right" : {
+                            "type" : "hexstr",
+                            "value" : "0x7e"
+                          }
+                        }
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0x7f"
+                      }
+                    }
+                  }
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "stack",
+                  "value" : "vec"
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "hexstr",
+                    "value" : "0x00000000"
+                  }
+                }
+              ],
+              "op" : "extract_VL"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "tmp_2"]
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "&",
+                      "left" : {
+                        "type" : "expression",
+                        "value" : {
+                          "op" : "&",
+                          "left" : {
+                            "type" : "expression",
+                            "value" : {
+                              "op" : "<<",
+                              "left" : {
+                                "type" : "expression",
+                                "value" : {
+                                  "op" : "&",
+                                  "left" : {
+                                    "type" : "field",
+                                    "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
+                                  },
+                                  "right" : {
+                                    "type" : "hexstr",
+                                    "value" : "0x01ff"
+                                  }
+                                }
+                              },
+                              "right" : {
+                                "type" : "hexstr",
+                                "value" : "0x3"
+                              }
+                            }
+                          },
+                          "right" : {
+                            "type" : "hexstr",
+                            "value" : "0x01ff"
+                          }
+                        }
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0xffffffff"
+                      }
+                    }
+                  }
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "padding_1"
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "field",
+                    "value" : ["scalars", "tmp_2"]
+                  }
+                }
+              ],
+              "op" : "extract_VL"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : "parse_tcp_0"
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "Tcp_option_parser_parse_tcp_option_nop",
+          "id" : 6,
           "parser_ops" : [
             {
               "parameters" : [
@@ -1030,197 +1122,6 @@
                 }
               ],
               "op" : "extract_VL"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["scalars", "tmp_4"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "&",
-                      "left" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : "&",
-                          "left" : {
-                            "type" : "expression",
-                            "value" : {
-                              "op" : "<<",
-                              "left" : {
-                                "type" : "expression",
-                                "value" : {
-                                  "op" : "&",
-                                  "left" : {
-                                    "type" : "field",
-                                    "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
-                                  },
-                                  "right" : {
-                                    "type" : "hexstr",
-                                    "value" : "0x01ff"
-                                  }
-                                }
-                              },
-                              "right" : {
-                                "type" : "hexstr",
-                                "value" : "0x3"
-                              }
-                            }
-                          },
-                          "right" : {
-                            "type" : "hexstr",
-                            "value" : "0x01ff"
-                          }
-                        }
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0xffffffff"
-                      }
-                    }
-                  }
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "regular",
-                  "value" : "padding_1"
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "field",
-                    "value" : ["scalars", "tmp_4"]
-                  }
-                }
-              ],
-              "op" : "extract_VL"
-            }
-          ],
-          "transitions" : [
-            {
-              "value" : "default",
-              "mask" : null,
-              "next_state" : "parse_tcp_0"
-            }
-          ],
-          "transition_key" : []
-        },
-        {
-          "name" : "Tcp_option_parser_parse_tcp_option_nop",
-          "id" : 6,
-          "parser_ops" : [
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["scalars", "tmp_5"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "b2d",
-                      "left" : null,
-                      "right" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : ">=",
-                          "left" : {
-                            "type" : "field",
-                            "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
-                          },
-                          "right" : {
-                            "type" : "hexstr",
-                            "value" : "0x02"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "op" : "d2b",
-                    "left" : null,
-                    "right" : {
-                      "type" : "field",
-                      "value" : ["scalars", "tmp_5"]
-                    }
-                  }
-                },
-                {
-                  "type" : "hexstr",
-                  "value" : "8"
-                }
-              ],
-              "op" : "verify"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "&",
-                      "left" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : "+",
-                          "left" : {
-                            "type" : "field",
-                            "value" : ["scalars", "Tcp_option_parser_tcp_hdr_bytes_left_0"]
-                          },
-                          "right" : {
-                            "type" : "hexstr",
-                            "value" : "0x7e"
-                          }
-                        }
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x7f"
-                      }
-                    }
-                  }
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "stack",
-                  "value" : "vec"
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "hexstr",
-                    "value" : "0x00000000"
-                  }
-                }
-              ],
-              "op" : "extract_VL"
             }
           ],
           "transitions" : [
@@ -1240,7 +1141,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_6"]
+                  "value" : ["scalars", "tmp_4"]
                 },
                 {
                   "type" : "expression",
@@ -1278,7 +1179,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_6"]
+                      "value" : ["scalars", "tmp_4"]
                     }
                   }
                 },
@@ -1359,7 +1260,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_7"]
+                  "value" : ["scalars", "tmp_5"]
                 },
                 {
                   "type" : "expression",
@@ -1397,7 +1298,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_7"]
+                      "value" : ["scalars", "tmp_5"]
                     }
                   }
                 },
@@ -1478,7 +1379,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_1"]
+                  "value" : ["scalars", "tmp"]
                 },
                 {
                   "type" : "lookahead",
@@ -1509,7 +1410,7 @@
                               "op" : ">>",
                               "left" : {
                                 "type" : "field",
-                                "value" : ["scalars", "tmp_1"]
+                                "value" : ["scalars", "tmp"]
                               },
                               "right" : {
                                 "type" : "hexstr",
@@ -1547,7 +1448,7 @@
                       "op" : "&",
                       "left" : {
                         "type" : "field",
-                        "value" : ["scalars", "tmp_1"]
+                        "value" : ["scalars", "tmp"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -1576,7 +1477,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_11"]
+                  "value" : ["scalars", "tmp_6"]
                 },
                 {
                   "type" : "expression",
@@ -1674,7 +1575,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_11"]
+                      "value" : ["scalars", "tmp_6"]
                     }
                   }
                 },
@@ -1689,7 +1590,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_13"]
+                  "value" : ["scalars", "tmp_7"]
                 },
                 {
                   "type" : "expression",
@@ -1737,7 +1638,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_13"]
+                      "value" : ["scalars", "tmp_7"]
                     }
                   }
                 },
@@ -1798,7 +1699,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_14"]
+                  "value" : ["scalars", "tmp_8"]
                 },
                 {
                   "type" : "expression",
@@ -1870,7 +1771,7 @@
                   "type" : "expression",
                   "value" : {
                     "type" : "field",
-                    "value" : ["scalars", "tmp_14"]
+                    "value" : ["scalars", "tmp_8"]
                   }
                 }
               ],
@@ -1897,7 +1798,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[0]"
+                      "value" : "tcp_options_vec[0]"
                     },
                     {
                       "type" : "header",
@@ -1915,7 +1816,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[1]"
+                      "value" : "tcp_options_vec[1]"
                     },
                     {
                       "type" : "header",
@@ -1933,7 +1834,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[2]"
+                      "value" : "tcp_options_vec[2]"
                     },
                     {
                       "type" : "header",
@@ -1951,7 +1852,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[3]"
+                      "value" : "tcp_options_vec[3]"
                     },
                     {
                       "type" : "header",
@@ -1969,7 +1870,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[4]"
+                      "value" : "tcp_options_vec[4]"
                     },
                     {
                       "type" : "header",
@@ -1987,7 +1888,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[5]"
+                      "value" : "tcp_options_vec[5]"
                     },
                     {
                       "type" : "header",
@@ -2005,7 +1906,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[6]"
+                      "value" : "tcp_options_vec[6]"
                     },
                     {
                       "type" : "header",
@@ -2023,7 +1924,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[7]"
+                      "value" : "tcp_options_vec[7]"
                     },
                     {
                       "type" : "header",
@@ -2041,7 +1942,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[8]"
+                      "value" : "tcp_options_vec[8]"
                     },
                     {
                       "type" : "header",
@@ -2059,7 +1960,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_0[9]"
+                      "value" : "tcp_options_vec[9]"
                     },
                     {
                       "type" : "header",
@@ -2077,7 +1978,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_8"
+                      "value" : "tcp_options_padding"
                     },
                     {
                       "type" : "header",
@@ -2106,8 +2007,8 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-        "line" : 318,
+        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "line" : 323,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
@@ -2117,65 +2018,7 @@
   "meter_arrays" : [],
   "counter_arrays" : [],
   "register_arrays" : [],
-  "calculations" : [
-    {
-      "name" : "calc",
-      "id" : 0,
-      "source_info" : {
-        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-        "line" : 355,
-        "column" : 16,
-        "source_fragment" : "ipv4_checksum.get({ hdr.ipv4.version, ..."
-      },
-      "algo" : "csum16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["ipv4", "version"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "ihl"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "diffserv"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "totalLen"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "identification"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "flags"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "fragOffset"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "ttl"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "protocol"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "srcAddr"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "dstAddr"]
-        }
-      ]
-    }
-  ],
+  "calculations" : [],
   "learn_lists" : [],
   "actions" : [
     {
@@ -2187,8 +2030,8 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 251,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 256,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
           }
@@ -2204,8 +2047,8 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 251,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 256,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
           }
@@ -2235,8 +2078,8 @@
             }
           ],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 259,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 264,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
           }
@@ -2250,18 +2093,6 @@
         {
           "name" : "bd",
           "bitwidth" : 24
-        },
-        {
-          "name" : "unused1",
-          "bitwidth" : 1
-        },
-        {
-          "name" : "unused2",
-          "bitwidth" : 1
-        },
-        {
-          "name" : "unused3",
-          "bitwidth" : 1
         },
         {
           "name" : "dmac",
@@ -2286,8 +2117,8 @@
             }
           ],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 273,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 278,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
           }
@@ -2301,12 +2132,12 @@
             },
             {
               "type" : "runtime_data",
-              "value" : 4
+              "value" : 1
             }
           ],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 274,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 279,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
           }
@@ -2320,12 +2151,12 @@
             },
             {
               "type" : "runtime_data",
-              "value" : 5
+              "value" : 2
             }
           ],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 275,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 280,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
           }
@@ -2366,8 +2197,8 @@
             }
           ],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 276,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 281,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -2383,8 +2214,8 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 251,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 256,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
           }
@@ -2414,8 +2245,8 @@
             }
           ],
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 300,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 305,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
           }
@@ -2428,8 +2259,8 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-        "line" : 254,
+        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "line" : 259,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -2439,8 +2270,8 @@
           "name" : "ipv4_da_lpm",
           "id" : 0,
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 261,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 266,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
           },
@@ -2475,8 +2306,8 @@
           "name" : "mac_da",
           "id" : 1,
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 278,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 283,
             "column" : 10,
             "source_fragment" : "mac_da"
           },
@@ -2515,8 +2346,8 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-        "line" : 295,
+        "filename" : "p4_programs/tcp-options-parser2.p4",
+        "line" : 300,
         "column" : 8,
         "source_fragment" : "egress"
       },
@@ -2526,8 +2357,8 @@
           "name" : "send_frame",
           "id" : 2,
           "source_info" : {
-            "filename" : "../../p4pktgen/p4_programs/tcp-options-parser2.p4",
-            "line" : 302,
+            "filename" : "p4_programs/tcp-options-parser2.p4",
+            "line" : 307,
             "column" : 10,
             "source_fragment" : "send_frame"
           },
@@ -2563,15 +2394,7 @@
       "conditionals" : []
     }
   ],
-  "checksums" : [
-    {
-      "name" : "cksum",
-      "id" : 0,
-      "target" : ["ipv4", "hdrChecksum"],
-      "type" : "generic",
-      "calculation" : "calc"
-    }
-  ],
+  "checksums" : [],
   "force_arith" : [],
   "extern_instances" : [],
   "field_aliases" : [
