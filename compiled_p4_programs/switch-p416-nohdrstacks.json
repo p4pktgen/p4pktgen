@@ -3542,7 +3542,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6428,
+        "line" : 6433,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
@@ -3585,7 +3585,7 @@
       "id" : 2,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6205,
+        "line" : 6210,
         "column" : 50,
         "source_fragment" : "copp"
       },
@@ -3637,7 +3637,7 @@
       "id" : 6,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 5841,
+        "line" : 5846,
         "column" : 94,
         "source_fragment" : "ingress_bd_stats"
       },
@@ -3649,7 +3649,7 @@
       "id" : 7,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 5857,
+        "line" : 5862,
         "column" : 87,
         "source_fragment" : "acl_stats"
       },
@@ -3667,7 +3667,7 @@
       "id" : 9,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6203,
+        "line" : 6208,
         "column" : 63,
         "source_fragment" : "drop_stats"
       },
@@ -3679,7 +3679,7 @@
       "id" : 10,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6204,
+        "line" : 6209,
         "column" : 65,
         "source_fragment" : "drop_stats_2"
       },
@@ -3698,156 +3698,9 @@
     {
       "name" : "calc",
       "id" : 0,
-      "algo" : "crc16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["ipv4_metadata", "lkp_ipv4_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4_metadata", "lkp_ipv4_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_ip_proto"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_sport"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_dport"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_0",
-      "id" : 1,
-      "algo" : "crc16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4_metadata", "lkp_ipv4_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4_metadata", "lkp_ipv4_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_ip_proto"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_sport"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_dport"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_1",
-      "id" : 2,
-      "algo" : "crc16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["ipv6_metadata", "lkp_ipv6_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv6_metadata", "lkp_ipv6_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_ip_proto"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_sport"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_dport"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_2",
-      "id" : 3,
-      "algo" : "crc16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv6_metadata", "lkp_ipv6_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv6_metadata", "lkp_ipv6_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_ip_proto"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_sport"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l3_metadata", "lkp_l4_dport"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_3",
-      "id" : 4,
-      "algo" : "crc16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["ingress_metadata", "ifindex"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_sa"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_da"]
-        },
-        {
-          "type" : "field",
-          "value" : ["l2_metadata", "lkp_mac_type"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_4",
-      "id" : 5,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6477,
+        "line" : 6482,
         "column" : 8,
         "source_fragment" : "verify_checksum(hdr.inner_ipv4.ihl == 4w5, { hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr }, hdr.inner_ipv4.hdrChecksum, HashAlgorithm.csum16)"
       },
@@ -3900,11 +3753,11 @@
       ]
     },
     {
-      "name" : "calc_5",
-      "id" : 6,
+      "name" : "calc_0",
+      "id" : 1,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6478,
+        "line" : 6483,
         "column" : 8,
         "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16)"
       },
@@ -3957,11 +3810,11 @@
       ]
     },
     {
-      "name" : "calc_6",
-      "id" : 7,
+      "name" : "calc_1",
+      "id" : 2,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6484,
+        "line" : 6489,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.inner_ipv4.ihl == 4w5, { hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr }, hdr.inner_ipv4.hdrChecksum, HashAlgorithm.csum16)"
       },
@@ -4014,11 +3867,11 @@
       ]
     },
     {
-      "name" : "calc_7",
-      "id" : 8,
+      "name" : "calc_2",
+      "id" : 3,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6485,
+        "line" : 6490,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16)"
       },
@@ -17361,7 +17214,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6299,
+            "line" : 6304,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.rmac_hit = 1w1"
           }
@@ -17387,7 +17240,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6302,
+            "line" : 6307,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.rmac_hit = 1w0"
           }
@@ -31090,60 +30943,53 @@
     {
       "name" : "compute_lkp_ipv4_hash",
       "id" : 433,
-      "runtime_data" : [],
+      "runtime_data" : [
+        {
+          "name" : "p4pktgen_hash_hack_hash1",
+          "bitwidth" : 16
+        },
+        {
+          "name" : "p4pktgen_hash_hack_hash2",
+          "bitwidth" : 16
+        }
+      ],
       "primitives" : [
         {
-          "op" : "modify_field_with_hash_based_offset",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
               "value" : ["hash_metadata", "hash1"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x0000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00010000"
+              "type" : "runtime_data",
+              "value" : 0
             }
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5739,
+            "line" : 5741,
             "column" : 8,
-            "source_fragment" : "hash(meta.hash_metadata.hash1, HashAlgorithm.crc16, (bit<16>)0, { meta.ipv4_metadata.lkp_ipv4_sa, meta.ipv4_metadata.lkp_ipv4_da, meta.l3_metadata.lkp_ip_proto, meta.l3_metadata.lkp_l4_sport, meta.l3_metadata.lkp_l4_dport }, (bit<32>)65536)"
+            "source_fragment" : "meta.hash_metadata.hash1 = p4pktgen_hash_hack_hash1"
           }
         },
         {
-          "op" : "modify_field_with_hash_based_offset",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
               "value" : ["hash_metadata", "hash2"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x0000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_0"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00010000"
+              "type" : "runtime_data",
+              "value" : 1
             }
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5740,
+            "line" : 5742,
             "column" : 8,
-            "source_fragment" : "hash(meta.hash_metadata.hash2, HashAlgorithm.crc16, (bit<16>)0, { meta.l2_metadata.lkp_mac_sa, meta.l2_metadata.lkp_mac_da, meta.ipv4_metadata.lkp_ipv4_sa, meta.ipv4_metadata.lkp_ipv4_da, meta.l3_metadata.lkp_ip_proto, meta.l3_metadata.lkp_l4_sport, meta.l3_metadata.lkp_l4_dport }, (bit<32>)65536)"
+            "source_fragment" : "meta.hash_metadata.hash2 = p4pktgen_hash_hack_hash2"
           }
         }
       ]
@@ -31151,60 +30997,53 @@
     {
       "name" : "compute_lkp_ipv6_hash",
       "id" : 434,
-      "runtime_data" : [],
+      "runtime_data" : [
+        {
+          "name" : "p4pktgen_hash_hack_hash1",
+          "bitwidth" : 16
+        },
+        {
+          "name" : "p4pktgen_hash_hack_hash2",
+          "bitwidth" : 16
+        }
+      ],
       "primitives" : [
         {
-          "op" : "modify_field_with_hash_based_offset",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
               "value" : ["hash_metadata", "hash1"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x0000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_1"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00010000"
+              "type" : "runtime_data",
+              "value" : 0
             }
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5743,
+            "line" : 5747,
             "column" : 8,
-            "source_fragment" : "hash(meta.hash_metadata.hash1, HashAlgorithm.crc16, (bit<16>)0, { meta.ipv6_metadata.lkp_ipv6_sa, meta.ipv6_metadata.lkp_ipv6_da, meta.l3_metadata.lkp_ip_proto, meta.l3_metadata.lkp_l4_sport, meta.l3_metadata.lkp_l4_dport }, (bit<32>)65536)"
+            "source_fragment" : "meta.hash_metadata.hash1 = p4pktgen_hash_hack_hash1"
           }
         },
         {
-          "op" : "modify_field_with_hash_based_offset",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
               "value" : ["hash_metadata", "hash2"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x0000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_2"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00010000"
+              "type" : "runtime_data",
+              "value" : 1
             }
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5744,
+            "line" : 5748,
             "column" : 8,
-            "source_fragment" : "hash(meta.hash_metadata.hash2, HashAlgorithm.crc16, (bit<16>)0, { meta.l2_metadata.lkp_mac_sa, meta.l2_metadata.lkp_mac_da, meta.ipv6_metadata.lkp_ipv6_sa, meta.ipv6_metadata.lkp_ipv6_da, meta.l3_metadata.lkp_ip_proto, meta.l3_metadata.lkp_l4_sport, meta.l3_metadata.lkp_l4_dport }, (bit<32>)65536)"
+            "source_fragment" : "meta.hash_metadata.hash2 = p4pktgen_hash_hack_hash2"
           }
         }
       ]
@@ -31212,33 +31051,30 @@
     {
       "name" : "compute_lkp_non_ip_hash",
       "id" : 435,
-      "runtime_data" : [],
+      "runtime_data" : [
+        {
+          "name" : "p4pktgen_hash_hack_hash2",
+          "bitwidth" : 16
+        }
+      ],
       "primitives" : [
         {
-          "op" : "modify_field_with_hash_based_offset",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
               "value" : ["hash_metadata", "hash2"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x0000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_3"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00010000"
+              "type" : "runtime_data",
+              "value" : 0
             }
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5747,
+            "line" : 5752,
             "column" : 8,
-            "source_fragment" : "hash(meta.hash_metadata.hash2, HashAlgorithm.crc16, (bit<16>)0, { meta.ingress_metadata.ifindex, meta.l2_metadata.lkp_mac_sa, meta.l2_metadata.lkp_mac_da, meta.l2_metadata.lkp_mac_type }, (bit<32>)65536)"
+            "source_fragment" : "meta.hash_metadata.hash2 = p4pktgen_hash_hack_hash2"
           }
         }
       ]
@@ -31275,7 +31111,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5750,
+            "line" : 5755,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_hash = (bit<13>)meta.hash_metadata.hash1"
           }
@@ -31294,7 +31130,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5751,
+            "line" : 5756,
             "column" : 8,
             "source_fragment" : "meta.hash_metadata.entropy_hash = meta.hash_metadata.hash2"
           }
@@ -31320,7 +31156,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5754,
+            "line" : 5759,
             "column" : 8,
             "source_fragment" : "meta.hash_metadata.hash1 = meta.hash_metadata.hash2"
           }
@@ -31352,7 +31188,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5755,
+            "line" : 5760,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_hash = (bit<13>)meta.hash_metadata.hash2"
           }
@@ -31371,7 +31207,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5756,
+            "line" : 5761,
             "column" : 8,
             "source_fragment" : "meta.hash_metadata.entropy_hash = meta.hash_metadata.hash2"
           }
@@ -31394,7 +31230,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5819,
+            "line" : 5824,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
           }
@@ -31446,7 +31282,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5843,
+            "line" : 5848,
             "column" : 8,
             "source_fragment" : "ingress_bd_stats.count((bit<32>)(bit<32>)meta.l2_metadata.bd_stats_idx)"
           }
@@ -31498,7 +31334,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5859,
+            "line" : 5864,
             "column" : 8,
             "source_fragment" : "acl_stats.count((bit<32>)(bit<32>)meta.acl_metadata.acl_stats_index)"
           }
@@ -31536,7 +31372,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5899,
+            "line" : 5904,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = meta.l2_metadata.l2_nexthop"
           }
@@ -31555,7 +31391,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5900,
+            "line" : 5905,
             "column" : 8,
             "source_fragment" : "meta.nexthop_metadata.nexthop_type = meta.l2_metadata.l2_nexthop_type"
           }
@@ -31574,7 +31410,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5901,
+            "line" : 5906,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -31593,7 +31429,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5902,
+            "line" : 5907,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = 16w0"
           }
@@ -31612,7 +31448,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5903,
+            "line" : 5908,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -31638,7 +31474,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5906,
+            "line" : 5911,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = meta.l3_metadata.fib_nexthop"
           }
@@ -31657,7 +31493,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5907,
+            "line" : 5912,
             "column" : 8,
             "source_fragment" : "meta.nexthop_metadata.nexthop_type = meta.l3_metadata.fib_nexthop_type"
           }
@@ -31676,7 +31512,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5908,
+            "line" : 5913,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.routed = 1w1"
           }
@@ -31695,7 +31531,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5909,
+            "line" : 5914,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = 16w0"
           }
@@ -31714,7 +31550,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5910,
+            "line" : 5915,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.reason_code = 16w0x217"
           }
@@ -31733,7 +31569,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5911,
+            "line" : 5916,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -31759,7 +31595,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5914,
+            "line" : 5919,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.routed = 1w0"
           }
@@ -31778,7 +31614,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5915,
+            "line" : 5920,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = 16w0"
           }
@@ -31797,7 +31633,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5916,
+            "line" : 5921,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = 9w64"
           }
@@ -31816,7 +31652,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5917,
+            "line" : 5922,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -31835,7 +31671,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5918,
+            "line" : 5923,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -31861,7 +31697,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5921,
+            "line" : 5926,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = meta.acl_metadata.acl_nexthop"
           }
@@ -31880,7 +31716,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5922,
+            "line" : 5927,
             "column" : 8,
             "source_fragment" : "meta.nexthop_metadata.nexthop_type = meta.acl_metadata.acl_nexthop_type"
           }
@@ -31899,7 +31735,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5923,
+            "line" : 5928,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -31918,7 +31754,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5924,
+            "line" : 5929,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = 16w0"
           }
@@ -31937,7 +31773,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5925,
+            "line" : 5930,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -31963,7 +31799,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5928,
+            "line" : 5933,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = meta.acl_metadata.racl_nexthop"
           }
@@ -31982,7 +31818,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5929,
+            "line" : 5934,
             "column" : 8,
             "source_fragment" : "meta.nexthop_metadata.nexthop_type = meta.acl_metadata.racl_nexthop_type"
           }
@@ -32001,7 +31837,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5930,
+            "line" : 5935,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.routed = 1w1"
           }
@@ -32020,7 +31856,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5931,
+            "line" : 5936,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -32039,7 +31875,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5932,
+            "line" : 5937,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = 16w0"
           }
@@ -32058,7 +31894,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5933,
+            "line" : 5938,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -32084,7 +31920,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5936,
+            "line" : 5941,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = meta.nat_metadata.nat_nexthop"
           }
@@ -32103,7 +31939,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5937,
+            "line" : 5942,
             "column" : 8,
             "source_fragment" : "meta.nexthop_metadata.nexthop_type = meta.nat_metadata.nat_nexthop_type"
           }
@@ -32122,7 +31958,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5938,
+            "line" : 5943,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.routed = 1w1"
           }
@@ -32141,7 +31977,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5939,
+            "line" : 5944,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = 16w0"
           }
@@ -32160,7 +31996,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5940,
+            "line" : 5945,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -32186,7 +32022,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5943,
+            "line" : 5948,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w127"
           }
@@ -32205,7 +32041,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5944,
+            "line" : 5949,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -32224,7 +32060,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5945,
+            "line" : 5950,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = meta.multicast_metadata.multicast_route_mc_index"
           }
@@ -32243,7 +32079,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5946,
+            "line" : 5951,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.routed = 1w1"
           }
@@ -32262,7 +32098,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5947,
+            "line" : 5952,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.same_bd_check = 16w0xffff"
           }
@@ -32272,70 +32108,6 @@
     {
       "name" : "set_multicast_bridge_action",
       "id" : 451,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["fabric_metadata", "dst_device"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x7f"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5950,
-            "column" : 8,
-            "source_fragment" : "meta.fabric_metadata.dst_device = 8w127"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["ingress_metadata", "egress_ifindex"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x0000"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5951,
-            "column" : 8,
-            "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["intrinsic_metadata", "mcast_grp"]
-            },
-            {
-              "type" : "field",
-              "value" : ["multicast_metadata", "multicast_bridge_mc_index"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5952,
-            "column" : 8,
-            "source_fragment" : "meta.intrinsic_metadata.mcast_grp = meta.multicast_metadata.multicast_bridge_mc_index"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "set_multicast_flood",
-      "id" : 452,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -32366,12 +32138,76 @@
             },
             {
               "type" : "hexstr",
-              "value" : "0xffff"
+              "value" : "0x0000"
             }
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
             "line" : 5956,
+            "column" : 8,
+            "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["intrinsic_metadata", "mcast_grp"]
+            },
+            {
+              "type" : "field",
+              "value" : ["multicast_metadata", "multicast_bridge_mc_index"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
+            "line" : 5957,
+            "column" : 8,
+            "source_fragment" : "meta.intrinsic_metadata.mcast_grp = meta.multicast_metadata.multicast_bridge_mc_index"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "set_multicast_flood",
+      "id" : 452,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["fabric_metadata", "dst_device"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x7f"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
+            "line" : 5960,
+            "column" : 8,
+            "source_fragment" : "meta.fabric_metadata.dst_device = 8w127"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ingress_metadata", "egress_ifindex"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0xffff"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
+            "line" : 5961,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w65535"
           }
@@ -32397,7 +32233,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5959,
+            "line" : 5964,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.drop_flag = 1w1"
           }
@@ -32416,7 +32252,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5960,
+            "line" : 5965,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.drop_reason = 8w44"
           }
@@ -32471,7 +32307,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6005,
+            "line" : 6010,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = ifindex"
           }
@@ -32490,7 +32326,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6006,
+            "line" : 6011,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = nhop_index"
           }
@@ -32522,7 +32358,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6007,
+            "line" : 6012,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.same_bd_check = meta.ingress_metadata.bd ^ bd"
           }
@@ -32554,7 +32390,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6008,
+            "line" : 6013,
             "column" : 8,
             "source_fragment" : "meta.l2_metadata.same_if_check = meta.l2_metadata.same_if_check ^ ifindex"
           }
@@ -32586,7 +32422,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6009,
+            "line" : 6014,
             "column" : 8,
             "source_fragment" : "meta.tunnel_metadata.tunnel_if_check = meta.tunnel_metadata.tunnel_terminate ^ tunnel"
           }
@@ -32625,7 +32461,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6012,
+            "line" : 6017,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = uuc_mc_index"
           }
@@ -32644,7 +32480,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6013,
+            "line" : 6018,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.nexthop_index = nhop_index"
           }
@@ -32663,7 +32499,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6014,
+            "line" : 6019,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -32695,7 +32531,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6015,
+            "line" : 6020,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.same_bd_check = meta.ingress_metadata.bd ^ bd"
           }
@@ -32714,7 +32550,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6016,
+            "line" : 6021,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w127"
           }
@@ -32753,7 +32589,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6019,
+            "line" : 6024,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = ifindex"
           }
@@ -32785,7 +32621,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6020,
+            "line" : 6025,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.same_bd_check = meta.ingress_metadata.bd ^ bd"
           }
@@ -32817,7 +32653,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6021,
+            "line" : 6026,
             "column" : 8,
             "source_fragment" : "meta.l2_metadata.same_if_check = meta.l2_metadata.same_if_check ^ ifindex"
           }
@@ -32849,7 +32685,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6022,
+            "line" : 6027,
             "column" : 8,
             "source_fragment" : "meta.tunnel_metadata.tunnel_if_check = meta.tunnel_metadata.tunnel_terminate ^ tunnel"
           }
@@ -32884,7 +32720,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6025,
+            "line" : 6030,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = uuc_mc_index"
           }
@@ -32903,7 +32739,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6026,
+            "line" : 6031,
             "column" : 8,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex = 16w0"
           }
@@ -32935,7 +32771,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6027,
+            "line" : 6032,
             "column" : 8,
             "source_fragment" : "meta.l3_metadata.same_bd_check = meta.ingress_metadata.bd ^ bd"
           }
@@ -32954,7 +32790,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6028,
+            "line" : 6033,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w127"
           }
@@ -32991,7 +32827,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6068,
+            "line" : 6073,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.mcast_grp = mc_index"
           }
@@ -33028,7 +32864,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6090,
+            "line" : 6095,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -33063,7 +32899,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6093,
+            "line" : 6098,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = device"
           }
@@ -33082,7 +32918,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6094,
+            "line" : 6099,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_port = port"
           }
@@ -33184,7 +33020,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6149,
+            "line" : 6154,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = port"
           }
@@ -33215,7 +33051,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6152,
+            "line" : 6157,
             "column" : 8,
             "source_fragment" : "meta.multicast_metadata.mcast_grp = meta.intrinsic_metadata.mcast_grp"
           }
@@ -33252,7 +33088,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6175,
+            "line" : 6180,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.ingress_cos = icos"
           }
@@ -33283,7 +33119,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6178,
+            "line" : 6183,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.qid = qid"
           }
@@ -33318,7 +33154,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6181,
+            "line" : 6186,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.ingress_cos = icos"
           }
@@ -33337,7 +33173,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6182,
+            "line" : 6187,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.qid = qid"
           }
@@ -33389,7 +33225,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6207,
+            "line" : 6212,
             "column" : 8,
             "source_fragment" : "drop_stats_2.count((bit<32>)(bit<32>)meta.ingress_metadata.drop_reason)"
           }
@@ -33434,7 +33270,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6212,
+            "line" : 6217,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.qid = qid"
           }
@@ -33453,7 +33289,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6213,
+            "line" : 6218,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.ingress_cos = icos"
           }
@@ -33489,7 +33325,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6215,
+            "line" : 6220,
             "column" : 8,
             "source_fragment" : "copp.execute_meter((bit<32>)meter_id, meta.intrinsic_metadata.packet_color)"
           }
@@ -33528,7 +33364,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6212,
+            "line" : 6217,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.qid = qid; ..."
           }
@@ -33547,7 +33383,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6213,
+            "line" : 6218,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.ingress_cos = icos; ..."
           }
@@ -33583,7 +33419,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6215,
+            "line" : 6220,
             "column" : 8,
             "source_fragment" : "copp.execute_meter((bit<32>)meter_id, meta.intrinsic_metadata.packet_color)"
           }
@@ -33593,7 +33429,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6219,
+            "line" : 6224,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
           }
@@ -33612,7 +33448,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6220,
+            "line" : 6225,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -33655,7 +33491,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6223,
+            "line" : 6228,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.reason_code = reason_code"
           }
@@ -33674,7 +33510,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6212,
+            "line" : 6217,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.qid = qid; ..."
           }
@@ -33693,7 +33529,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6213,
+            "line" : 6218,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.ingress_cos = icos; ..."
           }
@@ -33729,7 +33565,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6215,
+            "line" : 6220,
             "column" : 8,
             "source_fragment" : "copp.execute_meter((bit<32>)meter_id, meta.intrinsic_metadata.packet_color)"
           }
@@ -33772,7 +33608,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6223,
+            "line" : 6228,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.reason_code = reason_code; ..."
           }
@@ -33791,7 +33627,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6212,
+            "line" : 6217,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.qid = qid; ..."
           }
@@ -33810,7 +33646,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6213,
+            "line" : 6218,
             "column" : 8,
             "source_fragment" : "meta.intrinsic_metadata.ingress_cos = icos; ..."
           }
@@ -33846,7 +33682,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6215,
+            "line" : 6220,
             "column" : 8,
             "source_fragment" : "copp.execute_meter((bit<32>)meter_id, meta.intrinsic_metadata.packet_color)"
           }
@@ -33856,7 +33692,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6228,
+            "line" : 6233,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
           }
@@ -33875,7 +33711,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6229,
+            "line" : 6234,
             "column" : 8,
             "source_fragment" : "meta.fabric_metadata.dst_device = 8w0"
           }
@@ -33892,7 +33728,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6232,
+            "line" : 6237,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
           }
@@ -33923,7 +33759,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6235,
+            "line" : 6240,
             "column" : 8,
             "source_fragment" : "drop_stats.count((bit<32>)drop_reason)"
           }
@@ -33933,7 +33769,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6236,
+            "line" : 6241,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
           }
@@ -33968,7 +33804,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6240,
+            "line" : 6245,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
           }
@@ -33982,7 +33818,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-        "line" : 6297,
+        "line" : 6302,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -35792,7 +35628,7 @@
           "id" : 38,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6304,
+            "line" : 6309,
             "column" : 25,
             "source_fragment" : "rmac"
           },
@@ -36966,7 +36802,7 @@
           "id" : 63,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5758,
+            "line" : 5763,
             "column" : 40,
             "source_fragment" : "compute_ipv4_hashes"
           },
@@ -37002,7 +36838,7 @@
           "id" : 64,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5766,
+            "line" : 5771,
             "column" : 40,
             "source_fragment" : "compute_ipv6_hashes"
           },
@@ -37038,7 +36874,7 @@
           "id" : 65,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5774,
+            "line" : 5779,
             "column" : 42,
             "source_fragment" : "compute_non_ip_hashes"
           },
@@ -37074,7 +36910,7 @@
           "id" : 66,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5782,
+            "line" : 5787,
             "column" : 41,
             "source_fragment" : "compute_other_hashes"
           },
@@ -37111,7 +36947,7 @@
           "id" : 67,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5821,
+            "line" : 5826,
             "column" : 33,
             "source_fragment" : "meter_action"
           },
@@ -37152,7 +36988,7 @@
           "id" : 68,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5845,
+            "line" : 5850,
             "column" : 37,
             "source_fragment" : "ingress_bd_stats_0"
           },
@@ -37182,7 +37018,7 @@
           "id" : 69,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5861,
+            "line" : 5866,
             "column" : 30,
             "source_fragment" : "acl_stats_0"
           },
@@ -37212,7 +37048,7 @@
           "id" : 70,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5879,
+            "line" : 5884,
             "column" : 40,
             "source_fragment" : "storm_control_stats_0"
           },
@@ -37252,7 +37088,7 @@
           "id" : 71,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5962,
+            "line" : 5967,
             "column" : 31,
             "source_fragment" : "fwd_result"
           },
@@ -37363,7 +37199,7 @@
           "id" : 72,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6030,
+            "line" : 6035,
             "column" : 31,
             "source_fragment" : "ecmp_group"
           },
@@ -37401,7 +37237,7 @@
           "id" : 73,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6043,
+            "line" : 6048,
             "column" : 28,
             "source_fragment" : "nexthop"
           },
@@ -37439,7 +37275,7 @@
           "id" : 74,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6070,
+            "line" : 6075,
             "column" : 29,
             "source_fragment" : "bd_flood"
           },
@@ -37481,7 +37317,7 @@
           "id" : 75,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6096,
+            "line" : 6101,
             "column" : 30,
             "source_fragment" : "lag_group"
           },
@@ -37519,7 +37355,7 @@
           "id" : 76,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6126,
+            "line" : 6131,
             "column" : 33,
             "source_fragment" : "learn_notify"
           },
@@ -37566,7 +37402,7 @@
           "id" : 77,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6154,
+            "line" : 6159,
             "column" : 31,
             "source_fragment" : "fabric_lag"
           },
@@ -37604,7 +37440,7 @@
           "id" : 78,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6184,
+            "line" : 6189,
             "column" : 34,
             "source_fragment" : "traffic_class"
           },
@@ -37648,7 +37484,7 @@
           "id" : 79,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6248,
+            "line" : 6253,
             "column" : 31,
             "source_fragment" : "system_acl"
           },
@@ -37806,7 +37642,7 @@
           "id" : 80,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6242,
+            "line" : 6247,
             "column" : 31,
             "source_fragment" : "drop_stats_0"
           },
@@ -38457,7 +38293,7 @@
           "id" : 18,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6366,
+            "line" : 6371,
             "column" : 12,
             "source_fragment" : "meta.ingress_metadata.port_type != 2w1"
           },
@@ -38631,7 +38467,7 @@
           "id" : 22,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6371,
+            "line" : 6376,
             "column" : 20,
             "source_fragment" : "meta.l3_metadata.lkp_ip_type == 2w0"
           },
@@ -38781,7 +38617,7 @@
           "id" : 27,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6379,
+            "line" : 6384,
             "column" : 28,
             "source_fragment" : "(meta.ingress_metadata.bypass_lookups & 16w0x2) == 16w0"
           },
@@ -38817,7 +38653,7 @@
           "id" : 28,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6380,
+            "line" : 6385,
             "column" : 32,
             "source_fragment" : "meta.l3_metadata.lkp_ip_type == 2w1 && meta.ipv4_metadata.ipv4_unicast_enabled == 1w1"
           },
@@ -38889,7 +38725,7 @@
           "id" : 30,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6386,
+            "line" : 6391,
             "column" : 36,
             "source_fragment" : "meta.l3_metadata.lkp_ip_type == 2w2 && meta.ipv6_metadata.ipv6_unicast_enabled == 1w1"
           },
@@ -39279,7 +39115,7 @@
           "id" : 40,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5792,
+            "line" : 5797,
             "column" : 12,
             "source_fragment" : "meta.tunnel_metadata.tunnel_terminate == 1w0 && hdr.ipv4.isValid() || meta.tunnel_metadata.tunnel_terminate == 1w1 && hdr.inner_ipv4.isValid()"
           },
@@ -39365,7 +39201,7 @@
           "id" : 41,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5796,
+            "line" : 5801,
             "column" : 16,
             "source_fragment" : "meta.tunnel_metadata.tunnel_terminate == 1w0 && hdr.ipv6.isValid() || meta.tunnel_metadata.tunnel_terminate == 1w1 && hdr.inner_ipv6.isValid()"
           },
@@ -39451,7 +39287,7 @@
           "id" : 42,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5834,
+            "line" : 5839,
             "column" : 12,
             "source_fragment" : "(meta.ingress_metadata.bypass_lookups & 16w0x10) == 16w0"
           },
@@ -39487,7 +39323,7 @@
           "id" : 43,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6406,
+            "line" : 6411,
             "column" : 12,
             "source_fragment" : "meta.ingress_metadata.port_type != 2w1"
           },
@@ -39513,7 +39349,7 @@
           "id" : 44,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 5995,
+            "line" : 6000,
             "column" : 14,
             "source_fragment" : "meta.ingress_metadata.bypass_lookups == 16w0xffff"
           },
@@ -39539,7 +39375,7 @@
           "id" : 45,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6055,
+            "line" : 6060,
             "column" : 12,
             "source_fragment" : "meta.nexthop_metadata.nexthop_type == 2w1"
           },
@@ -39565,7 +39401,7 @@
           "id" : 46,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6412,
+            "line" : 6417,
             "column" : 16,
             "source_fragment" : "meta.ingress_metadata.egress_ifindex == 16w65535"
           },
@@ -39591,7 +39427,7 @@
           "id" : 47,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6139,
+            "line" : 6144,
             "column" : 12,
             "source_fragment" : "meta.l2_metadata.learning_enabled == 1w1"
           },
@@ -39617,7 +39453,7 @@
           "id" : 48,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6422,
+            "line" : 6427,
             "column" : 12,
             "source_fragment" : "meta.ingress_metadata.port_type != 2w1"
           },
@@ -39643,7 +39479,7 @@
           "id" : 49,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6288,
+            "line" : 6293,
             "column" : 12,
             "source_fragment" : "(meta.ingress_metadata.bypass_lookups & 16w0x20) == 16w0"
           },
@@ -39679,7 +39515,7 @@
           "id" : 50,
           "source_info" : {
             "filename" : "p4_programs/switch-p416-nohdrstacks.p4",
-            "line" : 6290,
+            "line" : 6295,
             "column" : 16,
             "source_fragment" : "meta.ingress_metadata.drop_flag == 1w1"
           },
@@ -42025,28 +41861,28 @@
       "id" : 0,
       "target" : ["inner_ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_4"
+      "calculation" : "calc"
     },
     {
       "name" : "cksum_0",
       "id" : 1,
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_5"
+      "calculation" : "calc_0"
     },
     {
       "name" : "cksum_1",
       "id" : 2,
       "target" : ["inner_ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_6"
+      "calculation" : "calc_1"
     },
     {
       "name" : "cksum_2",
       "id" : 3,
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_7"
+      "calculation" : "calc_2"
     }
   ],
   "force_arith" : [],

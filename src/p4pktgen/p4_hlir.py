@@ -551,7 +551,11 @@ class Table:
         # XXX: Make enum?
         self.match_type = json_obj['match_type']
         self.max_size = int(json_obj['max_size'])
-        self.with_counters = json_obj['with_counters']
+        # With recent version of switch-p416-nohdrstacks.json, found
+        # that at least some calls to this method had no
+        # 'with_counters' property.
+        if 'with_counters' in json_obj:
+            self.with_counters = json_obj['with_counters']
         self.support_timeout = json_obj['support_timeout']
         self.direct_meters = json_obj['direct_meters']
 

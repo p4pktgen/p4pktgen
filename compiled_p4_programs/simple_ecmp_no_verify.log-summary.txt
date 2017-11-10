@@ -1,0 +1,229 @@
+INFO: END   9 Exp path (len 3+8=11) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_ecmp_path_idx'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_path', u'set_l2ptr'),
+(u'mac_da', u'set_bd_dmac_intf')]
+
+9 Takes the 'longest' path through the code, all 'if' conditions true.
+
+INFO: END   10 Exp path (len 3+8=11) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_ecmp_path_idx'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_path', u'set_l2ptr'),
+(u'mac_da', u'my_drop')]
+
+10 Same as 9 except packet dropped in last table mac_da
+
+INFO: END   12 Exp path (len 3+8=11) complete_path True TestPathResult.UNINITIALIZED_READ: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_ecmp_path_idx'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_path', u'NoAction'),
+(u'mac_da', u'set_bd_dmac_intf')]
+
+12 same as 9 except got a miss in table ecmp_path, leading to uninitialized read in table mac_da search
+
+INFO: END   13 Exp path (len 3+8=11) complete_path True TestPathResult.UNINITIALIZED_READ: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_ecmp_path_idx'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_path', u'NoAction'),
+(u'mac_da', u'my_drop')]
+
+13 Same as 12 except last table action different.  Still uninitialized read
+
+INFO: END   14 Exp path (len 3+6=9) complete_path False TestPathResult.NO_PACKET_FOUND: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_ecmp_path_idx'),
+(u'node_7', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR')))]
+
+14 last if condition cannot be satisfied given earlier path.  Designed
+to be impossible as the code was intended.
+
+INFO: END   16 Exp path (len 3+6=9) complete_path False TestPathResult.NO_PACKET_FOUND: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_l2ptr'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR')))]
+
+16 Designed to be impossible path by how code was written.
+
+INFO: END   18 Exp path (len 3+7=10) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_l2ptr'),
+(u'node_7', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'mac_da', u'set_bd_dmac_intf')]
+
+18 '2nd longest path' through the code, where ecmp_group table result
+sets the l2ptr, so no need to look up ecmp_path table.
+
+INFO: END   19 Exp path (len 3+7=10) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'set_l2ptr'),
+(u'node_7', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'mac_da', u'my_drop')]
+
+19 same as 18, except drop action on last table
+
+INFO: END   22 Exp path (len 3+7=10) complete_path False TestPathResult.UNINITIALIZED_READ: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'NoAction'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_path', u'set_l2ptr')]
+
+22 uninitialized read in ecmp_path search key because of miss in
+search of ecmp_group table.  Field ecmp_path_selector is the
+uninitialized field.
+
+INFO: END   23 Exp path (len 3+7=10) complete_path False TestPathResult.UNINITIALIZED_READ: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'NoAction'),
+(u'node_7', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_path', u'NoAction')]
+
+23 Same as 22 except table miss in last table
+
+INFO: END   24 Exp path (len 3+6=9) complete_path False TestPathResult.NO_PACKET_FOUND: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'ecmp_group', u'NoAction'),
+(u'node_7', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 158, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR')))]
+
+24 Same as 14, except a miss occurred in ecmp_group.
+
+INFO: END   25 Exp path (len 3+4=7) complete_path False TestPathResult.NO_PACKET_FOUND: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_ecmp_group_idx'),
+(u'node_5', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR')))]
+
+25 Path designed to be impossible as code was written.  action
+set_ecmp_group_idx will always leave nexthop_type with a value other
+than NEXTHOP_TYPE_L2PTR.
+
+INFO: END   27 Exp path (len 3+4=7) complete_path False TestPathResult.NO_PACKET_FOUND: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_l2ptr'),
+(u'node_5', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR')))]
+
+27 Path designed to be impossible as code was written.  Action
+set_l2ptr always sets nexthop_type ot NEXTHOP_TYPE_L2PTR.
+
+INFO: END   29 Exp path (len 3+5=8) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_l2ptr'),
+(u'node_5', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'mac_da', u'set_bd_dmac_intf')]
+
+29 Shortest non-drop functional path through the code, with
+ipv4_da_lpm action providing an l2ptr value directly.  No need to look
+up ecmp_group or ecmp_path tables.
+
+INFO: END   30 Exp path (len 3+5=8) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'set_l2ptr'),
+(u'node_5', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 156, u'meta.nexthop_type != NEXTHOP_TYPE_L2PTR'))),
+(u'mac_da', u'my_drop')]
+
+30 Same as 29, except drop in mac_da table.
+
+INFO: END   31 Exp path (len 3+3=6) complete_path True TestPathResult.SUCCESS: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()'))),
+(u'tbl_act', u'act'),
+(u'ipv4_da_lpm', u'ipv4_da_lpm_drop')]
+
+31 ipv4_da_lpm table gives drop action.  No further table lookups should be done.
+
+INFO: END   32 Exp path (len 3+1=4) complete_path True TestPathResult.NO_PACKET_FOUND: ['start',
+'parse_ipv4',
+'sink',
+(u'node_2', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()')))]
+
+32 Impossible by design.  Parser found IPv4 header, so
+hdr.ipv4.isValid() is true.
+
+INFO: END   34 Exp path (len 2+1=3) complete_path False TestPathResult.NO_PACKET_FOUND: ['start',
+'sink',
+(u'node_2', (True, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()')))]
+
+34 Impossible by design.  Parser found no IPv4 header, so
+hdr.ipv4.isValid() is false.
+
+INFO: END   35 Exp path (len 2+1=3) complete_path True TestPathResult.SUCCESS: ['start',
+'sink',
+(u'node_2', (False, (u'p4_programs/simple_ecmp_no_verify.p4', 151, u'hdr.ipv4.isValid()')))]
+
+35 Expected path, the way the code was written.  It does nothing for
+packets without IPv4 headers.
+
+INFO: TestPathResult.NO_PACKET_FOUND: 7
+INFO: TestPathResult.UNINITIALIZED_READ: 4
+INFO: TestPathResult.SUCCESS: 8

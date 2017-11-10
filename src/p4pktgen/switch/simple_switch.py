@@ -24,6 +24,26 @@ class SimpleSwitch:
             eth_args.append('-i')
             eth_args.append('{}@veth{}'.format(i, (i + 1) * 2))
 
+        # Workaround for problem that I have only seen on some
+        # systems, but not others, for reasons that I don't
+        # understand.  The symptom of the problem is that when running
+        # pytest, even as root, multiple of the test cases fail with
+        # "Exception: Initializing simple_switch failed", and the
+        # following output labeled "Captured stderr call".
+
+        # Nanomsg returned a exception when trying to bind to address 'ipc:///tmp/bmv2-0-notifications.ipc'.
+        # The exception is: Address already in use
+        # This may happen if
+        # 1) the address provided is invalid,
+        # 2) another instance of bmv2 is running and using the same address, or
+        # 3) you have insufficent permissions (e.g. you are using an IPC socket on Unix, the file already exists and you don't have permission to access it)
+
+        # I have tried adding debug messages to a few places in the
+        # simple_switch executable to discover why this failure
+        # occurs, but haven't discovered a reason for it.  Removing
+        # this file seems to avoid the problem.
+        os.remove('/tmp/bmv2-0-notifications.ipc')
+
         # Start simple_switch
         self.proc = subprocess.Popen(
             ['simple_switch', '--log-console', '--thrift-port', '9090'] +
