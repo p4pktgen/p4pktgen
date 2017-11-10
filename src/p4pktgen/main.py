@@ -258,6 +258,7 @@ def process_json_file(input_file, debug=False):
 
     avg_full_path_len = Average('full_path_len')
     avg_unsat_path_len = Average('unsat_path_len')
+    count_unsat_paths = Counter('unsat_paths')
 
     start_time = time.time()
     count = Counter('path_count')
@@ -281,6 +282,7 @@ def process_json_file(input_file, debug=False):
                 avg_full_path_len.record(len(parser_path + control_path))
             if result == TestPathResult.NO_PACKET_FOUND:
                 avg_unsat_path_len.record(len(parser_path + control_path))
+                count_unsat_paths.inc()
 
             if Config().get_record_statistics():
                 current_time = time.time()
@@ -288,7 +290,7 @@ def process_json_file(input_file, debug=False):
                     timing_file.write('{},{}\n'.format(result, current_time - start_time))
                     timing_file.flush()
                 if count.counter % 100 == 0:
-                    breakdown_file.write('{},{},{},{},{}\n'.format(current_time - start_time, translator.total_solver_time, translator.total_switch_time, avg_full_path_len.get_avg(), avg_unsat_path_len.get_avg()))
+                    breakdown_file.write('{},{},{},{},{},{}\n'.format(current_time - start_time, translator.total_solver_time, translator.total_switch_time, avg_full_path_len.get_avg(), avg_unsat_path_len.get_avg(), count_unsat_paths.counter))
                     breakdown_file.flush()
 
             record_result = (is_complete_control_path
