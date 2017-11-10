@@ -2436,7 +2436,7 @@ control process_egress_bd_stats(inout headers hdr, inout metadata meta, inout st
             meta.l2_metadata.lkp_pkt_type: exact;
         }
         size = 1024;
-        @name(".egress_bd_stats") counters = direct_counter(CounterType.packets_and_bytes);
+        counters = egress_bd_stats;
     }
     apply {
         egress_bd_stats_0.apply();
@@ -3614,13 +3614,14 @@ control process_global_params(inout headers hdr, inout metadata meta, inout stan
     @name(".deflect_on_drop") action deflect_on_drop(bit<1> enable_dod) {
         meta.intrinsic_metadata.deflect_on_drop = enable_dod;
     }
-    @name(".set_config_parameters") action set_config_parameters(bit<1> enable_dod) {
+    @name(".set_config_parameters") action set_config_parameters(bit<1> enable_dod, bit<32> p4pktgen_random_hack) {
         deflect_on_drop(enable_dod);
         meta.i2e_metadata.ingress_tstamp = (bit<32>)meta.intrinsic_metadata.ingress_global_timestamp;
         meta.ingress_metadata.ingress_port = standard_metadata.ingress_port;
         meta.l2_metadata.same_if_check = meta.ingress_metadata.ifindex;
         standard_metadata.egress_spec = 9w511;
-        random(meta.ingress_metadata.sflow_take_sample, (bit<32>)0, (bit<32>)32w0x7fffffff);
+        //random(meta.ingress_metadata.sflow_take_sample, (bit<32>)0, (bit<32>)32w0x7fffffff);
+        meta.ingress_metadata.sflow_take_sample = p4pktgen_random_hack & 0x7fffffff;
     }
     @name(".switch_config_params") table switch_config_params {
         actions = {
@@ -3946,7 +3947,7 @@ control process_ingress_sflow(inout headers hdr, inout metadata meta, inout stan
             hdr.sflow.isValid()           : exact;
         }
         size = 512;
-        @name(".sflow_ingress_session_pkt_counter") counters = direct_counter(CounterType.packets);
+        counters = sflow_ingress_session_pkt_counter;
     }
     apply {
         sflow_ingress.apply();
@@ -5403,7 +5404,7 @@ control process_ipv4_multicast(inout headers hdr, inout metadata meta, inout sta
             meta.ipv4_metadata.lkp_ipv4_da: exact;
         }
         size = 1024;
-        @name(".ipv4_multicast_route_s_g_stats") counters = direct_counter(CounterType.packets);
+        counters = ipv4_multicast_route_s_g_stats;
     }
     @name(".multicast_route_star_g_miss") action multicast_route_star_g_miss_0() {
         ipv4_multicast_route_star_g_stats.count();
@@ -5434,7 +5435,7 @@ control process_ipv4_multicast(inout headers hdr, inout metadata meta, inout sta
             meta.ipv4_metadata.lkp_ipv4_da: exact;
         }
         size = 1024;
-        @name(".ipv4_multicast_route_star_g_stats") counters = direct_counter(CounterType.packets);
+        counters = ipv4_multicast_route_star_g_stats;
     }
     apply {
         if ((meta.ingress_metadata.bypass_lookups & 16w0x1) == 16w0) {
@@ -5536,7 +5537,7 @@ control process_ipv6_multicast(inout headers hdr, inout metadata meta, inout sta
             meta.ipv6_metadata.lkp_ipv6_da: exact;
         }
         size = 1024;
-        @name(".ipv6_multicast_route_s_g_stats") counters = direct_counter(CounterType.packets);
+        counters = ipv6_multicast_route_s_g_stats;
     }
     @name(".multicast_route_star_g_miss") action multicast_route_star_g_miss_1() {
         ipv6_multicast_route_star_g_stats.count();
@@ -5567,7 +5568,7 @@ control process_ipv6_multicast(inout headers hdr, inout metadata meta, inout sta
             meta.ipv6_metadata.lkp_ipv6_da: exact;
         }
         size = 1024;
-        @name(".ipv6_multicast_route_star_g_stats") counters = direct_counter(CounterType.packets);
+        counters = ipv6_multicast_route_star_g_stats;
     }
     apply {
         if ((meta.ingress_metadata.bypass_lookups & 16w0x1) == 16w0) {
@@ -5827,7 +5828,7 @@ control process_meter_action(inout headers hdr, inout metadata meta, inout stand
             meta.meter_metadata.meter_index : exact;
         }
         size = 1024;
-        @name(".meter_stats") counters = direct_counter(CounterType.packets);
+        counters = meter_stats;
     }
     apply {
         if ((meta.ingress_metadata.bypass_lookups & 16w0x10) == 16w0) {
@@ -5884,7 +5885,7 @@ control process_storm_control_stats(inout headers hdr, inout metadata meta, inou
             standard_metadata.ingress_port  : exact;
         }
         size = 1024;
-        @name(".storm_control_stats") counters = direct_counter(CounterType.packets);
+        counters = storm_control_stats;
     }
     apply {
         storm_control_stats_0.apply();
@@ -6471,25 +6472,17 @@ control DeparserImpl(packet_out packet, in headers hdr) {
     }
 }
 
-control verifyChecksum(in headers hdr, inout metadata meta) {
-    Checksum16() inner_ipv4_checksum;
-    Checksum16() ipv4_checksum;
+control verifyChecksum(inout headers hdr, inout metadata meta) {
     apply {
-        if (hdr.inner_ipv4.ihl == 4w5 && hdr.inner_ipv4.hdrChecksum == inner_ipv4_checksum.get({ hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr })) 
-            mark_to_drop();
-        if (hdr.ipv4.ihl == 4w5 && hdr.ipv4.hdrChecksum == ipv4_checksum.get({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr })) 
-            mark_to_drop();
+        verify_checksum(hdr.inner_ipv4.ihl == 4w5, { hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr }, hdr.inner_ipv4.hdrChecksum, HashAlgorithm.csum16);
+        verify_checksum(hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
     }
 }
 
 control computeChecksum(inout headers hdr, inout metadata meta) {
-    Checksum16() inner_ipv4_checksum;
-    Checksum16() ipv4_checksum;
     apply {
-        if (hdr.inner_ipv4.ihl == 4w5) 
-            hdr.inner_ipv4.hdrChecksum = inner_ipv4_checksum.get({ hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr });
-        if (hdr.ipv4.ihl == 4w5) 
-            hdr.ipv4.hdrChecksum = ipv4_checksum.get({ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr });
+        update_checksum(hdr.inner_ipv4.ihl == 4w5, { hdr.inner_ipv4.version, hdr.inner_ipv4.ihl, hdr.inner_ipv4.diffserv, hdr.inner_ipv4.totalLen, hdr.inner_ipv4.identification, hdr.inner_ipv4.flags, hdr.inner_ipv4.fragOffset, hdr.inner_ipv4.ttl, hdr.inner_ipv4.protocol, hdr.inner_ipv4.srcAddr, hdr.inner_ipv4.dstAddr }, hdr.inner_ipv4.hdrChecksum, HashAlgorithm.csum16);
+        update_checksum(hdr.ipv4.ihl == 4w5, { hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv, hdr.ipv4.totalLen, hdr.ipv4.identification, hdr.ipv4.flags, hdr.ipv4.fragOffset, hdr.ipv4.ttl, hdr.ipv4.protocol, hdr.ipv4.srcAddr, hdr.ipv4.dstAddr }, hdr.ipv4.hdrChecksum, HashAlgorithm.csum16);
     }
 }
 
