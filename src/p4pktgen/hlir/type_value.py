@@ -76,6 +76,7 @@ class TypeValueCalculation(TypeValue):
     def __repr__(self):
         return 'Calculation<{}>'.format(self.calculation_name)
 
+
 class TypeValueCounterArray(TypeValue):
     def __init__(self, json_obj):
         self.counter_array_name = json_obj
@@ -83,12 +84,25 @@ class TypeValueCounterArray(TypeValue):
     def __repr__(self):
         return 'CounterArray<{}>'.format(self.counter_array_name)
 
+
 class TypeValueMeterArray(TypeValue):
     def __init__(self, json_obj):
         self.counter_meter_name = json_obj
 
     def __repr__(self):
         return 'MeterArray<{}>'.format(self.counter_meter_name)
+
+
+class TypeValueRegular(TypeValue):
+    def __init__(self, json_obj):
+        self.header_name = json_obj
+
+
+class TypeValueLookahead(TypeValue):
+    def __init__(self, json_obj):
+        self.offset = json_obj[0]
+        self.size = json_obj[1]
+
 
 def parse_type_value(json_obj):
     p4_type_str = json_obj['type']
@@ -124,5 +138,9 @@ def parse_type_value(json_obj):
         return TypeValueCounterArray(value)
     elif p4_type_str == 'meter_array':
         return TypeValueMeterArray(value)
+    elif p4_type_str == 'regular':
+        return TypeValueRegular(value)
+    elif p4_type_str == 'lookahead':
+        return TypeValueLookahead(value)
     else:
         raise Exception('{} not supported'.format(p4_type_str))

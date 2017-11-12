@@ -15,18 +15,21 @@ class Packet:
 
     def extract(self, start, size):
         end = start + BitVecVal(size, 32)
-        self.packet_size = simplify(
-            If(self.packet_size > end, self.packet_size, end))
+        self.update_packet_size(end)
         return Extract(size - 1, 0,
                        LShR(self.sym_packet,
                             ZeroExt(self.max_packet_size - start.size(),
                                     self.max_packet_size - start - size)))
 
+    def update_packet_size(self, end):
+        self.packet_size = simplify(
+            If(self.packet_size > end, self.packet_size, end))
+
     def get_length_constraint(self):
         if self.max_length is None:
             return self.packet_size_var == self.packet_size
         else:
-            return self.packet_size_var < self.max_length
+            return And(self.packet_size_var > self.packet_size, self.packet_size_var < self.max_length)
 
     def set_max_length(self, max_length):
         self.max_length = max_length

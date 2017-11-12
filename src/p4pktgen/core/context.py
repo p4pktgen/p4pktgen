@@ -46,14 +46,19 @@ class Context:
 
     def set_field_value(self, header_name, header_field, sym_val):
         var_name = '{}.{}'.format(header_name, header_field)
+        do_write = True
         # XXX: clean up
         if header_field != '$valid$' and ('{}.{}'.format(
                 header_name, '$valid$') in self.sym_vars) and simplify(
                     self.get_header_field(header_name,
                                           '$valid$')) == BitVecVal(0, 1):
-            self.uninitialized_writes.append((var_name, self.source_info))
+            if Config().get_allow_uninitialized_writes():
+                do_write = False
+            else:
+                self.uninitialized_writes.append((var_name, self.source_info))
 
-        self.sym_vars[var_name] = sym_val
+        if do_write:
+            self.sym_vars[var_name] = sym_val
 
     def register_runtime_data(self, table_name, action_name, param_name,
                               bitwidth):

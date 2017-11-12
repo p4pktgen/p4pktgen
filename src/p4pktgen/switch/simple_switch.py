@@ -115,9 +115,10 @@ class SimpleSwitch:
                 continue
             m = re.search(r'Action ([0-9a-zA-Z_]*)$', line)
             if m is not None:
-                assert prev_match == 'table_apply'
-                extracted_path.append((table_name, m.group(1)))
-                prev_match = 'action'
+                if m.group(1) != 'add_header':
+                    assert prev_match == 'table_apply'
+                    extracted_path.append((table_name, m.group(1)))
+                    prev_match = 'action'
                 continue
             m = re.search(r'Exception while parsing: ([0-9a-zA-Z_]*)$', line)
             if m is not None:

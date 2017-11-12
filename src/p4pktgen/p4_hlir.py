@@ -26,6 +26,7 @@ from p4_utils import p4_parser_ops_enum
 from p4pktgen.hlir.type_value import *
 from p4pktgen.hlir.transition import *
 from p4pktgen.util.graph import Graph
+from p4pktgen.config import Config
 
 
 class P4_HLIR(P4_Obj):
@@ -34,6 +35,10 @@ class P4_HLIR(P4_Obj):
     Top level P4_HLIR object
     Aggregates all the elements of a parsed P4 program
     """
+
+    def get_field(self, type_value_field):
+        return self.headers[type_value_field.header_name].fields[
+            type_value_field.header_field]
 
     class HLIR_Meta(P4_Obj):
         """Class to represent a P4 meta field"""
@@ -100,11 +105,11 @@ class P4_HLIR(P4_Obj):
             # Set max_length, it is optional
             if json_obj.has_key(
                     'max_length') and json_obj['max_length'] != None:
-                self.max_length = int(json_obj['max_length'])
+                self.max_length = int(json_obj['max_length']) * 8
 
                 for field_name, field in self.fields.iteritems():
                     if field.var_length:
-                        field.length = self.max_length - fixed_length
+                        field.size = self.max_length - fixed_length
             else:
                 self.max_length = None
 
@@ -188,6 +193,7 @@ class P4_HLIR(P4_Obj):
             Class representing the parser parse_states
             """
 
+            # XXX: need subclasses to properly deal with primitive
             class HLIR_Parser_Ops(P4_Obj):
                 """
                 Class representing the operations in a parse state
@@ -208,6 +214,8 @@ class P4_HLIR(P4_Obj):
                         self.op = p4_parser_ops_enum.shift
                     elif json_op['op'] == 'primitive':
                         self.op = p4_parser_ops_enum.primitive
+                    else:
+                        raise Exception('Unexpected op: {}'.format(json_op['op']))
 
             class HLIR_Parser_Transition(P4_Obj):
                 """
@@ -299,19 +307,6 @@ class P4_HLIR(P4_Obj):
             # Create parse_states dict
             self.parse_states = OrderedDict()
 
-    class P4_Expression(P4_Obj):
-        """
-        Class representing the parsed p4 expression
-        """
-
-        def __init__(self, json_obj):
-            self.parse_expression(json_obj)
-
-        def parse_expression(self, json_obj):
-            self.op = json_obj['op']
-            # self.left = super(P4_HLIR.P4_Expression, self).parse_p4_value(json_obj['left'])
-            # self.right = super(P4_HLIR.P4_Expression, self).parse_p4_value(json_obj['right'])
-
     def __init__(self, debug, json_obj):
         """
         The order in which these objects are intialized is not arbitrary
@@ -350,13 +345,18 @@ class P4_HLIR(P4_Obj):
             for k, fd in self.header_types[
                     curr_hdr.header_type_name].fields.items():
                 # make a copy for this header instance
-                new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed)
+                new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed, fd.var_length)
                 new_field.header = curr_hdr
                 new_field.header_type = fd.header_type
                 new_field.hdr = curr_hdr
                 curr_hdr.fields[fd.name] = new_field
 
             self.headers[curr_hdr.name] = curr_hdr
+
+        # Get the mapping of error ids to error strings
+        self.id_to_errors = {}
+        for error in json_obj['errors']:
+            self.id_to_errors[int(error[1])] = error[0]
 
         self.parsers = OrderedDict()
         for p in json_obj['parsers']:
@@ -366,13 +366,26 @@ class P4_HLIR(P4_Obj):
                 for i, k in enumerate(parse_state['parser_ops']):
                     parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(
                         k)
-                    parser_op.value = []
-                    for pair in k['parameters']:
-                        parser_op.value.append(self.parse_p4_value(pair))
+
+                    if parser_op.op == p4_parser_ops_enum.primitive:
+                        parser_op.value = [PrimitiveCall(k['parameters'][0])]
+                    else:
+                        parser_op.value = []
+                        for pair in k['parameters']:
+                            parser_op.value.append(parse_type_value(pair))
 
                     if parser_op.op == p4_parser_ops_enum.verify:
+                        error_str = self.id_to_errors[parser_op.value[1].value]
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(parser_op, i, 'sink')])
+                            [ParserOpTransition(parser_op, i, 'sink', error_str)])
+                    elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract:
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(parser_op, i, 'sink', 'PacketTooShort')])
+                    elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract_VL:
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(parser_op, i, 'sink', 'PacketTooShort')])
+                        p4ps.parser_ops_transitions.append(
+                            [ParserOpTransition(parser_op, i, 'sink', 'HeaderTooShort')])
                     else:
                         p4ps.parser_ops_transitions.append([])
 
@@ -397,11 +410,13 @@ class P4_HLIR(P4_Obj):
                         k)
                     value_mask_tuple = (transition.value, transition.mask)
                     if value_mask_tuple in set_of_value_mask_tuples:
-                        if isinstance(transition.value, int) or isinstance(transition.value, long):
+                        if isinstance(transition.value, int) or isinstance(
+                                transition.value, long):
                             show_value = "0x%x" % (transition.value)
                         else:
                             show_value = str(transition.value)
-                        if isinstance(transition.mask, int) or isinstance(transition.mask, long):
+                        if isinstance(transition.mask, int) or isinstance(
+                                transition.mask, long):
                             show_mask = "0x%x" % (transition.mask)
                         else:
                             show_mask = str(transition.mask)
@@ -416,7 +431,7 @@ class P4_HLIR(P4_Obj):
                         set_of_value_mask_tuples.add(value_mask_tuple)
                         p4ps.transitions.append(transition)
                 for k in parse_state['transition_key']:
-                    p4ps.transition_key.append(self.parse_p4_value(k))
+                    p4ps.transition_key.append(parse_type_value(k))
                 parser.parse_states[p4ps.name] = p4ps
             # Link up the parse state objects
             for ps_name, ps in parser.parse_states.items():
@@ -435,17 +450,15 @@ class P4_HLIR(P4_Obj):
         # Get the pipelines
         self.pipelines = {}
         for pipeline_json in json_obj['pipelines']:
-            pipeline = Pipeline(self, pipeline_json)
-            self.pipelines[pipeline.name] = pipeline
+            # XXX: Also parse egress
+            if pipeline_json['name'] != 'egress':
+                pipeline = Pipeline(self, pipeline_json)
+                self.pipelines[pipeline.name] = pipeline
 
         self.hdr_stacks = None
         self.hdr_union_types = None
         self.hdr_unions = None
         self.hdr_union_stacks = None
-
-        self.id_to_errors = {}
-        for error in json_obj['errors']:
-            self.id_to_errors[int(error[1])] = error[0]
 
         self.enums = None
 
@@ -469,49 +482,6 @@ class P4_HLIR(P4_Obj):
             # graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
 
         return graph
-
-    # parses the p4/json type/value combo to the appropriate object
-    def parse_p4_value(self, json_obj):
-        if 'type' in json_obj:
-            if json_obj['type'] == 'field':
-                # TODO: handle hidden fields !
-                ll = list(
-                    json_obj['value'])  # a 2-tuple with the header and field
-                return self.headers[ll[0]].fields[ll[1]]
-            elif json_obj['type'] == 'hexstr':
-                return int(json_obj['value'], 16)
-            elif json_obj['type'] == 'bool':
-                return json_obj['value']
-            elif json_obj['type'] == 'string':
-                return str(json_obj['value'])
-            elif json_obj['type'] == 'regular':
-                return self.headers[json_obj['value']]
-            elif json_obj['type'] == 'stack':
-                # XXX: do this properly
-                return str(json_obj['value'])
-            elif json_obj['type'] == 'union_stack':
-                assert (False)  # TODO
-            elif json_obj['type'] == 'expression':
-                if 'type' in json_obj['value']:
-                    return self.parse_p4_value(json_obj['value'])
-                exp = P4_HLIR.P4_Expression(json_obj['value'])
-                # Unary ops
-                if json_obj['value']['left']:
-                    exp.left = self.parse_p4_value(json_obj['value']['left'])
-                else:
-                    exp.left = None
-                exp.right = self.parse_p4_value(json_obj['value']['right'])
-                return exp
-        elif 'op' in json_obj:
-            # XXX: What should be done about this?
-            parser_op = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops(
-                json_obj)
-            parser_op.value = []
-            for pair in json_obj['parameters']:
-                parser_op.value.append(self.parse_p4_value(pair))
-            return parser_op
-        else:
-            assert False
 
 
 class PrimitiveCall:
