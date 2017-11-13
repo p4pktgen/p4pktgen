@@ -809,6 +809,9 @@ class Translator:
             if not Config().get_silent():
                 context.log_model(model)
             payload = self.sym_packet.get_payload_from_model(model)
+            logging.debug("payload (%d bytes) %s"
+                          "" % (len(payload),
+                                ''.join([('%02x' % (x)) for x in payload])))
 
             # Determine table configurations
             table_configs = []
@@ -899,9 +902,7 @@ class Translator:
                     logging.error('Uninitialized write of {} at {}'.format(
                         var_name, source_info))
                     result = TestPathResult.UNINITIALIZED_WRITE
-            # XXX: Is 14 the correct number here? Is it possible to construct
-            # shorter, invalid packets?
-            elif len(payload) >= 14:
+            elif len(payload) >= Config().get_min_packet_len_generated():
                 packet = Ether(bytes(payload))
                 extracted_path = self.test_packet(packet, table_configs,
                                                   source_info_to_node_name)
@@ -922,7 +923,10 @@ class Translator:
                     logging.error('Actual:   {}'.format(extracted_path))
                     result = TestPathResult.TEST_FAILED
             else:
-                logging.warning('Packet not sent (too short)')
+                logging.warning('Packet not sent (%d bytes is shorter than'
+                                ' minimum %d supported)'
+                                '' % (len(payload),
+                                      Config().get_min_packet_len_generated()))
         else:
             logging.info(
                 'Unable to find packet for path: {}'.format(expected_path))
