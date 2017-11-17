@@ -44,7 +44,7 @@ header ipv4_t {
 struct fwd_metadata_t {
     bit<16> received_ipv4_hdr_checksum;
     bit<16> ipv4_hdr_correct_checksum;
-    bit<16> incremental_checksum;
+    bit<16> checksum_state;
     bit<16> new_ipv4_checksum_from_scratch;
 }
 
@@ -58,8 +58,8 @@ struct headers {
 }
 
 
-//#include "ones-comp-code.p4"
-#include "ones-comp-code-issue983-workaround.p4"
+#include "ones-comp-code.p4"
+//#include "ones-comp-code-issue983-workaround.p4"
 
 
 parser IngressParserImpl(packet_in buffer,
@@ -96,24 +96,27 @@ parser IngressParserImpl(packet_in buffer,
         //bit<16> word09 = hdr.ipv4.dstAddr[15:0];
 
         bit<32> tmp1a = (
-            //(((bit<32>) word00) & 0xffff) +
-            (((bit<32>) word01) & 0xffff) +
-            (((bit<32>) word02) & 0xffff) +
-            //(((bit<32>) word03) & 0xffff) +
-            //(((bit<32>) word04) & 0xffff) +
-            // (((bit<32>) word05) & 0xffff) +
-            (((bit<32>) word06) & 0xffff) +
-            (((bit<32>) word07) & 0xffff)
-            //(((bit<32>) word08) & 0xffff) +
-            //(((bit<32>) word09) & 0xffff)
+            //((bit<32>) word00) +
+            ((bit<32>) word01) +
+            ((bit<32>) word02) +
+            //((bit<32>) word03) +
+            //((bit<32>) word04) +
+            //((bit<32>) word05) +
+            ((bit<32>) word06) +
+            ((bit<32>) word07)
+            //((bit<32>) word08) +
+            //((bit<32>) word09)
             );
-        bit<32> tmp1b = (((bit<32>) tmp1a[15:0]) & 0xffff) + (((bit<32>) tmp1a[31:16]) & 0xffff);
+        bit<32> tmp1b = ((bit<32>) tmp1a[15:0]) + ((bit<32>) tmp1a[31:16]);
         user_meta.fwd_metadata.ipv4_hdr_correct_checksum = ~(tmp1b[15:0] + tmp1b[31:16]);
 
         // See Note 1
         //ck.clear();
         ck_sum = 0;
-        //ck.remove({hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.ipv4.hdrChecksum});
+        //ck.subtract({
+        //    /* 16-bit words 0-1 */ hdr.ipv4.srcAddr,
+        //    /* 16-bit words 2-3 */ hdr.ipv4.dstAddr
+        //});
         bit<16> word0 = ~hdr.ipv4.srcAddr[31:16];
         bit<16> word1 = ~hdr.ipv4.srcAddr[15:0];
         //bit<16> word2 = ~hdr.ipv4.dstAddr[31:16];
@@ -123,15 +126,15 @@ parser IngressParserImpl(packet_in buffer,
         // remove them from ck_sum by adding ~ of each using one's
         // complement sum
         bit<32> tmp2a = (
-            (((bit<32>) ck_sum) & 0xffff) +
-            (((bit<32>) word0) & 0xffff) +
-            (((bit<32>) word1) & 0xffff) +
-            //(((bit<32>) word2) & 0xffff) +
-            //(((bit<32>) word3) & 0xffff) +
-            (((bit<32>) word4) & 0xffff));
-        bit<32> tmp2b = (((bit<32>) tmp2a[15:0]) & 0xffff) + (((bit<32>) tmp2a[31:16]) & 0xffff);
+            ((bit<32>) ck_sum) +
+            ((bit<32>) word0) +
+            ((bit<32>) word1) +
+            //((bit<32>) word2) +
+            //((bit<32>) word3) +
+            ((bit<32>) word4));
+        bit<32> tmp2b = ((bit<32>) tmp2a[15:0]) + ((bit<32>) tmp2a[31:16]);
         ck_sum = tmp2b[15:0] + tmp2b[31:16];
-        user_meta.fwd_metadata.incremental_checksum = ck_sum;
+        user_meta.fwd_metadata.checksum_state = ck_sum;
 
         transition accept;
     }
@@ -161,7 +164,7 @@ control ingress(inout headers hdr,
         key = {
             user_meta.fwd_metadata.received_ipv4_hdr_checksum : exact;
             user_meta.fwd_metadata.ipv4_hdr_correct_checksum : exact;
-            user_meta.fwd_metadata.incremental_checksum : exact;
+            user_meta.fwd_metadata.checksum_state : exact;
             hdr.ipv4.srcAddr : exact;
             hdr.ipv4.dstAddr : exact;
             hdr.ipv4.hdrChecksum : exact;
@@ -176,7 +179,7 @@ control ingress(inout headers hdr,
         key = {
             user_meta.fwd_metadata.received_ipv4_hdr_checksum : exact;
             user_meta.fwd_metadata.ipv4_hdr_correct_checksum : exact;
-            user_meta.fwd_metadata.incremental_checksum : exact;
+            user_meta.fwd_metadata.checksum_state : exact;
             hdr.ipv4.srcAddr : exact;
             hdr.ipv4.dstAddr : exact;
             hdr.ipv4.hdrChecksum : exact;
@@ -191,7 +194,7 @@ control ingress(inout headers hdr,
         key = {
             user_meta.fwd_metadata.received_ipv4_hdr_checksum : exact;
             user_meta.fwd_metadata.ipv4_hdr_correct_checksum : exact;
-            user_meta.fwd_metadata.incremental_checksum : exact;
+            user_meta.fwd_metadata.checksum_state : exact;
             hdr.ipv4.srcAddr : exact;
             hdr.ipv4.dstAddr : exact;
             hdr.ipv4.hdrChecksum : exact;
@@ -231,7 +234,7 @@ control ingress(inout headers hdr,
 
         // restore state of removing original src and dst IPv4
         // addresses, and original hdr checksum.
-        ck_sum = user_meta.fwd_metadata.incremental_checksum;
+        ck_sum = user_meta.fwd_metadata.checksum_state;
         // Add in effect of new src and dst IPv4 addresses.
         ones_comp_sum_b48.apply(ck_sum,
             //ck_sum ++ hdr.ipv4.srcAddr ++ hdr.ipv4.dstAddr);
@@ -243,7 +246,7 @@ control ingress(inout headers hdr,
         //ck.clear();
         ck_sum = 0;
 /*
-        ck.update({
+        ck.add({
             hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv,
             hdr.ipv4.totalLen,
             hdr.ipv4.identification,
@@ -268,17 +271,13 @@ control ingress(inout headers hdr,
         user_meta.fwd_metadata.new_ipv4_checksum_from_scratch = ~ck_sum;
 
         debug_table_1.apply();
-        // The "& 0xffff" parts of the next condition should be
-        // redundant in a correct P4_16 implementation.  They are
-        // there in hopes that they work around issue #983, assuming
-        // that may be causing problems here.
-        if ((hdr.ipv4.hdrChecksum & 0xffff) != (user_meta.fwd_metadata.new_ipv4_checksum_from_scratch & 0xffff)) {
+        if (hdr.ipv4.hdrChecksum != user_meta.fwd_metadata.new_ipv4_checksum_from_scratch) {
             hdr.ethernet.dstAddr = 0xbad1bad1bad1;
         } else {
-            if ((hdr.ipv4.hdrChecksum & 0xffff) == 0xffff) {
+            if (hdr.ipv4.hdrChecksum == 0xffff) {
                 // This should be impossible
                 hdr.ethernet.dstAddr = 0xbad2bad2bad2;
-            } else if ((hdr.ipv4.hdrChecksum & 0xffff) == 0x0000) {
+            } else if (hdr.ipv4.hdrChecksum == 0x0000) {
                 // This should be possible
                 hdr.ethernet.dstAddr = 0xc000c000c000;
             } else {

@@ -78,7 +78,7 @@ header udp_t {
 
 struct fwd_metadata_t {
     bit<16> ipv4_hdr_correct_checksum;
-    bit<16> incremental_checksum;
+    bit<16> checksum_state;
     bit<16> tcp_or_udp_length_for_pseudo_header;
 }
 
@@ -100,8 +100,8 @@ struct headers {
 }
 
 
-//#include "ones-comp-code.p4"
-#include "ones-comp-code-issue983-workaround.p4"
+#include "ones-comp-code.p4"
+//#include "ones-comp-code-issue983-workaround.p4"
 
 
 // Define additional error values, one of them for packets with
@@ -143,28 +143,27 @@ parser IngressParserImpl(packet_in buffer,
         bit<16> word08 = hdr.ipv4.dstAddr[31:16];
         bit<16> word09 = hdr.ipv4.dstAddr[15:0];
 
-        // The following lines, and many other places where you see "&
-        // 0xffff", are workarounds for what appears to be a bug in
-        // the p4c-bm2-ss compiler.  Issue #983 in the Github
-        // repository: https://github.com/p4lang/p4c/issues/983
         bit<32> tmp1a = (
-            (((bit<32>) word00) & 0xffff) +
-            (((bit<32>) word01) & 0xffff) +
-            (((bit<32>) word02) & 0xffff) +
-            (((bit<32>) word03) & 0xffff) +
-            (((bit<32>) word04) & 0xffff) +
-            // (((bit<32>) word05) & 0xffff) +
-            (((bit<32>) word06) & 0xffff) +
-            (((bit<32>) word07) & 0xffff) +
-            (((bit<32>) word08) & 0xffff) +
-            (((bit<32>) word09) & 0xffff));
-        bit<32> tmp1b = (((bit<32>) tmp1a[15:0]) & 0xffff) + (((bit<32>) tmp1a[31:16]) & 0xffff);
+            ((bit<32>) word00) +
+            ((bit<32>) word01) +
+            ((bit<32>) word02) +
+            ((bit<32>) word03) +
+            ((bit<32>) word04) +
+            // ((bit<32>) word05) +
+            ((bit<32>) word06) +
+            ((bit<32>) word07) +
+            ((bit<32>) word08) +
+            ((bit<32>) word09));
+        bit<32> tmp1b = ((bit<32>) tmp1a[15:0]) + ((bit<32>) tmp1a[31:16]);
         user_meta.fwd_metadata.ipv4_hdr_correct_checksum = ~(tmp1b[15:0] + tmp1b[31:16]);
 
         // See Note 1
         //ck.clear();
         ck_sum = 0;
-        //ck.remove({hdr.ipv4.srcAddr, hdr.ipv4.dstAddr});
+        //ck.subtract({
+        //    /* 16-bit words 0-1 */ hdr.ipv4.srcAddr,
+        //    /* 16-bit words 2-3 */ hdr.ipv4.dstAddr
+        //});
         bit<16> word0 = ~hdr.ipv4.srcAddr[31:16];
         bit<16> word1 = ~hdr.ipv4.srcAddr[15:0];
         bit<16> word2 = ~hdr.ipv4.dstAddr[31:16];
@@ -173,11 +172,11 @@ parser IngressParserImpl(packet_in buffer,
         // remove them from ck_sum by adding ~ of each using one's
         // complement sum
         bit<32> tmp2a = (
-            (((bit<32>) word0) & 0xffff) +
-            (((bit<32>) word1) & 0xffff) +
-            (((bit<32>) word2) & 0xffff) +
-            (((bit<32>) word3) & 0xffff));
-        bit<32> tmp2b = (((bit<32>) tmp2a[15:0]) & 0xffff) + (((bit<32>) tmp2a[31:16]) & 0xffff);
+            ((bit<32>) word0) +
+            ((bit<32>) word1) +
+            ((bit<32>) word2) +
+            ((bit<32>) word3));
+        bit<32> tmp2b = ((bit<32>) tmp2a[15:0]) + ((bit<32>) tmp2a[31:16]);
         ck_sum = tmp2b[15:0] + tmp2b[31:16];
 
         transition select(hdr.ipv4.protocol) {
@@ -193,7 +192,10 @@ parser IngressParserImpl(packet_in buffer,
         // See Note 2
         //ck.clear();
         ck_sum = 0;
-        //ck.remove({hdr.ipv6.srcAddr, hdr.ipv6.dstAddr});
+        //ck.subtract({
+        //    /* 16-bit words 0-7  */ hdr.ipv6.srcAddr,
+        //    /* 16-bit words 8-15 */ hdr.ipv6.dstAddr
+        //});
         bit<16> word00 = ~hdr.ipv6.srcAddr[127:112];
         bit<16> word01 = ~hdr.ipv6.srcAddr[111:96];
         bit<16> word02 = ~hdr.ipv6.srcAddr[95:80];
@@ -215,27 +217,24 @@ parser IngressParserImpl(packet_in buffer,
         // remove them from ck_sum by adding ~ of each using one's
         // complement sum
         bit<32> tmpa = (
-            (((bit<32>) word00) & 0xffff) +
-            (((bit<32>) word01) & 0xffff) +
-            (((bit<32>) word02) & 0xffff) +
-            (((bit<32>) word03) & 0xffff) +
-            (((bit<32>) word04) & 0xffff) +
-            (((bit<32>) word05) & 0xffff) +
-            (((bit<32>) word06) & 0xffff) +
-            (((bit<32>) word07) & 0xffff) +
-            (((bit<32>) word08) & 0xffff) +
-            (((bit<32>) word09) & 0xffff) +
-            (((bit<32>) word10) & 0xffff) +
-            (((bit<32>) word11) & 0xffff) +
-            (((bit<32>) word12) & 0xffff) +
-            (((bit<32>) word13) & 0xffff) +
-            (((bit<32>) word14) & 0xffff) +
-            (((bit<32>) word15) & 0xffff));
-        bit<32> tmpb = (((bit<32>) tmpa[15:0]) & 0xffff) + (((bit<32>) tmpa[31:16]) & 0xffff);
+            ((bit<32>) word00) +
+            ((bit<32>) word01) +
+            ((bit<32>) word02) +
+            ((bit<32>) word03) +
+            ((bit<32>) word04) +
+            ((bit<32>) word05) +
+            ((bit<32>) word06) +
+            ((bit<32>) word07) +
+            ((bit<32>) word08) +
+            ((bit<32>) word09) +
+            ((bit<32>) word10) +
+            ((bit<32>) word11) +
+            ((bit<32>) word12) +
+            ((bit<32>) word13) +
+            ((bit<32>) word14) +
+            ((bit<32>) word15));
+        bit<32> tmpb = ((bit<32>) tmpa[15:0]) + ((bit<32>) tmpa[31:16]);
         ck_sum = tmpb[15:0] + tmpb[31:16];
-
-        // Calculate the correct value of the one's complement sum of
-        // the IPv6 pseudo-header
 
         transition select(hdr.ipv6.nextHdr) {
             6: parse_tcp;
@@ -248,7 +247,7 @@ parser IngressParserImpl(packet_in buffer,
         user_meta.fwd_metadata.tcp_or_udp_length_for_pseudo_header = 20;
         // Part 2 of incremental update of TCP checksum: Subtract out
         // the contribution of the original TCP header.
-//        ck.remove({
+//        ck.subtract({
 //                /* TCP 16-bit word 0    */ hdr.tcp.srcPort,
 //                /* TCP 16-bit word 1    */ hdr.tcp.dstPort,
 //                /* TCP 16-bit words 2-3 */ hdr.tcp.seqNo,
@@ -274,22 +273,22 @@ parser IngressParserImpl(packet_in buffer,
         // remove them from ck_sum by adding ~ of each using one's
         // complement sum
         bit<32> tmpa = (
-            (((bit<32>) ck_sum) & 0xffff) +
-            (((bit<32>) word0) & 0xffff) +
-            (((bit<32>) word1) & 0xffff) +
-            (((bit<32>) word2) & 0xffff) +
-            (((bit<32>) word3) & 0xffff) +
-            (((bit<32>) word4) & 0xffff) +
-            (((bit<32>) word5) & 0xffff) +
-            (((bit<32>) word6) & 0xffff) +
-            (((bit<32>) word7) & 0xffff) +
-            (((bit<32>) word8) & 0xffff) +
-            (((bit<32>) word9) & 0xffff));
-        bit<32> tmpb = (((bit<32>) tmpa[15:0]) & 0xffff) + (((bit<32>) tmpa[31:16]) & 0xffff);
+            ((bit<32>) ck_sum) +
+            ((bit<32>) word0) +
+            ((bit<32>) word1) +
+            ((bit<32>) word2) +
+            ((bit<32>) word3) +
+            ((bit<32>) word4) +
+            ((bit<32>) word5) +
+            ((bit<32>) word6) +
+            ((bit<32>) word7) +
+            ((bit<32>) word8) +
+            ((bit<32>) word9));
+        bit<32> tmpb = ((bit<32>) tmpa[15:0]) + ((bit<32>) tmpa[31:16]);
         ck_sum = tmpb[15:0] + tmpb[31:16];
 
-        //user_meta.fwd_metadata.incremental_checksum = ck.get();
-        user_meta.fwd_metadata.incremental_checksum = ~ck_sum;
+        //user_meta.fwd_metadata.checksum_state = ck.get_state();
+        user_meta.fwd_metadata.checksum_state = ck_sum;
 
         transition accept;
     }
@@ -298,7 +297,7 @@ parser IngressParserImpl(packet_in buffer,
         user_meta.fwd_metadata.tcp_or_udp_length_for_pseudo_header = 8;
         // Part 2 of incremental update of UDP checksum: Subtract out
         // the contribution of the original UDP header.
-//        ck.remove({
+//        ck.subtract({
 //                /* UDP 16-bit word 0 */ hdr.udp.srcPort,
 //                /* UDP 16-bit word 1 */ hdr.udp.dstPort,
 //                /* UDP 16-bit word 2 */ hdr.udp.length_,
@@ -312,16 +311,16 @@ parser IngressParserImpl(packet_in buffer,
         // remove them from ck_sum by adding ~ of each using one's
         // complement sum
         bit<32> tmpa = (
-            (((bit<32>) ck_sum) & 0xffff) +
-            (((bit<32>) word0) & 0xffff) +
-            (((bit<32>) word1) & 0xffff) +
-            (((bit<32>) word2) & 0xffff) +
-            (((bit<32>) word3) & 0xffff));
-        bit<32> tmpb = (((bit<32>) tmpa[15:0]) & 0xffff) + (((bit<32>) tmpa[31:16]) & 0xffff);
+            ((bit<32>) ck_sum) +
+            ((bit<32>) word0) +
+            ((bit<32>) word1) +
+            ((bit<32>) word2) +
+            ((bit<32>) word3));
+        bit<32> tmpb = ((bit<32>) tmpa[15:0]) + ((bit<32>) tmpa[31:16]);
         ck_sum = tmpb[15:0] + tmpb[31:16];
 
-        //user_meta.fwd_metadata.incremental_checksum = ck.get();
-        user_meta.fwd_metadata.incremental_checksum = ~ck_sum;
+        //user_meta.fwd_metadata.checksum_state = ck.get_state();
+        user_meta.fwd_metadata.checksum_state = ck_sum;
         transition accept;
     }
 }
@@ -445,7 +444,7 @@ control ingress(inout headers hdr,
 #ifdef DEBUG_TABLES
     table debug_table_udp2 {
         key = {
-            user_meta.fwd_metadata.incremental_checksum : exact;
+            user_meta.fwd_metadata.checksum_state : exact;
             hdr.ipv4.srcAddr : exact;
             hdr.ipv4.dstAddr : exact;
             hdr.ipv6.srcAddr : exact;
@@ -536,7 +535,7 @@ control ingress(inout headers hdr,
                 // hdr.tcp.checksum ++   // skip this
                 hdr.tcp.urgentPtr);
             expected_l4_hdr_checksum = ~expected_l4_hdr_checksum;
-            if ((hdr.tcp.checksum & 0xffff) != (expected_l4_hdr_checksum & 0xffff)) {
+            if (hdr.tcp.checksum != expected_l4_hdr_checksum) {
                 exit;
             }
         }
@@ -555,14 +554,14 @@ control ingress(inout headers hdr,
                     hdr.udp.length_
                     // hdr.udp.checksum  // skip this
                 );
-                expected_l4_hdr_checksum = (~expected_l4_hdr_checksum & 0xffff);
+                expected_l4_hdr_checksum = ~expected_l4_hdr_checksum;
                 // See Note 3 - If the expected checksum is calculated
                 // by the method above as 0, then it should be 0xffff
                 // in the packet.
-                if ((expected_l4_hdr_checksum & 0xffff) == 0) {
+                if (expected_l4_hdr_checksum == 0) {
                     expected_l4_hdr_checksum = 0xffff;
                 }
-                if ((hdr.udp.checksum & 0xffff) != (expected_l4_hdr_checksum & 0xffff)) {
+                if (hdr.udp.checksum != expected_l4_hdr_checksum) {
                     exit;
                 }
             }
@@ -572,7 +571,7 @@ control ingress(inout headers hdr,
             // Calculate IPv4 header checksum from scratch.
             //ck.clear();
             ck_sum = 0;
-//            ck.update({
+//            ck.add({
 //                /* 16-bit word  0   */ hdr.ipv4.version, hdr.ipv4.ihl, hdr.ipv4.diffserv,
 //                /* 16-bit word  1   */ hdr.ipv4.totalLen,
 //                /* 16-bit word  2   */ hdr.ipv4.identification,
@@ -599,31 +598,13 @@ control ingress(inout headers hdr,
         // There is no IPv6 header checksum
 
         // TCP/UDP header incremental checksum update.
-        //ck.clear();
-        ck_sum = 0;
-
-        // It may seem a bit strange, but this code is written
-        // assuming that ck.get() returns the bit-wise complement of
-        // the one's complement sum it has been calculating
-        // internally, so that when doing non-incremental checksum
-        // calculations like the one for the IPv4 header above, you
-        // can do clear, then update, then get, and copy that value
-        // with no changes into the checksum field.
-
-        // For incremental checksums with the calculation spread
-        // across two different controls, like this example, it might
-        // be easier to understand if there were also ck.get_state()
-        // and ck.set_state(new_state) methods, that simply returned
-        // the current 16-bit internal state, or assigned it.
-
-        //ck.remove(user_meta.fwd_metadata.incremental_checksum);
-        ck_sum = ~user_meta.fwd_metadata.incremental_checksum;
-
-        // or, if we had {get,set}_state methods:
-        // ck.set_state(user_meta.fwd_metadata.incremental_checksum);
+        // Restore the checksum state partially calculated in the
+        // parser.
+        //ck.set_state(user_meta.fwd_metadata.checksum_state);
+        ck_sum = user_meta.fwd_metadata.checksum_state;
 
         if (hdr.ipv4.isValid()) {
-//            ck.update({
+//            ck.add({
 //                /* 16-bit words 0-1 */ hdr.ipv4.srcAddr,
 //                /* 16-bit words 2-3 */ hdr.ipv4.dstAddr
 //            });
@@ -633,7 +614,7 @@ control ingress(inout headers hdr,
                 hdr.ipv4.dstAddr);
         }
         if (hdr.ipv6.isValid()) {
-//            ck.update({
+//            ck.add({
 //                /* 16-bit words 0-7  */ hdr.ipv6.srcAddr,
 //                /* 16-bit words 8-15 */ hdr.ipv6.dstAddr
 //            });
@@ -643,7 +624,7 @@ control ingress(inout headers hdr,
                 hdr.ipv6.dstAddr);
         }
         if (hdr.tcp.isValid()) {
-//            ck.update({
+//            ck.add({
 //                /* TCP 16-bit word 0    */ hdr.tcp.srcPort,
 //                /* TCP 16-bit word 1    */ hdr.tcp.dstPort,
 //                /* TCP 16-bit words 2-3 */ hdr.tcp.seqNo,
@@ -667,14 +648,14 @@ control ingress(inout headers hdr,
                 hdr.tcp.urgentPtr);
 
             //hdr.tcp.checksum = ck.get();
-            hdr.tcp.checksum = ~ck_sum & 0xffff;
+            hdr.tcp.checksum = ~ck_sum;
         }
         if (hdr.udp.isValid()) {
             if (hdr.udp.checksum == 0) {
                 // The sender didn't calculate it, and we don't need
                 // to adjust it.
             } else {
-//                ck.update({
+//                ck.add({
 //                    /* UDP 16-bit word 0 */ hdr.udp.srcPort,
 //                    /* UDP 16-bit word 1 */ hdr.udp.dstPort,
 //                    /* UDP 16-bit word 2 */ hdr.udp.length_
@@ -696,7 +677,7 @@ control ingress(inout headers hdr,
                 debug_table_udp2.apply();
 #endif  // DEBUG_TABLES
                 //hdr.udp.checksum = ck.get();
-                hdr.udp.checksum = ~ck_sum & 0xffff;
+                hdr.udp.checksum = ~ck_sum;
                 if (hdr.udp.checksum == 0) {
                     hdr.udp.checksum = 0xffff;
                 }
