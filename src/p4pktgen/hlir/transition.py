@@ -1,14 +1,14 @@
 from enum import Enum
+from p4pktgen.util.graph import Edge
 
 TransitionType = Enum('TransitionType',
                       'PARSER_OP_TRANSITION ACTION_TRANSITION BOOL_TRANSITION')
 
 
-class Transition(object):
-    def __init__(self, transition_type, src, dest):
+class Transition(Edge):
+    def __init__(self, transition_type, src, dst):
+        super(Transition, self).__init__(src, dst)
         self.transition_type = transition_type
-        self.src = src
-        self.dest = dest
 
 
 class ParserOpTransition(Transition):

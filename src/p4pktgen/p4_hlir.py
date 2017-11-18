@@ -5,15 +5,14 @@ import logging
 from pprint import pprint
 from collections import OrderedDict
 
-from p4_obj import P4_Obj
 from p4_utils import p4_parser_ops_enum
 from p4pktgen.hlir.type_value import *
 from p4pktgen.hlir.transition import *
-from p4pktgen.util.graph import Graph
+from p4pktgen.util.graph import Graph, Edge
 from p4pktgen.config import Config
 
 
-class P4_HLIR(P4_Obj):
+class P4_HLIR(object):
     PACKET_TOO_SHORT = 'PacketTooShort'
     """
     Top level P4_HLIR object
@@ -24,7 +23,7 @@ class P4_HLIR(P4_Obj):
         return self.headers[type_value_field.header_name].fields[
             type_value_field.header_field]
 
-    class HLIR_Meta(P4_Obj):
+    class HLIR_Meta(object):
         """Class to represent a P4 meta field"""
 
         def __init__(self, json_obj):
@@ -40,7 +39,7 @@ class P4_HLIR(P4_Obj):
             else:
                 self.compiler = None
 
-    class HLIR_Header_Types(P4_Obj):
+    class HLIR_Header_Types(object):
         """Class to represent a P4 Header Type"""
 
         def __init__(self, json_obj):
@@ -97,7 +96,7 @@ class P4_HLIR(P4_Obj):
             else:
                 self.max_length = None
 
-    class HLIR_Field(P4_Obj):
+    class HLIR_Field(object):
         """
         Class to represent a P4 field which is part of a P4 Header Type
         """
@@ -118,7 +117,7 @@ class P4_HLIR(P4_Obj):
         def __str__(self):
             return self.__repr__()
 
-    class HLIR_Headers(P4_Obj):
+    class HLIR_Headers(object):
         """Class to represent a header instance"""
 
         def __init__(self, json_obj):
@@ -167,18 +166,18 @@ class P4_HLIR(P4_Obj):
                 valid_field.header = self
                 self.fields['$valid$'] = valid_field
 
-    class HLIR_Parser(P4_Obj):
+    class HLIR_Parser(object):
         """
         Class representing the p4 parser
         """
 
-        class HLIR_Parse_States(P4_Obj):
+        class HLIR_Parse_States(object):
             """
             Class representing the parser parse_states
             """
 
             # XXX: need subclasses to properly deal with primitive
-            class HLIR_Parser_Ops(P4_Obj):
+            class HLIR_Parser_Ops(object):
                 """
                 Class representing the operations in a parse state
                 """
@@ -201,17 +200,20 @@ class P4_HLIR(P4_Obj):
                     else:
                         raise Exception('Unexpected op: {}'.format(json_op['op']))
 
-            class HLIR_Parser_Transition(P4_Obj):
+            class HLIR_Parser_Transition(Edge):
                 """
                 Class representing the P4 parser transitions
                 """
 
                 def __init__(self,
+                             state_name,
                              type_=None,
                              next_state_name=None,
                              next_state=None,
                              mask=None,
                              value=None):
+                    # XXX: remove 'sink' hack
+                    super(P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition, self).__init__(state_name, next_state_name if next_state_name is not None else 'sink')
                     self.type_ = type_
                     self.next_state_name = next_state_name
                     self.next_state = next_state
@@ -226,7 +228,7 @@ class P4_HLIR(P4_Obj):
                             self.value == other.value)
 
                 @classmethod
-                def from_json(cls, json_obj):
+                def from_json(cls, state_name, json_obj):
                     type_ = None if not 'type' in json_obj else json_obj[
                         'type']
                     # XXX: is "default" possible here?
@@ -239,7 +241,7 @@ class P4_HLIR(P4_Obj):
                         mask = None
                     else:
                         mask = int(json_obj['mask'], 16)
-                    return cls(
+                    return cls(state_name,
                         type_=type_,
                         next_state_name=json_obj['next_state'],
                         mask=mask,
@@ -390,7 +392,7 @@ class P4_HLIR(P4_Obj):
                 # constraint generation code.
                 set_of_value_mask_tuples = set()
                 for k in parse_state['transitions']:
-                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(
+                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(p4ps.name,
                         k)
                     value_mask_tuple = (transition.value, transition.mask)
                     if value_mask_tuple in set_of_value_mask_tuples:
@@ -462,8 +464,6 @@ class P4_HLIR(P4_Obj):
             for parser_op_transitions in ps.parser_ops_transitions:
                 for transition in parser_op_transitions:
                     graph.add_edge(ps_name, transition.next_state, transition)
-            # XXX: implement edges to packet_too_short
-            # graph.add_edge(ps_name, P4_HLIR.PACKET_TOO_SHORT)
 
         return graph
 
