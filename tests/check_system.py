@@ -121,9 +121,9 @@ class CheckSystem:
         results = process_json_file('compiled_p4_programs/demo1_rm_header.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act')):
-            TestPathResult.UNINITIALIZED_WRITE,
+            TestPathResult.INVALID_HEADER_WRITE,
             ('start', 'sink', (u'tbl_act', u'act')):
-            TestPathResult.UNINITIALIZED_WRITE
+            TestPathResult.INVALID_HEADER_WRITE
         }
         assert results == expected_results
 

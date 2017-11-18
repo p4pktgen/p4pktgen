@@ -68,11 +68,11 @@ def main():
         help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
     )
     parser.add_argument(
-        '--allow-uninitialized-writes',
-        dest='allow_uninitialized_writes',
+        '--allow-invalid-header-writes',
+        dest='allow_invalid_header_writes',
         action='store_true',
         default=False,
-        help='Treat uninitialized writes as no-op'
+        help='Treat writes to fields in invalid headers as no-op'
     )
     parser.add_argument(
         '--record-statistics',

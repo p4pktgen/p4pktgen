@@ -19,7 +19,7 @@ class Context:
         self.id = 0
         # XXX: unify errors
         self.uninitialized_reads = []
-        self.uninitialized_writes = []
+        self.invalid_header_writes = []
         self.runtime_data = []
         self.table_values = {}
         self.source_info = None
@@ -52,10 +52,10 @@ class Context:
                 header_name, '$valid$') in self.sym_vars) and simplify(
                     self.get_header_field(header_name,
                                           '$valid$')) == BitVecVal(0, 1):
-            if Config().get_allow_uninitialized_writes():
+            if Config().get_allow_invalid_header_writes():
                 do_write = False
             else:
-                self.uninitialized_writes.append((var_name, self.source_info))
+                self.invalid_header_writes.append((var_name, self.source_info))
 
         if do_write:
             self.sym_vars[var_name] = sym_val
