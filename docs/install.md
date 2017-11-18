@@ -18,7 +18,7 @@ Starting from a default Ubuntu 16.04 installation, the only additional
 packages required may be installed with the command below:
 
 ```bash
-% sudo apt-get install --yes python-tk graphviz
+% sudo apt-get install --yes virtualenv python-tk graphviz
 ```
 
 
@@ -30,18 +30,6 @@ Python 2.7.12  (any 2.7.x with x >= 10 is probably good enough)
 
 % pip --version
 pip 9.0.1 from /home/jafinger/.local/lib/python2.7/site-packages (python 2.7)
-
-% pip install virtualenv
-
-[ verbose output deleted.  The command above will install virtualenv
-as the current user by creating files in subdirectories beneath the
-directory $HOME/.local
-
-You can install it system-wide on Ubuntu 16.04 using this command
-instead:
-
-% sudo apt-get install virtualenv
-]
 
 % virtualenv --version
 15.1.0
