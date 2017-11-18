@@ -1,15 +1,22 @@
 import logging
 import copy
 
+class Edge(object):
+    def __init__(self, src, dst):
+        self.src = src
+        self.dst = dst
+
+    def __repr__(self):
+        return '{} -> {}'.format(self.src, self.dst)
 
 class Graph:
     def __init__(self):
         self.graph = {}
 
-    def add_edge(self, v_from, v_to, edge):
-        if v_from not in self.graph:
-            self.graph[v_from] = []
-        self.graph[v_from].append((edge, v_to))
+    def add_edge(self, src, dst, edge):
+        if src not in self.graph:
+            self.graph[src] = []
+        self.graph[src].append(edge)
 
     def get_neighbors(self, v):
         return self.graph[v]
@@ -43,9 +50,9 @@ class Graph:
                 return
 
             for t in self.get_neighbors(node):
-                transition_name = t[0]
-                neighbor = t[1]
-                path_so_far.append((node, transition_name) + t[2:])
+                transition_name = t
+                neighbor = t.dst
+                path_so_far.append((node, transition_name))
                 go_deeper = True
                 if callback is not None:
                     # The recursive generate_all_paths_() call below
@@ -88,8 +95,8 @@ class Graph:
                 return num_paths_to_end[node]
             count = 0
             for t in self.get_neighbors(node):
-                transition_name = t[0]
-                neighbor = t[1]
+                transition_name = t
+                neighbor = t.dst
                 tmp = count_all_paths_(neighbor)
                 logging.debug(
                     "  %d ways to end through transition %s -> %s -> %s" %

@@ -28,17 +28,6 @@ TestPathResult = Enum(
 )
 
 
-def min_bits_for_uint_maybe_slower(uint):
-    if uint == 0:
-        return 1
-    width = 1
-    max_value_of_width = ((1 << width) - 1)
-    while uint > max_value_of_width:
-        width += 1
-        max_value_of_width = ((1 << width) - 1)
-    return width
-
-
 def min_bits_for_uint(uint):
     # The fewest number of bits needed to represent an unsigned
     # integer in binary.
@@ -72,11 +61,6 @@ def min_bits_for_uint(uint):
         else:
             min_width = cur_width + 1
     cur_width = min_width
-    #other_val = min_bits_for_uint_maybe_slower(uint)
-    #if cur_width != other_val:
-    #    logging.debug("cur_width %d other_val %d uint %d"
-    #                  "" % (cur_width, other_val, uint))
-    #assert cur_width == other_val
 
     return cur_width
 
@@ -131,7 +115,7 @@ class Translator:
             return BitVecVal(type_value.value, size)
         if isinstance(type_value, TypeValueHeader):
             # XXX: What should be done here?
-            raise Exception('?')
+            raise Exception('Unexpected')
         if isinstance(type_value, TypeValueBool):
             return BoolVal(type_value.value)
         if isinstance(type_value, TypeValueLookahead):
@@ -425,8 +409,8 @@ class Translator:
                 if field.name != '$valid$':
                     if field.var_length:
                         # This messes up the packet size somewhat
-                        field_val = sym_packet.extract(new_pos + extract_offset,
-                                                       field.size)
+                        field_val = sym_packet.extract(
+                            new_pos + extract_offset, field.size)
                         ones = BitVecVal(-1, field.size)
                         assert ones.size() >= sym_size.size()
                         field_size_c = BitVecVal(field.size, sym_size.size())
@@ -440,7 +424,8 @@ class Translator:
                     else:
                         context.insert(field,
                                        sym_packet.extract(
-                                           new_pos + extract_offset, field.size))
+                                           new_pos + extract_offset,
+                                           field.size))
                         extract_offset += BitVecVal(field.size, 32)
                 else:
                     # Even though the P4_16 isValid() method
@@ -502,10 +487,11 @@ class Translator:
                 dest_size = fld_info.size
                 if dest_size != value.size():
                     if Config().get_debug():
-                        logging.debug("primitive op '%s' lhs/rhs width mismatch"
-                                      " (%d != %d bits) lhs %s source_info %s"
-                                      "" % (primitive.op, dest_size, value.size(),
-                                            field, primitive.source_info))
+                        logging.debug(
+                            "primitive op '%s' lhs/rhs width mismatch"
+                            " (%d != %d bits) lhs %s source_info %s"
+                            "" % (primitive.op, dest_size, value.size(), field,
+                                  primitive.source_info))
                         logging.debug("    value %s" % (value))
                     if dest_size > value.size():
                         value = ZeroExt(dest_size - value.size(), value)
@@ -810,8 +796,8 @@ class Translator:
                 context.log_model(model)
             payload = self.sym_packet.get_payload_from_model(model)
             logging.debug("payload (%d bytes) %s"
-                          "" % (len(payload),
-                                ''.join([('%02x' % (x)) for x in payload])))
+                          "" % (len(payload), ''.join([('%02x' % (x))
+                                                       for x in payload])))
 
             # Determine table configurations
             table_configs = []
