@@ -6,8 +6,8 @@ features with appropriate P4 programs.
 
 ## Incorrect JSON for select statements with multiple key fields
 
-    https://github.com/p4lang/p4c/issues/914
-    https://github.com/p4lang/behavioral-model/issues/441
+[p4c issue #914](https://github.com/p4lang/p4c/issues/914)
+[behavioral-model issue #441](https://github.com/p4lang/behavioral-model/issues/441)
 
 The issues include P4 programs we were trying with p4pktgen that
 exhibited the wrong behavior with simple_switch.
@@ -15,7 +15,7 @@ exhibited the wrong behavior with simple_switch.
 
 ## Incorrect JSON for using Boolean variables in if conditions
 
-    https://github.com/p4lang/p4c/issues/950
+[p4c issue #950](https://github.com/p4lang/p4c/issues/950)
 
 Someone else found this bug, and I believe one of the main p4c
 developers correctly analyzed it, both without using p4pktgen.
@@ -67,7 +67,7 @@ it is correct for size N, it will be correct for all larger sizes.
 
 ## Incorrect JSON when complementing a bitvector, then casting it to a wider bitvector
 
-    https://github.com/p4lang/p4c/issues/983
+[p4c issue #983](https://github.com/p4lang/p4c/issues/983)
 
 It took me several hours to narrow down the root cause, which started
 from getting mismatches between p4pktgen expected path and the actual
@@ -80,7 +80,7 @@ issue.
 
 ## Incorrect JSON when select statements used masks for ternary matching
 
-    https://github.com/p4lang/p4c/issues/995
+[p4c issue #995](https://github.com/p4lang/p4c/issues/995)
 
 Independently of issue #914, p4c also generated incorrect JSON when
 those select statements used masks for ternary matching.
@@ -94,4 +94,4 @@ incorrect.
 
 ## Incorrect JSON specifying maximum length of variable-length headers
 
-    https://github.com/p4lang/p4c/issues/995
+[p4c issue #995](https://github.com/p4lang/p4c/issues/995)
