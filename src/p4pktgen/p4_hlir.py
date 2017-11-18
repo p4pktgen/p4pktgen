@@ -214,6 +214,8 @@ class P4_HLIR(object):
                              value=None):
                     # XXX: remove 'sink' hack
                     super(P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition, self).__init__(state_name, next_state_name if next_state_name is not None else 'sink')
+
+                    assert(state_name is not None)
                     self.type_ = type_
                     self.next_state_name = next_state_name
                     self.next_state = next_state
@@ -363,15 +365,15 @@ class P4_HLIR(object):
                     if parser_op.op == p4_parser_ops_enum.verify:
                         error_str = self.id_to_errors[parser_op.value[1].value]
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(parser_op, i, 'sink', error_str)])
+                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', error_str)])
                     elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract:
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(parser_op, i, 'sink', 'PacketTooShort')])
+                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', 'PacketTooShort')])
                     elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract_VL:
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(parser_op, i, 'sink', 'PacketTooShort')])
+                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', 'PacketTooShort')])
                         p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(parser_op, i, 'sink', 'HeaderTooShort')])
+                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', 'HeaderTooShort')])
                     else:
                         p4ps.parser_ops_transitions.append([])
 
