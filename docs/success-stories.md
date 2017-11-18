@@ -94,4 +94,4 @@ incorrect.
 
 ## Incorrect JSON specifying maximum length of variable-length headers
 
-[p4c issue #995](https://github.com/p4lang/p4c/issues/995)
+[p4c issue #1025](https://github.com/p4lang/p4c/issues/1025)
