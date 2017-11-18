@@ -151,18 +151,21 @@ likely requires changes to run on other operating systems.
 ## Any time you reboot your machine
 
 Before running p4pktgen, make sure that you created the necesary
-virtual ethernet interfaces.  This can be done using the [veth_setup
-script](https://github.com/jafingerhut/p4-guide/blob/master/bin/veth_setup.sh).
+virtual ethernet interfaces.  This can be done using the following
+command from the top level p4pktgen directory:
+
+```bash
+% sudo ./tools/veth_setup.sh
+```
 
 
 ## Any time you create a new shell and want to run p4pktgen
 
 In any new shell you create, you will need to activate the Python venv
-you created during the one-time setup above.
+you created during the one-time setup above.  This can be done by the
+following command from the top level p4pktgen directory:
 
 ```bash
-% cd <root directory of where you cloned p4pktgen>
-
 % source my-venv/bin/activate
 ```
 

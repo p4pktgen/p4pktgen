@@ -60,4 +60,25 @@ then
 fi
 
 set -ex
-sudo apt-get install --yes python-tk graphviz
+sudo apt-get install --yes virtualenv python-tk graphviz
+virtualenv my-venv --system-site-packages
+source my-venv/bin/activate
+pip install -r requirements.txt
+python setup.py develop
+set +ex
+
+echo ""
+echo ""
+echo "If there were no errors above, you should be ready to create"
+echo "virtual Ethernet (veth) interfaces using the following command,"
+echo "and to set up your command path and environment variables for"
+echo "running p4pktgen by the second command below."
+echo ""
+echo "    sudo ./tools/veth_setup.sh"
+echo "    source my-venv/bin/activate"
+echo ""
+echo "veth_setup.sh must be run again if you reboot this machine, to"
+echo "create the veth interfaces again."
+echo ""
+echo "The source command must be done in any new command shell you"
+echo "create, to set up its command path and environment variables."
