@@ -49,7 +49,7 @@ for line in fileinput.input():
     else:
         raise ValueError('weird internal error')
 
-    if result_type not in ['None', 'SUCCESS', 'NO_PACKET_FOUND', 'TEST_FAILED', 'UNINITIALIZED_READ', 'UNINITIALIZED_WRITE']:
+    if result_type not in ['None', 'SUCCESS', 'NO_PACKET_FOUND', 'TEST_FAILED', 'UNINITIALIZED_READ', 'INVALID_HEADER_WRITE']:
         print("ERROR: Unexpected result_type '%s'" % (result_type))
         print("ERROR: %s" % (line))
         num_errors += 1
