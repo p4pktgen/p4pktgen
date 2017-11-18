@@ -795,9 +795,6 @@ class Translator:
             if not Config().get_silent():
                 context.log_model(model)
             payload = self.sym_packet.get_payload_from_model(model)
-            logging.debug("payload (%d bytes) %s"
-                          "" % (len(payload), ''.join([('%02x' % (x))
-                                                       for x in payload])))
 
             # Determine table configurations
             table_configs = []
@@ -875,6 +872,9 @@ class Translator:
                     logging.info('table_add %s',
                                  self.table_add_cmd_string(
                                      table, action, values, params, priority))
+            logging.info("packet (%d bytes) %s"
+                         "" % (len(payload), ''.join([('%02x' % (x))
+                                                      for x in payload])))
 
             if len(context.uninitialized_reads) != 0:
                 for uninitialized_read in context.uninitialized_reads:
