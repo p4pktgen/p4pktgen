@@ -7,8 +7,7 @@ As of 2017-Oct-03, the latest greatest version of the code is in the
 `master` branch.
 
 ```bash
-% BITBUCKET_USERID=jafingerhut
-% git clone https://${BITBUCKET_USERID}@bitbucket.org/p4pktgen/p4pktgen.git
+% git clone https://github.com/p4pktgen/p4pktgen
 % cd p4pktgen
 ```
 

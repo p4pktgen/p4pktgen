@@ -25,7 +25,7 @@ and likely requires changes to run on other operating systems.
 
 Before running p4pktgen, make sure that you created a couple of virtual
 ethernet interfaces. This can be done using the [veth_setup
-script](https://github.com/p4lang/behavioral-model/blob/595bb7935d9f478f8e36befa24a48f77665c6639/tools/veth_setup.sh).
+script](https://github.com/p4lang/behavioral-model/blob/58a5e99eb34999b53c7a8ea27128e9484748ae24/tools/veth_setup.sh).
 
 Running p4pktgen currently requires root privileges because Linux
 does not allow unprivileged users to send raw ethernet packets.
