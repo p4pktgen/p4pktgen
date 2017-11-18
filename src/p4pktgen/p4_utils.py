@@ -1,18 +1,4 @@
-# Added support
 from __future__ import print_function
-
-"""p4_utils.py: Misc classes/functions"""
-
-__author__ = "Jehandad Khan, Colin Burgin"
-__copyright__ = "Copyright 2017, Virginia Tech"
-__credits__ = [""]
-__license__ = "MIT"
-__version__ = "1.0"
-__maintainer__ = ""
-__email__ = "jehandad@vt.edu, cburgin@vt.edu"
-__status__ = "in progress"
-
-# Standard Python Libraries
 from enum import Enum
 
 # Enums for the parser

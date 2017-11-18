@@ -1,26 +1,10 @@
-# Added support
 from __future__ import print_function
-"""p4_hlir.py class for operating on the HLIR"""
-
-__author__ = "Jehandad Khan, Colin Burgin"
-__copyright__ = "Copyright 2017, Virginia Tech"
-__credits__ = [""]
-__license__ = "MIT"
-__version__ = "1.0"
-__maintainer__ = ""
-__email__ = "jehandad@vt.edu, cburgin@vt.edu"
-__status__ = "in progress"
-
-# Standard Python Libraries
 import copy
 import json
 import logging
 from pprint import pprint
 from collections import OrderedDict
 
-# P4 Specfic Libraries
-
-# Local API Libraries
 from p4_obj import P4_Obj
 from p4_utils import p4_parser_ops_enum
 from p4pktgen.hlir.type_value import *
