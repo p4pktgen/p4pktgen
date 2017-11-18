@@ -310,7 +310,7 @@ def process_json_file(input_file, debug=False):
                 if result_path_tuple in results and results[result_path_tuple] != result:
                     print("result_path %s with result %s is already recorded in results"
                           " while trying to record different result %s"
-                          "" % (result_path, result, results[result_path_tuple]))
+                          "" % (result_path, results[result_path_tuple], result))
                     assert False
                 results[tuple(result_path)] = result
                 stats[result] += 1
