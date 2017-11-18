@@ -23,17 +23,19 @@ and likely requires changes to run on other operating systems.
 
 ## Running p4pktgen
 
-Before running p4pktgen, make sure that you created a couple of virtual
-ethernet interfaces. This can be done using the [veth_setup
-script](https://github.com/p4lang/behavioral-model/blob/58a5e99eb34999b53c7a8ea27128e9484748ae24/tools/veth_setup.sh).
-
 Running p4pktgen currently requires root privileges because Linux
 does not allow unprivileged users to send raw ethernet packets.
 
+Run p4pktgen's install script as follows:
+```bash
+% ./tools/install.sh
+```
+
 The basic command to run p4pktgen is as follows:
 
-```
-p4pktgen <json file>
+```bash
+% p4pktgen <json file>
 ```
 
-The flag `-d` prints additional debug information.
+The flag `-d` prints additional debug information.  The `-h` option
+gives help on other command line options available.
