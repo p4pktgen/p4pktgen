@@ -57,7 +57,7 @@ class Config:
         self.dump_test_case = args.dump_test_case
         # TBD: Make the values below configurable via command line
         # options.
-        self.no_packet_length_errs = False
+        self.no_packet_length_errs = args.disable_packet_length_errors
         self.min_packet_len_generated = 14
         self.max_packet_len_generated = 1536
 

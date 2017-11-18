@@ -90,6 +90,14 @@ def main():
         """With this option enabled, allow analysis of paths that use primitives not yet fully implemented.  Use of such primitives only causes warning message to be issued, and the primitive operation is treated as a no-op.  Without this option (the default), use of such primitives causes an exception to be raised, typically aborting the program at that point."""
     )
     parser.add_argument(
+        '--disable-packet-length-errors',
+        dest='disable_packet_length_errors',
+        action='store_true',
+        default=False,
+        help=
+        """With this option given, do not analyze parser paths that cause errors related to packet length, such as PacketTooShort or HeaderTooShort.  Without this option (the default), do try to analyze those paths and create test packets to exercise them."""
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
@@ -298,6 +306,12 @@ def process_json_file(input_file, debug=False):
             if record_result:
                 result_path = [n[0]
                                for n in parser_path] + ['sink'] + control_path
+                result_path_tuple = tuple(result_path)
+                if result_path_tuple in results and results[result_path_tuple] != result:
+                    print("result_path %s with result %s is already recorded in results"
+                          " while trying to record different result %s"
+                          "" % (result_path, result, results[result_path_tuple]))
+                    assert False
                 results[tuple(result_path)] = result
                 stats[result] += 1
 
