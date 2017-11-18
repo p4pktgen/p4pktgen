@@ -9,7 +9,7 @@ class Config:
         self.debug = False
         self.silent = False
         self.allow_uninitialized_reads = False
-        self.allow_uninitialized_writes = False
+        self.allow_invalid_header_writes = False
         self.record_statistics = False
         self.allow_unimplemented_primitives = False
         self.dump_test_case = False
@@ -51,7 +51,7 @@ class Config:
         self.debug = args.debug
         self.silent = args.silent
         self.allow_uninitialized_reads = args.allow_uninitialized_reads
-        self.allow_uninitialized_writes = args.allow_uninitialized_writes
+        self.allow_invalid_header_writes = args.allow_invalid_header_writes
         self.record_statistics = args.record_statistics
         self.allow_unimplemented_primitives = args.allow_unimplemented_primitives
         self.dump_test_case = args.dump_test_case
@@ -73,8 +73,8 @@ class Config:
     def get_allow_uninitialized_reads(self):
         return self.allow_uninitialized_reads
 
-    def get_allow_uninitialized_writes(self):
-        return self.allow_uninitialized_writes
+    def get_allow_invalid_header_writes(self):
+        return self.allow_invalid_header_writes
 
     def get_record_statistics(self):
         return self.record_statistics

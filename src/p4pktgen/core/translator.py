@@ -24,7 +24,7 @@ from p4pktgen.util.statistics import Timer
 
 TestPathResult = Enum(
     'TestPathResult',
-    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ UNINITIALIZED_WRITE'
+    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE'
 )
 
 
@@ -882,12 +882,12 @@ class Translator:
                     logging.error('Uninitialized read of {} at {}'.format(
                         var_name, source_info))
                     result = TestPathResult.UNINITIALIZED_READ
-            elif len(context.uninitialized_writes) != 0:
-                for uninitialized_write in context.uninitialized_writes:
-                    var_name, source_info = uninitialized_write
+            elif len(context.invalid_header_writes) != 0:
+                for invalid_header_write in context.invalid_header_writes:
+                    var_name, source_info = invalid_header_write
                     logging.error('Uninitialized write of {} at {}'.format(
                         var_name, source_info))
-                    result = TestPathResult.UNINITIALIZED_WRITE
+                    result = TestPathResult.INVALID_HEADER_WRITE
             elif len(payload) >= Config().get_min_packet_len_generated():
                 packet = Ether(bytes(payload))
                 extracted_path = self.test_packet(packet, table_configs,
