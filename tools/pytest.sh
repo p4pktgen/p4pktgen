@@ -14,4 +14,4 @@ set -x
 set +x
 source my-venv/bin/activate
 set -x
-pytest
+pytest -vv
