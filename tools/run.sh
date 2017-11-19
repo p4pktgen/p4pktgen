@@ -13,7 +13,9 @@
 
 
 #OPTS=""
-OPTS="-d"
+#OPTS="-d"
+#OPTS="-d --dump-test-case"
+OPTS="-d --dump-test-case --disable-packet-length-errors"
 #OPTS="-d --allow-uninitialized-reads"
 #OPTS="-d --allow-uninitialized-reads --allow-unimplemented-primitives"
 #OPTS="--allow-uninitialized-reads --allow-unimplemented-primitives"
@@ -126,6 +128,13 @@ set -x
 # Most recent version of least-modified switch.p4 that I have done
 # p4pktgen runs with.
 ######################################################################
+# Recommended to use these options.  -d is too verbose.
+# There are many uninitialized reads, probably because the P4 program
+# was originally written in P4_14, where the language specifies an
+# initial value of 0 for all metadata and header fields.
+# There are some primitive actions in the JSON that are not yet
+# supported by p4pktgen, like clone and hash.
+#OPTS="--allow-uninitialized-reads --allow-unimplemented-primitives"
 #p4pktgen ${OPTS} compiled_p4_programs/switch-p416-nohdrstacks.json
 
 #p4pktgen ${OPTS} $HOME/p4-docs/test-p4-programs/p4c-issue-950.json
@@ -146,6 +155,10 @@ set -x
 
 #p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1.json
 #p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1-small.json
+#p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental1-small-no-issue983-workarounds.json
 
 #p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp.json
-p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp_no_verify.json
+#p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp_no_verify.json
+
+p4pktgen ${OPTS} compiled_p4_programs/checksum-ipv4-with-options.json
+#p4pktgen ${OPTS} compiled_p4_programs/parse-ipv4-with-opts-no-lookahead.json
