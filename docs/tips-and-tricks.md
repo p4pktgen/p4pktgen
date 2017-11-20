@@ -6,7 +6,7 @@ p4pktgen's capabilities in ways that might not be obvious.
 
 == P4 programs with random number generation
 
-If you use random number generation in a P4 program, typically these
+If you use random number generation in a P4 program, typically the
 results of the random number generator can affect the way packets are
 processed.
 
@@ -18,7 +18,7 @@ least significant 16 bits of the result are less than 0x7000, it
 assigns 1 to the metadata field `rand_drop`, otherwise it assigns 0 to
 that field.
 
-```p4_16
+```
     action rand_drop_decision() {
         bit<32> tmp_rand;
         random(tmp_rand, (bit<32>) 0, (bit<32>) 0xffff);
@@ -30,8 +30,9 @@ that field.
 After the table is applied in control `cIngress`, there is an `if`
 statement (shown below) that marks the packet for dropping and exits
 the control block, if `rand_drop` is 1.  Otherwise, it does not mark
-the packet for dropping, and with bmv2 `simple_switch` the default
-behavior is for the packet to go out port 0 if it is not dropped.
+the packet for dropping, and with bmv2 `simple_switch` combined with
+`v1model.p4`, the default behavior is for the packet to go out port 0
+if it is not dropped.
 
 ```
             if (meta.rand_drop == 1) {
@@ -51,7 +52,7 @@ A workaround to both of these issues is to modify the definition of
 action `rand_drop_decision` slightly, as shown here (it can also be
 found in the example program `p4_programs/random-demo-modified.p4`):
 
-```p4_16
+```
     action rand_drop_decision(bit<32> p4pktgen_hack_tmp_rand) {
         bit<32> tmp_rand;
         //random(tmp_rand, (bit<32>) 0, (bit<32>) 0xffff);
