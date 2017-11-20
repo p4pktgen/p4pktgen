@@ -276,6 +276,15 @@ class Translator:
                 # solver does.
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 return lhs >> rhs
+            elif type_value.op == '?':
+                condition = self.type_value_to_smt(context, type_value.cond,
+                                                   sym_packet, pos)
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
+                lhs, rhs = self.equalize_bv_size([lhs, rhs])
+                return If(condition, lhs, rhs)
             else:
                 raise Exception('Type value expression {} not supported'.
                                 format(type_value.op))
@@ -846,7 +855,7 @@ class Translator:
                             raise Exception('Match type {} not supported'.
                                             format(table_key.match_type))
 
-                    logging.debug("jafinger-dbg table_name %s"
+                    logging.debug("table_name %s"
                                   " table.default_entry.action_const %s"
                                   "" % (table_name,
                                         table.default_entry.action_const))

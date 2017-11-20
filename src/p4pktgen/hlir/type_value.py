@@ -7,6 +7,9 @@ class TypeValueExpression(TypeValue):
     def __init__(self, json_obj):
         # XXX: Make op an enum
         self.op = json_obj['op']
+        # cond only exists for the ternary operator '?'
+        if 'cond' in json_obj:
+            self.cond = parse_type_value(json_obj['cond'])
         if json_obj['left'] is None:
             self.left = None
         else:
@@ -14,10 +17,13 @@ class TypeValueExpression(TypeValue):
         self.right = parse_type_value(json_obj['right'])
 
     def __repr__(self):
-        if self.left is None:
-            return '{}({})'.format(self.op, self.right)
+        if hasattr(self, 'cond'):
+            return '({} {} : {})'.format(self.cond, self.op, self.left, self.right)
         else:
-            return '({} {} {})'.format(self.left, self.op, self.right)
+            if self.left is None:
+                return '{}({})'.format(self.op, self.right)
+            else:
+                return '({} {} {})'.format(self.left, self.op, self.right)
 
 
 class TypeValueField(TypeValue):
