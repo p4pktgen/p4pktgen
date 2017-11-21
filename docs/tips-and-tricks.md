@@ -1,10 +1,10 @@
-= p4pktgen tips and tricks
+# p4pktgen tips and tricks
 
 Here we describe a few techniques you can use to take advantage of
 p4pktgen's capabilities in ways that might not be obvious.
 
 
-== P4 programs with random number generation
+## P4 programs with random number generation
 
 If you use random number generation in a P4 program, typically the
 results of the random number generator can affect the way packets are
@@ -116,7 +116,7 @@ primary choice of P4_16 architecture included with the open source P4
 compiler `p4c-bm2-ss`.
 
 
-== P4 programs with meters or hash functions
+## P4 programs with meters or hash functions
 
 The same technique described in the previous section also works for
 programs that use meters.  See the example program
