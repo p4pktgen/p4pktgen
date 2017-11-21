@@ -18,9 +18,10 @@ cover all paths of the program.
 - [p4c](https://github.com/p4lang/p4c)
 - `simple_switch` from the [behavioral-model](https://github.com/p4lang/behavioral-model) project
 
-For installing `p4c` and `simple-switch`, there is a
+For installing `p4c` and `simple_switch`, there is a
 [script](https://github.com/jafingerhut/p4-guide/blob/master/bin/install-p4dev.sh)
-by Andy Fingerhut.  Make sure that `simple_switch` is in your path.
+by Andy Fingerhut.  Make sure that `simple_switch` is in your path before running
+p4pktgen.
 
 Note: this software has been developed and tested on Ubuntu 16.04
 and likely requires changes to run on other operating systems.
@@ -37,7 +38,6 @@ Run p4pktgen's install script as follows:
 ```
 
 The basic command to run p4pktgen is as follows:
-
 ```bash
 % p4pktgen <json file>
 ```
