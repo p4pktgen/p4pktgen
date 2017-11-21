@@ -9,17 +9,18 @@ cover all paths of the program.
 * [Installation instructions](#installing-and-running-p4pktgen)
 * [P4 language features supported](README-P4-language-features.md)
 * [Tips & tricks](docs/tips-and-tricks.md)
+* [Bugs found using p4pktgen](docs/success-stories.md)
 
 
 ## Prerequisites
 
 - Python 2.7, pip
-- p4c
-- simple_switch from the behavioral-model project
+- [p4c](https://github.com/p4lang/p4c)
+- `simple_switch` from the [behavioral-model](https://github.com/p4lang/behavioral-model) project
 
-For installing p4c and simple-switch, there is a
+For installing `p4c` and `simple-switch`, there is a
 [script](https://github.com/jafingerhut/p4-guide/blob/master/bin/install-p4dev.sh)
-by Andy Fingerhut.  Make sure that simple_switch is in your path.
+by Andy Fingerhut.  Make sure that `simple_switch` is in your path.
 
 Note: this software has been developed and tested on Ubuntu 16.04
 and likely requires changes to run on other operating systems.

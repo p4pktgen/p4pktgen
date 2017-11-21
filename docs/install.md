@@ -1,5 +1,9 @@
 # Detailed setup instructions
 
+All of these steps should be handled by the `tools/install.sh`
+installation script, but if you love installing things yourself, or
+want to know a bit more about what is going on there, read on.
+
 
 ## Clone a copy of the p4pktgen repository from bitbucket.org
 
