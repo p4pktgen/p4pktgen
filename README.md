@@ -6,6 +6,10 @@
 p4pktgen is a tool for generating input packets for P4 programs that
 cover all paths of the program.
 
+* [P4 language features supported](README-P4-language-features.md)
+* [Tips & tricks](docs/tips-and-tricks.md#p4-programs-with-meters-or-hash-functions)
+* [Installation instructions](#tbd)
+
 
 ## Prerequisites
 
@@ -21,10 +25,10 @@ Note: this software has been developed and tested on Ubuntu 16.04
 and likely requires changes to run on other operating systems.
 
 
-## Running p4pktgen
+## Installing and running p4pktgen
 
 Running p4pktgen currently requires root privileges because Linux
-does not allow unprivileged users to send raw ethernet packets.
+does not allow unprivileged users to send raw Ethernet packets.
 
 Run p4pktgen's install script as follows:
 ```bash
