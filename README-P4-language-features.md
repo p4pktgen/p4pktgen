@@ -144,10 +144,10 @@ enables treating them as no-ops:
   only the expected output packet, but also the expected counter
   updates to be made for each test case.  This would enable testing
   that counter updates are being made as they should be.
-+ meter updates - See [tips & tricks](docs/tips-and-tricks.md) for a workaround
++ meter updates - See [tips & tricks](docs/tips-and-tricks.md#p4-programs-with-meters-or-hash-functions) for a workaround
 + register reads/writes
-+ hash/checksum calculation - See [tips & tricks](docs/tips-and-tricks.md) for a workaround
-+ random number generation - See [tips & tricks](docs/tips-and-tricks.md) for a workaround
++ hash/checksum calculation - See [tips & tricks](docs/tips-and-tricks.md#p4-programs-with-meters-or-hash-functions) for a workaround
++ random number generation - See [tips & tricks](docs/tips-and-tricks.md#p4-programs-with-random-number-generation) for a workaround
 + clone/resubmit/recirculate operations
 
 Header unions
