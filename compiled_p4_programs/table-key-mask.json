@@ -192,7 +192,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4_programs/table-key-mask.p4",
-        "line" : 158,
+        "line" : 160,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
@@ -326,6 +326,42 @@
             }
           },
           "false_next" : null,
+          "true_next" : "node_3"
+        },
+        {
+          "name" : "node_3",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "p4_programs/table-key-mask.p4",
+            "line" : 145,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.dstAddr[7:0] != 0"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "!=",
+              "left" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["ipv4", "dstAddr"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xff"
+                  }
+                }
+              },
+              "right" : {
+                "type" : "hexstr",
+                "value" : "0x00"
+              }
+            }
+          },
+          "false_next" : null,
           "true_next" : "ipv4_da"
         }
       ]
@@ -335,7 +371,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4_programs/table-key-mask.p4",
-        "line" : 150,
+        "line" : 152,
         "column" : 8,
         "source_fragment" : "egress"
       },

@@ -142,7 +142,9 @@ control ingress(inout headers hdr,
 
     apply {
         if (hdr.ipv4.isValid()) {
-            ipv4_da.apply();
+            if (hdr.ipv4.dstAddr[7:0] != 0) {
+                ipv4_da.apply();
+            }
         }
     }
 }
