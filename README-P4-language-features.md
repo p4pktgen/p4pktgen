@@ -37,7 +37,7 @@ Features supported by `p4pktgen`:
   + `verify` statements
   + assignment statements in parser
   + `lookahead` expressions
-    + No support yet for generating `PacketTooShort` errors during
+    + NOT SUPPORTED: generating `PacketTooShort` errors during
       `lookahead` call.
   + Masks and default values supported in `select` expressions, for
     single fields and multiple fields.
@@ -52,7 +52,8 @@ Features supported by `p4pktgen`:
 
 + header operations `isValid()` `setValid()` `setInvalid()`
   + Includes command line option `--allow-uninitialized-reads` to
-    treat uninitialized fields as initially 0, or as undefined values
+    treat uninitialized fields as initially 0.  Without this option,
+    default behavior treats uninitialized fields as undefined values
     that cause error message to be issued for that path.
 
 + NOT SUPPORTED: header stacks
@@ -150,6 +151,7 @@ enables treating them as no-ops:
 + clone/resubmit/recirculate operations
 
 Header unions
+
 header stacks with header union elements
 
 Handling egress in at least a semi-complete way would require handling
