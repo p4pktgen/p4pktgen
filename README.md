@@ -8,7 +8,7 @@ cover all paths of the program.
 
 * [P4 language features supported](README-P4-language-features.md)
 * [Tips & tricks](docs/tips-and-tricks.md#p4-programs-with-meters-or-hash-functions)
-* [Installation instructions](#tbd)
+* [Installation instructions](##installing-and-running-p4pktgen)
 
 
 ## Prerequisites
