@@ -922,7 +922,10 @@ class Translator:
                 for param_name, param_val in params:
                     param_val = model_value_to_long(param_val)
                     param_vals.append(param_val)
-                    params2.append((param_name, param_val))
+                    params2.append(OrderedDict([
+                        ('name', param_name),
+                        ('value', param_val)
+                        ]))
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
