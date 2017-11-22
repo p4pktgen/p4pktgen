@@ -798,6 +798,8 @@ class Translator:
         time4 = time.time()
         self.total_solver_time += time4 - time3
 
+        packet_hexstr = None
+        ss_cli_setup_cmds = []
         result = None
         if smt_result != unsat:
             model = self.solver.model()
@@ -874,16 +876,19 @@ class Translator:
             # Print table configuration
             for table, action, values, params, priority in table_configs:
                 if len(values) == 0:
-                    logging.info('table_set_default %s',
-                                 self.table_set_default_cmd_string(
-                                     table, action, params))
+                    ss_cli_cmd = ('table_set_default ' +
+                                  self.table_set_default_cmd_string(
+                                      table, action, params))
                 else:
-                    logging.info('table_add %s',
-                                 self.table_add_cmd_string(
-                                     table, action, values, params, priority))
+                    ss_cli_cmd = ('table_add ' +
+                                  self.table_add_cmd_string(
+                                      table, action, values, params, priority))
+                logging.info(ss_cli_cmd)
+                ss_cli_setup_cmds.append(ss_cli_cmd)
+            packet_len_bytes = len(payload)
+            packet_hexstr = ''.join([('%02x' % (x)) for x in payload])
             logging.info("packet (%d bytes) %s"
-                         "" % (len(payload), ''.join([('%02x' % (x))
-                                                      for x in payload])))
+                         "" % (packet_len_bytes, packet_hexstr))
 
             if len(context.uninitialized_reads) != 0:
                 for uninitialized_read in context.uninitialized_reads:
@@ -939,7 +944,58 @@ class Translator:
                      "" % (time5 - time2, time3 - time2, time4 - time3,
                            time5 - time4))
 
-        return (expected_path, result)
+        if packet_hexstr is None:
+            input_packets = []
+        else:
+            input_packets = [OrderedDict([
+                ("port", 0),
+                ("packet_len_bytes", packet_len_bytes),
+                ("packet_hexstr", packet_hexstr)])]
+
+
+        # TBD: Also generate control plane setup commands in a format
+        # more JSON-y, i.e. table operation, table name, field names
+        # and values, action name, action parameter names and values
+        # in some kind of dict data structure that outputs nicely in
+        # JSON, and is easily taken apart and used in different ways
+        # by someone taking this data and using it to run test cases
+        # in something besides simple_switch.  There is no need to
+        # _remove_ the key "ss_cli_setup_cmds" when that is added.
+        # Its value is still more convenient to use if you are driving
+        # the tests into simple_switch.
+        
+        # TBD: Would be nice to get rid of u in front of strings on
+        # paths, e.g. u'node_2', u'p4_programs/demo1b.p4'.  Maybe it
+        # is beneficial to leave those in there for some reason, but I
+        # suspect a change in representation of parser paths and/or
+        # control paths could make bigger changes there such that we
+        # want to wait until those changes are made before mucking
+        # around with how they are returned.
+
+        # Instead of calling str() on every element of a path, might
+        # be nicer to convert them to a type that can be more easily
+        # represented as seprate parts in JSON, e.g. nested lists or
+        # dicts of strings, numbers, booleans.
+
+        # TBD: Is there a simple function to convert result to a
+        # string, without "TestPathResult." at the beginning?
+        test_case = OrderedDict([
+            ("parser_path", map(str, path)),
+            ("parser_path_len", len(path)),
+            ("ingress_path", map(str, control_path)),
+            ("ingress_path_len", len(control_path)),
+            ("expected_path", map(str, expected_path)),
+            ("complete_path", is_complete_control_path),
+            ("ss_cli_setup_cmds", ss_cli_setup_cmds),
+            ("input_packets", input_packets),
+            #("output_packets", TBD),
+            ("result", str(result)),
+            ("time_sec_generate_ingress_constraints", time3 - time2),
+            ("time_sec_solve", time4 - time3),
+            ("time_sec_simulate_packet", time5 - time4),
+            ])
+
+        return (expected_path, result, test_case)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):
         """This function starts simple_switch, sends a packet to the switch and

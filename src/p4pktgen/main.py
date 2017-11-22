@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse
+import json
 import logging
 from collections import defaultdict
 import time
@@ -274,6 +275,11 @@ def process_json_file(input_file, debug=False):
     stats = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
     old_control_path = [[]]
+    # TBD: Make this filename specifiable via command line option
+    test_cases_json_fname = 'test-cases.json'
+    test_casesf = open(test_cases_json_fname, 'w')
+    test_casesf.write('[\n')
+    first_time = [True]
     for parser_path in parser_paths:
         translator.generate_parser_constraints(parser_path + [('sink', None)])
 
@@ -281,7 +287,7 @@ def process_json_file(input_file, debug=False):
             print([x for x, y in zip(old_control_path, control_path) if x == y])
             count.inc()
             translator.push()
-            expected_path, result = translator.generate_constraints(
+            expected_path, result, test_case = translator.generate_constraints(
                 parser_path + [('sink', None)], control_path,
                 source_info_to_node_name, count, is_complete_control_path)
             translator.pop()
@@ -304,6 +310,15 @@ def process_json_file(input_file, debug=False):
             record_result = (is_complete_control_path
                              or (result != TestPathResult.SUCCESS))
             if record_result:
+                # Doing file writing here enables getting at least
+                # some test case output data for p4pktgen runs that
+                # the user kills before it completes, e.g. because it
+                # takes too long to complete.
+                if first_time[0]:
+                    first_time[0] = False
+                else:
+                    test_casesf.write(',\n')
+                json.dump(test_case, test_casesf, indent=2)
                 result_path = [n[0]
                                for n in parser_path] + ['sink'] + control_path
                 result_path_tuple = tuple(result_path)
@@ -321,6 +336,8 @@ def process_json_file(input_file, debug=False):
 
         graph.generate_all_paths(
             in_pipeline.init_table_name, None, callback=eval_control_path)
+    test_casesf.write('\n]\n')
+    test_casesf.close()
     translator.cleanup()
 
     if timing_file is not None:
