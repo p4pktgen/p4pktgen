@@ -800,6 +800,7 @@ class Translator:
 
         packet_hexstr = None
         ss_cli_setup_cmds = []
+        table_setup_cmd_data = []
         result = None
         if smt_result != unsat:
             model = self.solver.model()
@@ -875,16 +876,37 @@ class Translator:
 
             # Print table configuration
             for table, action, values, params, priority in table_configs:
+                # TBD: There is probably a better way to convert the
+                # params from whatever type they are coming from the
+                # SMT solver, to something that can be written out as
+                # JSON.  This seems to work, though.
+                params2 = [long(str(p)) for p in params]
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
                                       table, action, params))
+                    table_setup_info = OrderedDict([
+                        ("command", "table_set_default"),
+                        ("table_name", table),
+                        ("action_name", action),
+                        ("action_parameters", params2)
+                        ])
                 else:
                     ss_cli_cmd = ('table_add ' +
                                   self.table_add_cmd_string(
                                       table, action, values, params, priority))
+                    logging.debug('jafinger-dbg params types: %s'
+                                  '' % (map(type, params)))
+                    table_setup_info = OrderedDict([
+                        ("command", "table_add"),
+                        ("table_name", table),
+                        ("keys", values),
+                        ("action_name", action),
+                        ("action_parameters", params2)
+                        ])
                 logging.info(ss_cli_cmd)
                 ss_cli_setup_cmds.append(ss_cli_cmd)
+                table_setup_cmd_data.append(table_setup_info)
             packet_len_bytes = len(payload)
             packet_hexstr = ''.join([('%02x' % (x)) for x in payload])
             logging.info("packet (%d bytes) %s"
@@ -986,6 +1008,7 @@ class Translator:
             ("ingress_path_len", len(control_path)),
             ("expected_path", map(str, expected_path)),
             ("complete_path", is_complete_control_path),
+            ("table_setup_cmd_data", table_setup_cmd_data),
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
             #("output_packets", TBD),
