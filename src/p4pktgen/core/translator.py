@@ -1033,6 +1033,7 @@ class Translator:
         # TBD: Is there a simple function to convert result to a
         # string, without "TestPathResult." at the beginning?
         test_case = OrderedDict([
+            ("log_file_id", count.counter),
             ("parser_path", map(str, path)),
             ("parser_path_len", len(path)),
             ("ingress_path", map(str, control_path)),
