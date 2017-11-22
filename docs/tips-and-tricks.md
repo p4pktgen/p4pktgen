@@ -4,7 +4,55 @@ Here we describe a few techniques you can use to take advantage of
 p4pktgen's capabilities in ways that might not be obvious.
 
 
-## P4 programs with random number generation
+## Error messages
+
+
+### UNINITIALIZED_READ
+
+If you see a path with a result of UNINITIALIZED_READ, it means that
+the program attempts to use the value of some header field or metadata
+field before it has been initialized.
+
+You may have a program that expects that all such values are
+automatically initialized to 0, e.g. because the P4_14 language spec
+requires this.  In such cases, you can give the command line option
+`--allow-uninitialized-reads` to `p4pktgen`, and it will treat all
+such values as initialized to 0.
+
+
+### Exception: Primitive op X not supported
+
+Currently there are many operations such as counter and meter updates,
+register reads and writes, and hash calculations that are not yet
+supported by `p4pktgen`.
+
+For some of these (e.g. random number generation, meters, hash
+functions), there is a recommended workaround described below.
+
+For others, you can choose to have p4pktgen treat them as no-op by
+supplying the command line option `--allow-unimplemented-primitives`.
+Of course this is not the actual behavior of those primitive
+operations, so you should be cautious using the results of p4pktgen
+for paths involving these operations.
+
+
+### result_path ... with result ... is already recorded in results
+
+If you see an error message like this in the output:
+
+    result_path ['start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/meter-demo.p4', 97, u'hdr.ipv4.isValid()')))] with result TestPathResult.NO_PACKET_FOUND is already recorded in results while trying to record different result TestPathResult.SUCCESS
+
+there is a known issue where this can occur due to the way that
+execution paths through the parser are represented.  Until this
+problem is more fully fixed, you should be able to avoid it by giving
+`p4pktgen` the command line option `--disable-packet-length-errors`,
+which will cause `p4pktgen` not to create packets that exercise parser
+error cases.
+
+
+## P4 programs using features not yet supported by p4pktgen
+
+### P4 programs with random number generation
 
 If you use random number generation in a P4 program, typically the
 results of the random number generator can affect the way packets are
@@ -116,7 +164,7 @@ primary choice of P4_16 architecture included with the open source P4
 compiler `p4c-bm2-ss`.
 
 
-## P4 programs with meters or hash functions
+### P4 programs with meters or hash functions
 
 The same technique described in the previous section also works for
 programs that use meters.  See the example program
