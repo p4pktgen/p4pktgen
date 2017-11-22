@@ -896,10 +896,6 @@ class Translator:
                 # simple_switch_CLI syntax for all of those
                 # match_kinds.  We shouldn't make someone parse those
                 # strings to get at the individual pieces.
-
-                # TBD: Change params2 so that it is a list of
-                # (parameter_name, parameter_value) pairs.  Right now
-                # it does not have the parameter names, only values.
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
