@@ -40,7 +40,7 @@ set -x
 # Crashes with "Exception: Primitive op drop not supported"
 #p4pktgen ${OPTS} compiled_p4_programs/demo1-action-names-uniquified.p4_16.json
 
-#p4pktgen ${OPTS} compiled_p4_programs/demo1b.json
+p4pktgen ${OPTS} compiled_p4_programs/demo1b.json
 #p4pktgen ${OPTS} compiled_p4_programs/read-ingress-port.json
 
 # Similar crash as for demo1-action-names-uniquified.p4_16.json
@@ -160,5 +160,5 @@ set -x
 #p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp.json
 #p4pktgen ${OPTS} compiled_p4_programs/simple_ecmp_no_verify.json
 
-p4pktgen ${OPTS} compiled_p4_programs/checksum-ipv4-with-options.json
+#p4pktgen ${OPTS} compiled_p4_programs/checksum-ipv4-with-options.json
 #p4pktgen ${OPTS} compiled_p4_programs/parse-ipv4-with-opts-no-lookahead.json

@@ -819,9 +819,10 @@ class Translator:
                     for i, runtime_param in enumerate(
                             transition.action.runtime_data):
                         runtime_data_values.append(
-                            model[context.get_runtime_data_for_table_action(
-                                table_name, transition.action.name,
-                                runtime_param.name, i)])
+                            (runtime_param.name,
+                             model[context.get_runtime_data_for_table_action(
+                                 table_name, transition.action.name,
+                                 runtime_param.name, i)]))
                     sym_table_values = context.get_table_values(
                         model, table_name)
 
@@ -880,7 +881,12 @@ class Translator:
                 # params from whatever type they are coming from the
                 # SMT solver, to something that can be written out as
                 # JSON.  This seems to work, though.
-                params2 = [long(str(p)) for p in params]
+                params2 = []
+                param_vals = []
+                for param_name, param_val in params:
+                    param_val = long(str(param_val))
+                    param_vals.append(param_val)
+                    params2.append((param_name, param_val))
 
                 # TBD: Change values so that it is a list of
                 # (key_name, key_match) pairs, and key_match has
@@ -897,7 +903,7 @@ class Translator:
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
-                                      table, action, params))
+                                      table, action, param_vals))
                     table_setup_info = OrderedDict([
                         ("command", "table_set_default"),
                         ("table_name", table),
@@ -907,9 +913,8 @@ class Translator:
                 else:
                     ss_cli_cmd = ('table_add ' +
                                   self.table_add_cmd_string(
-                                      table, action, values, params, priority))
-                    logging.debug('jafinger-dbg params types: %s'
-                                  '' % (map(type, params)))
+                                      table, action, values, param_vals,
+                                      priority))
                     table_setup_info = OrderedDict([
                         ("command", "table_add"),
                         ("table_name", table),
@@ -1012,7 +1017,7 @@ class Translator:
             ("table_setup_cmd_data", table_setup_cmd_data),
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
-            #("output_packets", TBD),
+            #("expected_output_packets", TBD),
             ("result", str(result)),
             ("time_sec_generate_ingress_constraints", time3 - time2),
             ("time_sec_solve", time4 - time3),
@@ -1030,10 +1035,13 @@ class Translator:
         wrpcap('test.pcap', packet, append=True)
 
         for table, action, values, params, priority in table_configs:
+            # Extract values of parameters, without the names
+            param_vals = map(lambda x: x[1], params)
             if len(values) == 0:
-                self.switch.table_set_default(table, action, params)
+                self.switch.table_set_default(table, action, param_vals)
             else:
-                self.switch.table_add(table, action, values, params, priority)
+                self.switch.table_add(table, action, values, param_vals,
+                                      priority)
 
         extracted_path = self.switch.send_packet(packet,
                                                  source_info_to_node_name)
