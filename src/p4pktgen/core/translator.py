@@ -65,6 +65,20 @@ def min_bits_for_uint(uint):
     return cur_width
 
 
+# TBD: There is probably a better way to convert the params from
+# whatever type they are coming from the SMT solver, to something that
+# can be written out as JSON.  This seems to work, though.
+def model_value_to_long(model_val):
+    try:
+        return long(str(model_val))
+    except ValueError:
+        # This can happen when trying to convert values that are
+        # actually still variables in the model.  For example, when a
+        # key in a table is used that way, without first being
+        # initialized.
+        return None
+
+
 class Translator:
     def __init__(self, json_file, hlir, pipeline):
         self.switch = SimpleSwitch(json_file)
@@ -828,14 +842,23 @@ class Translator:
 
                     table = self.pipeline.tables[table_name]
                     table_values_strs = []
+                    table_key_data = []
                     table_entry_priority = None
                     for table_key, sym_table_value in zip(
                             table.key, sym_table_values):
+                        key_field_name = '.'.join(table_key.target)
+                        sym_table_value_long = model_value_to_long(sym_table_value)
                         if table_key.match_type == 'lpm':
                             bitwidth = context.get_header_field_size(
                                 table_key.target[0], table_key.target[1])
                             table_values_strs.append(
                                 '{}/{}'.format(sym_table_value, bitwidth))
+                            table_key_data.append(OrderedDict([
+                                ('match_kind', 'lpm'),
+                                ('key_field_name', key_field_name),
+                                ('value', sym_table_value_long),
+                                ('prefix_length', bitwidth),
+                                ]))
                         elif table_key.match_type == 'ternary':
                             # Always use exact match mask, which is
                             # represented in simple_switch_CLI as a 1 bit
@@ -846,6 +869,12 @@ class Translator:
                             table_values_strs.append(
                                 '{}&&&{}'.format(sym_table_value, mask))
                             table_entry_priority = 1
+                            table_key_data.append(OrderedDict([
+                                ('match_kind', 'ternary'),
+                                ('key_field_name', key_field_name),
+                                ('value', sym_table_value_long),
+                                ('mask', mask)
+                                ]))
                         elif table_key.match_type == 'range':
                             # Always use a range where the min and max
                             # values are exactly the one desired value
@@ -853,8 +882,19 @@ class Translator:
                             table_values_strs.append('{}->{}'.format(
                                 sym_table_value, sym_table_value))
                             table_entry_priority = 1
+                            table_key_data.append(OrderedDict([
+                                ('match_kind', 'range'),
+                                ('key_field_name', key_field_name),
+                                ('min_value', sym_table_value_long),
+                                ('max_value', sym_table_value_long)
+                                ]))
                         elif table_key.match_type == 'exact':
                             table_values_strs.append(str(sym_table_value))
+                            table_key_data.append(OrderedDict([
+                                ('match_kind', 'exact'),
+                                ('key_field_name', key_field_name),
+                                ('value', sym_table_value_long)
+                                ]))
                         else:
                             raise Exception('Match type {} not supported'.
                                             format(table_key.match_type))
@@ -872,30 +912,17 @@ class Translator:
                     else:
                         table_configs.append(
                             (table_name, transition.get_name(),
-                             table_values_strs, runtime_data_values,
-                             table_entry_priority))
+                             table_values_strs, table_key_data,
+                             runtime_data_values, table_entry_priority))
 
             # Print table configuration
-            for table, action, values, params, priority in table_configs:
-                # TBD: There is probably a better way to convert the
-                # params from whatever type they are coming from the
-                # SMT solver, to something that can be written out as
-                # JSON.  This seems to work, though.
+            for table, action, values, key_data, params, priority in table_configs:
                 params2 = []
                 param_vals = []
                 for param_name, param_val in params:
-                    param_val = long(str(param_val))
+                    param_val = model_value_to_long(param_val)
                     param_vals.append(param_val)
                     params2.append((param_name, param_val))
-
-                # TBD: Change values so that it is a list of
-                # (key_name, key_match) pairs, and key_match has
-                # different data for exact, ternary, lpm, and range
-                # match_kind cases.  Right now there are no key names,
-                # and the key_match is just a string that is in
-                # simple_switch_CLI syntax for all of those
-                # match_kinds.  We shouldn't make someone parse those
-                # strings to get at the individual pieces.
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
@@ -914,10 +941,12 @@ class Translator:
                     table_setup_info = OrderedDict([
                         ("command", "table_add"),
                         ("table_name", table),
-                        ("keys", values),
+                        ("keys", key_data),
                         ("action_name", action),
                         ("action_parameters", params2)
                         ])
+                    if priority is not None:
+                        table_setup_info['priority'] = priority
                 logging.info(ss_cli_cmd)
                 ss_cli_setup_cmds.append(ss_cli_cmd)
                 table_setup_cmd_data.append(table_setup_info)
@@ -1030,7 +1059,7 @@ class Translator:
         # Log packet
         wrpcap('test.pcap', packet, append=True)
 
-        for table, action, values, params, priority in table_configs:
+        for table, action, values, key_data, params, priority in table_configs:
             # Extract values of parameters, without the names
             param_vals = map(lambda x: x[1], params)
             if len(values) == 0:
