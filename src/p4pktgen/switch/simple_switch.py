@@ -42,7 +42,8 @@ class SimpleSwitch:
         # simple_switch executable to discover why this failure
         # occurs, but haven't discovered a reason for it.  Removing
         # this file seems to avoid the problem.
-        os.remove('/tmp/bmv2-0-notifications.ipc')
+        if os.path.isfile('/tmp/bmv2-0-notifications.ipc'):
+            os.remove('/tmp/bmv2-0-notifications.ipc')
 
         # Start simple_switch
         self.proc = subprocess.Popen(
