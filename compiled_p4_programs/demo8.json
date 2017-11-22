@@ -1,13 +1,18 @@
 {
-  "program" : "demo8.p4",
+  "program" : "p4_programs/demo8.p4",
   "__meta__" : {
-    "version" : [2, 6],
+    "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
   },
   "header_types" : [
     {
-      "name" : "ethernet_t",
+      "name" : "scalars_0",
       "id" : 0,
+      "fields" : []
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 1,
       "fields" : [
         ["dstAddr", 48, false],
         ["srcAddr", 48, false],
@@ -16,7 +21,7 @@
     },
     {
       "name" : "ipv4_t",
-      "id" : 1,
+      "id" : 2,
       "fields" : [
         ["version", 4, false],
         ["ihl", 4, false],
@@ -34,7 +39,7 @@
     },
     {
       "name" : "ipv6_t",
-      "id" : 2,
+      "id" : 3,
       "fields" : [
         ["version", 4, false],
         ["trafficClass", 8, false],
@@ -48,7 +53,7 @@
     },
     {
       "name" : "tcp_t",
-      "id" : 3,
+      "id" : 4,
       "fields" : [
         ["srcPort", 16, false],
         ["dstPort", 16, false],
@@ -64,21 +69,12 @@
     },
     {
       "name" : "udp_t",
-      "id" : 4,
+      "id" : 5,
       "fields" : [
         ["srcPort", 16, false],
         ["dstPort", 16, false],
         ["length", 16, false],
         ["checksum", 16, false]
-      ]
-    },
-    {
-      "name" : "scalars",
-      "id" : 5,
-      "fields" : [
-        ["tmp_10", 1, 0],
-        ["tmp_13", 1, 0],
-        ["_padding", 6, false]
       ]
     },
     {
@@ -109,77 +105,97 @@
         ["drop", 1, false],
         ["recirculate_port", 16, false],
         ["packet_length", 32, false],
-        ["_padding_0", 4, false]
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 1, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["_padding", 4, false]
       ]
     }
   ],
   "headers" : [
     {
-      "name" : "ethernet",
-      "id" : 0,
-      "header_type" : "ethernet_t",
-      "metadata" : false
-    },
-    {
-      "name" : "ipv4",
-      "id" : 1,
-      "header_type" : "ipv4_t",
-      "metadata" : false
-    },
-    {
-      "name" : "ipv6",
-      "id" : 2,
-      "header_type" : "ipv6_t",
-      "metadata" : false
-    },
-    {
-      "name" : "tcp",
-      "id" : 3,
-      "header_type" : "tcp_t",
-      "metadata" : false
-    },
-    {
-      "name" : "udp",
-      "id" : 4,
-      "header_type" : "udp_t",
-      "metadata" : false
-    },
-    {
       "name" : "scalars",
-      "id" : 5,
-      "header_type" : "scalars",
+      "id" : 0,
+      "header_type" : "scalars_0",
       "metadata" : true,
       "pi_omit" : true
     },
     {
-      "name" : "fwd_metadata",
+      "name" : "standard_metadata",
+      "id" : 1,
+      "header_type" : "standard_metadata",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ethernet",
+      "id" : 2,
+      "header_type" : "ethernet_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ipv4",
+      "id" : 3,
+      "header_type" : "ipv4_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ipv6",
+      "id" : 4,
+      "header_type" : "ipv6_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "tcp",
+      "id" : 5,
+      "header_type" : "tcp_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "udp",
       "id" : 6,
+      "header_type" : "udp_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "fwd_metadata",
+      "id" : 7,
       "header_type" : "fwd_metadata_t",
-      "metadata" : true
+      "metadata" : true,
+      "pi_omit" : true
     },
     {
       "name" : "l3_metadata",
-      "id" : 7,
-      "header_type" : "l3_metadata_t",
-      "metadata" : true
-    },
-    {
-      "name" : "standard_metadata",
       "id" : 8,
-      "header_type" : "standard_metadata",
-      "metadata" : true
+      "header_type" : "l3_metadata_t",
+      "metadata" : true,
+      "pi_omit" : true
     }
   ],
   "header_stacks" : [],
+  "header_union_types" : [],
+  "header_unions" : [],
+  "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["ParserTimeout", 7],
-    ["HeaderTooShort", 6],
-    ["OverwritingHeader", 5],
-    ["StackOutOfBounds", 4],
-    ["NoMatch", 3],
+    ["NoError", 1],
     ["PacketTooShort", 2],
-    ["NoError", 1]
+    ["NoMatch", 3],
+    ["StackOutOfBounds", 4],
+    ["HeaderTooShort", 5],
+    ["ParserTimeout", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -428,6 +444,12 @@
     {
       "name" : "deparser",
       "id" : 0,
+      "source_info" : {
+        "filename" : "p4_programs/demo8.p4",
+        "line" : 234,
+        "column" : 8,
+        "source_fragment" : "DeparserImpl"
+      },
       "order" : ["ethernet", "ipv4", "tcp"]
     }
   ],
@@ -438,12 +460,86 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "act_1",
+      "name" : "NoAction",
       "id" : 0,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "rewrite_mac",
+      "id" : 1,
+      "runtime_data" : [
+        {
+          "name" : "smac",
+          "bitwidth" : 48
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "srcAddr"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 141,
+            "column" : 8,
+            "source_fragment" : "hdr.ethernet.srcAddr = smac"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "NoAction",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "set_l2ptr",
+      "id" : 3,
+      "runtime_data" : [
+        {
+          "name" : "l2ptr",
+          "bitwidth" : 24
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["fwd_metadata", "l2ptr"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 166,
+            "column" : 8,
+            "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act",
+      "id" : 4,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "modify_field",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
@@ -476,118 +572,72 @@
                 }
               }
             }
-          ]
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 223,
+            "column" : 14,
+            "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 1"
+          }
         }
       ]
-    },
-    {
-      "name" : "rewrite_mac",
-      "id" : 1,
-      "runtime_data" : [
-        {
-          "name" : "smac",
-          "bitwidth" : 48
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "modify_field",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["ethernet", "srcAddr"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "NoAction",
-      "id" : 2,
-      "runtime_data" : [],
-      "primitives" : []
     },
     {
       "name" : "act_0",
-      "id" : 3,
+      "id" : 5,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "modify_field",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_13"]
+              "value" : ["ethernet", "dstAddr"]
             },
             {
               "type" : "expression",
               "value" : {
                 "type" : "expression",
                 "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
+                  "op" : "&",
+                  "left" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : ">",
+                      "op" : "+",
                       "left" : {
                         "type" : "field",
-                        "value" : ["ethernet", "dstAddr"]
+                        "value" : ["ethernet", "srcAddr"]
                       },
                       "right" : {
                         "type" : "hexstr",
                         "value" : "0x000000000002"
                       }
                     }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "act",
-      "id" : 4,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "modify_field",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_13"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
+                  },
                   "right" : {
-                    "type" : "bool",
-                    "value" : false
+                    "type" : "hexstr",
+                    "value" : "0xffffffffffff"
                   }
                 }
               }
             }
-          ]
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 225,
+            "column" : 14,
+            "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 2"
+          }
         }
       ]
     },
     {
-      "name" : "act_5",
-      "id" : 5,
+      "name" : "act_1",
+      "id" : 6,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "modify_field",
+          "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
@@ -620,163 +670,27 @@
                 }
               }
             }
-          ]
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 227,
+            "column" : 14,
+            "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 3"
+          }
         }
       ]
-    },
-    {
-      "name" : "act_4",
-      "id" : 6,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "modify_field",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["ethernet", "dstAddr"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "&",
-                  "left" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "+",
-                      "left" : {
-                        "type" : "field",
-                        "value" : ["ethernet", "srcAddr"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x000000000002"
-                      }
-                    }
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0xffffffffffff"
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "act_3",
-      "id" : 7,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "modify_field",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_10"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "not",
-                      "left" : null,
-                      "right" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : "valid",
-                          "left" : null,
-                          "right" : {
-                            "type" : "header",
-                            "value" : "ipv6"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "act_2",
-      "id" : 8,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "modify_field",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_10"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : false
-                  }
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "set_l2ptr",
-      "id" : 9,
-      "runtime_data" : [
-        {
-          "name" : "l2ptr",
-          "bitwidth" : 24
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "modify_field",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["fwd_metadata", "l2ptr"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name" : "NoAction",
-      "id" : 10,
-      "runtime_data" : [],
-      "primitives" : []
     }
   ],
   "pipelines" : [
     {
       "name" : "ingress",
       "id" : 0,
+      "source_info" : {
+        "filename" : "p4_programs/demo8.p4",
+        "line" : 162,
+        "column" : 8,
+        "source_fragment" : "ingress"
+      },
       "init_table" : "node_2",
       "tables" : [
         {
@@ -791,13 +705,13 @@
           "direct_meters" : null,
           "action_ids" : [4],
           "actions" : ["act"],
-          "base_default_next" : "node_5",
+          "base_default_next" : "ipv4_da_lpm",
           "next_tables" : {
-            "act" : "node_5"
+            "act" : "ipv4_da_lpm"
           },
           "default_entry" : {
             "action_id" : 4,
-            "action_const" : false,
+            "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
@@ -812,15 +726,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [3],
+          "action_ids" : [5],
           "actions" : ["act_0"],
-          "base_default_next" : "node_5",
+          "base_default_next" : "ipv4_da_lpm",
           "next_tables" : {
-            "act_0" : "node_5"
+            "act_0" : "ipv4_da_lpm"
           },
           "default_entry" : {
-            "action_id" : 3,
-            "action_const" : false,
+            "action_id" : 5,
+            "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
@@ -835,114 +749,28 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [0],
+          "action_ids" : [6],
           "actions" : ["act_1"],
           "base_default_next" : "ipv4_da_lpm",
           "next_tables" : {
             "act_1" : "ipv4_da_lpm"
           },
           "default_entry" : {
-            "action_id" : 0,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "tbl_act_2",
-          "id" : 3,
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [8],
-          "actions" : ["act_2"],
-          "base_default_next" : "node_11",
-          "next_tables" : {
-            "act_2" : "node_11"
-          },
-          "default_entry" : {
-            "action_id" : 8,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "tbl_act_3",
-          "id" : 4,
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [7],
-          "actions" : ["act_3"],
-          "base_default_next" : "node_11",
-          "next_tables" : {
-            "act_3" : "node_11"
-          },
-          "default_entry" : {
-            "action_id" : 7,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "tbl_act_4",
-          "id" : 5,
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [6],
-          "actions" : ["act_4"],
-          "base_default_next" : "ipv4_da_lpm",
-          "next_tables" : {
-            "act_4" : "ipv4_da_lpm"
-          },
-          "default_entry" : {
             "action_id" : 6,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
-          "name" : "tbl_act_5",
-          "id" : 6,
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [5],
-          "actions" : ["act_5"],
-          "base_default_next" : "ipv4_da_lpm",
-          "next_tables" : {
-            "act_5" : "ipv4_da_lpm"
-          },
-          "default_entry" : {
-            "action_id" : 5,
-            "action_const" : false,
+            "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
           "name" : "ipv4_da_lpm",
-          "id" : 7,
+          "id" : 3,
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 180,
+            "column" : 31,
+            "source_fragment" : "ipv4_da_lpm"
+          },
           "key" : [
             {
               "match_type" : "exact",
@@ -961,7 +789,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [9, 10],
+          "action_ids" : [3, 2],
           "actions" : ["set_l2ptr", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -969,7 +797,7 @@
             "NoAction" : null
           },
           "default_entry" : {
-            "action_id" : 10,
+            "action_id" : 2,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -981,12 +809,17 @@
         {
           "name" : "node_2",
           "id" : 0,
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 221,
+            "column" : 12,
+            "source_fragment" : "hdr.ethernet.srcAddr==123456 && hdr.ethernet.dstAddr > 2"
+          },
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "not",
-              "left" : null,
-              "right" : {
+              "op" : "and",
+              "left" : {
                 "type" : "expression",
                 "value" : {
                   "op" : "==",
@@ -999,32 +832,35 @@
                     "value" : "0x00000001e240"
                   }
                 }
-              }
-            }
-          },
-          "true_next" : "tbl_act",
-          "false_next" : "tbl_act_0"
-        },
-        {
-          "name" : "node_5",
-          "id" : 1,
-          "expression" : {
-            "type" : "expression",
-            "value" : {
-              "op" : "d2b",
-              "left" : null,
+              },
               "right" : {
-                "type" : "field",
-                "value" : ["scalars", "tmp_13"]
+                "type" : "expression",
+                "value" : {
+                  "op" : ">",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["ethernet", "dstAddr"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0x000000000002"
+                  }
+                }
               }
             }
           },
-          "true_next" : "node_6",
+          "true_next" : "node_3",
           "false_next" : "ipv4_da_lpm"
         },
         {
-          "name" : "node_6",
-          "id" : 2,
+          "name" : "node_3",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 222,
+            "column" : 13,
+            "source_fragment" : "hdr.ethernet.srcAddr !=hdr.ethernet.dstAddr"
+          },
           "expression" : {
             "type" : "expression",
             "value" : {
@@ -1039,60 +875,78 @@
               }
             }
           },
-          "true_next" : "tbl_act_1",
-          "false_next" : "node_8"
+          "true_next" : "tbl_act",
+          "false_next" : "node_5"
         },
         {
-          "name" : "node_8",
-          "id" : 3,
+          "name" : "node_5",
+          "id" : 2,
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 224,
+            "column" : 11,
+            "source_fragment" : "(hdr.ipv4.isValid()) && !(hdr.ipv6.isValid())"
+          },
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "not",
-              "left" : null,
+              "op" : "and",
+              "left" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["ipv4", "$valid$"]
+                  }
+                }
+              },
               "right" : {
                 "type" : "expression",
                 "value" : {
-                  "op" : "valid",
+                  "op" : "not",
                   "left" : null,
                   "right" : {
-                    "type" : "header",
-                    "value" : "ipv4"
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
+                        "type" : "field",
+                        "value" : ["ipv6", "$valid$"]
+                      }
+                    }
                   }
                 }
               }
             }
           },
-          "true_next" : "tbl_act_2",
-          "false_next" : "tbl_act_3"
-        },
-        {
-          "name" : "node_11",
-          "id" : 4,
-          "expression" : {
-            "type" : "expression",
-            "value" : {
-              "op" : "d2b",
-              "left" : null,
-              "right" : {
-                "type" : "field",
-                "value" : ["scalars", "tmp_10"]
-              }
-            }
-          },
-          "true_next" : "tbl_act_4",
-          "false_next" : "tbl_act_5"
+          "true_next" : "tbl_act_0",
+          "false_next" : "tbl_act_1"
         }
       ]
     },
     {
       "name" : "egress",
       "id" : 1,
+      "source_info" : {
+        "filename" : "p4_programs/demo8.p4",
+        "line" : 137,
+        "column" : 8,
+        "source_fragment" : "egress"
+      },
       "init_table" : "send_frame",
       "tables" : [
         {
           "name" : "send_frame",
-          "id" : 8,
+          "id" : 4,
+          "source_info" : {
+            "filename" : "p4_programs/demo8.p4",
+            "line" : 146,
+            "column" : 30,
+            "source_fragment" : "send_frame"
+          },
           "key" : [
             {
               "match_type" : "exact",
@@ -1106,7 +960,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [1, 2],
+          "action_ids" : [1, 0],
           "actions" : ["rewrite_mac", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
@@ -1114,7 +968,7 @@
             "NoAction" : null
           },
           "default_entry" : {
-            "action_id" : 2,
+            "action_id" : 0,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -1126,14 +980,44 @@
     }
   ],
   "checksums" : [],
-  "force_arith" : [
-    ["standard_metadata", "ingress_port"],
-    ["standard_metadata", "egress_spec"],
-    ["standard_metadata", "egress_port"],
-    ["standard_metadata", "clone_spec"],
-    ["standard_metadata", "instance_type"],
-    ["standard_metadata", "drop"],
-    ["standard_metadata", "recirculate_port"],
-    ["standard_metadata", "packet_length"]
+  "force_arith" : [],
+  "extern_instances" : [],
+  "field_aliases" : [
+    [
+      "queueing_metadata.enq_timestamp",
+      ["standard_metadata", "enq_timestamp"]
+    ],
+    [
+      "queueing_metadata.enq_qdepth",
+      ["standard_metadata", "enq_qdepth"]
+    ],
+    [
+      "queueing_metadata.deq_timedelta",
+      ["standard_metadata", "deq_timedelta"]
+    ],
+    [
+      "queueing_metadata.deq_qdepth",
+      ["standard_metadata", "deq_qdepth"]
+    ],
+    [
+      "intrinsic_metadata.ingress_global_timestamp",
+      ["standard_metadata", "ingress_global_timestamp"]
+    ],
+    [
+      "intrinsic_metadata.lf_field_list",
+      ["standard_metadata", "lf_field_list"]
+    ],
+    [
+      "intrinsic_metadata.mcast_grp",
+      ["standard_metadata", "mcast_grp"]
+    ],
+    [
+      "intrinsic_metadata.resubmit_flag",
+      ["standard_metadata", "resubmit_flag"]
+    ],
+    [
+      "intrinsic_metadata.egress_rid",
+      ["standard_metadata", "egress_rid"]
+    ]
   ]
 }
