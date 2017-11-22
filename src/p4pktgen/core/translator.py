@@ -881,6 +881,19 @@ class Translator:
                 # SMT solver, to something that can be written out as
                 # JSON.  This seems to work, though.
                 params2 = [long(str(p)) for p in params]
+
+                # TBD: Change values so that it is a list of
+                # (key_name, key_match) pairs, and key_match has
+                # different data for exact, ternary, lpm, and range
+                # match_kind cases.  Right now there are no key names,
+                # and the key_match is just a string that is in
+                # simple_switch_CLI syntax for all of those
+                # match_kinds.  We shouldn't make someone parse those
+                # strings to get at the individual pieces.
+
+                # TBD: Change params2 so that it is a list of
+                # (parameter_name, parameter_value) pairs.  Right now
+                # it does not have the parameter names, only values.
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
@@ -974,18 +987,6 @@ class Translator:
                 ("packet_len_bytes", packet_len_bytes),
                 ("packet_hexstr", packet_hexstr)])]
 
-
-        # TBD: Also generate control plane setup commands in a format
-        # more JSON-y, i.e. table operation, table name, field names
-        # and values, action name, action parameter names and values
-        # in some kind of dict data structure that outputs nicely in
-        # JSON, and is easily taken apart and used in different ways
-        # by someone taking this data and using it to run test cases
-        # in something besides simple_switch.  There is no need to
-        # _remove_ the key "ss_cli_setup_cmds" when that is added.
-        # Its value is still more convenient to use if you are driving
-        # the tests into simple_switch.
-        
         # TBD: Would be nice to get rid of u in front of strings on
         # paths, e.g. u'node_2', u'p4_programs/demo1b.p4'.  Maybe it
         # is beneficial to leave those in there for some reason, but I
