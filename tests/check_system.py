@@ -134,23 +134,23 @@ class CheckSystem:
         results = process_json_file(
             'compiled_p4_programs/add-remove-header.json')
         expected_results = {
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()'))), (u'mac_da', u'my_drop')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'my_drop')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()'))), (u'mac_da', u'my_drop')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'my_drop')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'add_outer_ipv4'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'add_outer_ipv4'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'add_outer_ipv4'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'add_outer_ipv4'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
             ('start', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
