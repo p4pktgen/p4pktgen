@@ -1185,14 +1185,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv4", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
