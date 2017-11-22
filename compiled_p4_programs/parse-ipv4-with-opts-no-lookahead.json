@@ -831,28 +831,22 @@
                   "left" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : "==",
-                      "left" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
                         "type" : "field",
                         "value" : ["ipv4_pt1", "$valid$"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01"
                       }
                     }
                   },
                   "right" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : "==",
-                      "left" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
                         "type" : "field",
                         "value" : ["ipv4_pt2", "$valid$"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01"
                       }
                     }
                   }
@@ -861,14 +855,11 @@
               "right" : {
                 "type" : "expression",
                 "value" : {
-                  "op" : "==",
-                  "left" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
                     "type" : "field",
                     "value" : ["tcp", "$valid$"]
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0x01"
                   }
                 }
               }

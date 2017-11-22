@@ -3600,37 +3600,37 @@
       "name" : "sflow_ingress_session_pkt_counter",
       "id" : 0,
       "is_direct" : true,
-      "binding" : ".sflow_ingress"
+      "binding" : "sflow_ingress"
     },
     {
       "name" : "ipv4_multicast_route_s_g_stats",
       "id" : 1,
       "is_direct" : true,
-      "binding" : ".ipv4_multicast_route"
+      "binding" : "ipv4_multicast_route"
     },
     {
       "name" : "ipv4_multicast_route_star_g_stats",
       "id" : 2,
       "is_direct" : true,
-      "binding" : ".ipv4_multicast_route_star_g"
+      "binding" : "ipv4_multicast_route_star_g"
     },
     {
       "name" : "ipv6_multicast_route_s_g_stats",
       "id" : 3,
       "is_direct" : true,
-      "binding" : ".ipv6_multicast_route"
+      "binding" : "ipv6_multicast_route"
     },
     {
       "name" : "ipv6_multicast_route_star_g_stats",
       "id" : 4,
       "is_direct" : true,
-      "binding" : ".ipv6_multicast_route_star_g"
+      "binding" : "ipv6_multicast_route_star_g"
     },
     {
       "name" : "meter_stats",
       "id" : 5,
       "is_direct" : true,
-      "binding" : ".meter_action"
+      "binding" : "meter_action"
     },
     {
       "name" : "ingress_bd_stats",
@@ -3660,7 +3660,7 @@
       "name" : "storm_control_stats",
       "id" : 8,
       "is_direct" : true,
-      "binding" : ".storm_control_stats"
+      "binding" : "storm_control_stats"
     },
     {
       "name" : "drop_stats",
@@ -3690,7 +3690,7 @@
       "name" : "egress_bd_stats",
       "id" : 11,
       "is_direct" : true,
-      "binding" : ".egress_bd_stats"
+      "binding" : "egress_bd_stats"
     }
   ],
   "register_arrays" : [],
@@ -34361,6 +34361,7 @@
           "match_type" : "ternary",
           "type" : "simple",
           "max_size" : 512,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [277, 278, 182],
@@ -36295,6 +36296,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [408, 409, 220],
@@ -36336,6 +36338,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [410, 411, 412, 221],
@@ -36472,6 +36475,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [417, 418, 224],
@@ -36513,6 +36517,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [419, 420, 421, 225],
@@ -36966,6 +36971,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [438, 439, 235],
@@ -37067,6 +37073,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [442, 238],
@@ -37682,14 +37689,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv4", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -37708,14 +37712,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv6", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -37966,14 +37967,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["fabric_header_multicast", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -38044,14 +38042,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv4", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -38070,14 +38065,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv6", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -38096,14 +38088,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv4", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -38122,14 +38111,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv6", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -39144,14 +39130,11 @@
                   "right" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : "==",
-                      "left" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
                         "type" : "field",
                         "value" : ["ipv4", "$valid$"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01"
                       }
                     }
                   }
@@ -39178,14 +39161,11 @@
                   "right" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : "==",
-                      "left" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
                         "type" : "field",
                         "value" : ["inner_ipv4", "$valid$"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01"
                       }
                     }
                   }
@@ -39230,14 +39210,11 @@
                   "right" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : "==",
-                      "left" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
                         "type" : "field",
                         "value" : ["ipv6", "$valid$"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01"
                       }
                     }
                   }
@@ -39264,14 +39241,11 @@
                   "right" : {
                     "type" : "expression",
                     "value" : {
-                      "op" : "==",
-                      "left" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
                         "type" : "field",
                         "value" : ["inner_ipv6", "$valid$"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01"
                       }
                     }
                   }
@@ -40196,6 +40170,7 @@
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
+          "with_counters" : true,
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [97, 14],
@@ -41562,14 +41537,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv4", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -41588,14 +41560,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv6", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
