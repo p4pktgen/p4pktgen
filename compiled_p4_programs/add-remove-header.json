@@ -66,7 +66,8 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 1, false],
         ["egress_rid", 16, false],
-        ["_padding", 5, false]
+        ["checksum_error", 1, false],
+        ["_padding", 4, false]
       ]
     }
   ],
@@ -827,14 +828,11 @@
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "==",
-              "left" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
                 "type" : "field",
                 "value" : ["ipv4", "$valid$"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
               }
             }
           },
@@ -847,20 +845,24 @@
           "source_info" : {
             "filename" : "p4_programs/add-remove-header.p4",
             "line" : 146,
-            "column" : 17,
-            "source_fragment" : "hdr.outer_ipv4.isValid()"
+            "column" : 16,
+            "source_fragment" : "!hdr.outer_ipv4.isValid()"
           },
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "!=",
-              "left" : {
-                "type" : "field",
-                "value" : ["outer_ipv4", "$valid$"]
-              },
+              "op" : "not",
+              "left" : null,
               "right" : {
-                "type" : "hexstr",
-                "value" : "0x01"
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["outer_ipv4", "$valid$"]
+                  }
+                }
               }
             }
           },

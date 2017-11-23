@@ -95,8 +95,17 @@ Features supported by `p4pktgen`:
   + NOT SUPPORTED: `if (table_name.apply().hit)` is not yet tested,
     and likely does not work.
 
-+ NOT SUPPORTED: Untested options of tables:
-  + search key field expressions with masks
++ Probably works:
+  + search key field expressions with masks, like in program
+    `p4_programs/table-key-mask.p4`, table `ipv4_da`.  This seems to
+    work, even though `p4pktgen` does not pay attention to the mask
+    yet, simply because the table matching in `simple_switch` works by
+    taking the search key field ANDed with the mask, and comparing
+    against the field value added for a table entry, _also_ ANDed with
+    the same mask, during search time.  `p4pktgen` does not try to
+    create table entries that can distinguish between an
+    implementation of table matching that uses these masks correctly,
+    vs. one that does not.
 + NOT SUPPORTED:
   + Tables with `const` entries defined in the source code.  I believe
     that the table entries defined in this way are not represented

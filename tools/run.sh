@@ -162,3 +162,5 @@ p4pktgen ${OPTS} compiled_p4_programs/demo1b.json
 
 #p4pktgen ${OPTS} compiled_p4_programs/checksum-ipv4-with-options.json
 #p4pktgen ${OPTS} compiled_p4_programs/parse-ipv4-with-opts-no-lookahead.json
+
+p4pktgen ${OPTS} compiled_p4_programs/table-key-mask.json

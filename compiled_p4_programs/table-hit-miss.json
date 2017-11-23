@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/demo1b.p4",
+  "program" : "p4_programs/table-hit-miss.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -9,8 +9,9 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["acl_drop", 1, false],
-        ["_padding_0", 7, false]
+        ["tmp_0", 1, false],
+        ["metadata.miss", 1, false],
+        ["_padding_0", 6, false]
       ]
     },
     {
@@ -41,16 +42,8 @@
       ]
     },
     {
-      "name" : "fwd_metadata_t",
-      "id" : 3,
-      "fields" : [
-        ["l2ptr", 32, false],
-        ["out_bd", 24, false]
-      ]
-    },
-    {
       "name" : "standard_metadata",
-      "id" : 4,
+      "id" : 3,
       "fields" : [
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
@@ -101,13 +94,6 @@
       "id" : 3,
       "header_type" : "ipv4_t",
       "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "fwd_metadata",
-      "id" : 4,
-      "header_type" : "fwd_metadata_t",
-      "metadata" : true,
       "pi_omit" : true
     }
   ],
@@ -195,10 +181,10 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1b.p4",
-        "line" : 196,
+        "filename" : "p4_programs/table-hit-miss.p4",
+        "line" : 132,
         "column" : 8,
-        "source_fragment" : "DeparserImpl"
+        "source_fragment" : "DeparserI"
       },
       "order" : ["ethernet", "ipv4"]
     }
@@ -210,217 +196,10 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "my_drop1",
+      "name" : "dec_ttl",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 67,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "my_drop2",
-      "id" : 1,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 70,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "do_acl_permit",
-      "id" : 2,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "acl_drop"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : false
-                  }
-                }
-              }
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 106,
-            "column" : 8,
-            "source_fragment" : "acl_drop = false"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "do_acl_drop",
-      "id" : 3,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "acl_drop"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "b2d",
-                  "left" : null,
-                  "right" : {
-                    "type" : "bool",
-                    "value" : true
-                  }
-                }
-              }
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 109,
-            "column" : 8,
-            "source_fragment" : "acl_drop = true"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "set_l2ptr",
-      "id" : 4,
-      "runtime_data" : [
-        {
-          "name" : "l2ptr",
-          "bitwidth" : 32
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["fwd_metadata", "l2ptr"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 126,
-            "column" : 8,
-            "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "set_bd_dmac_intf",
-      "id" : 5,
-      "runtime_data" : [
-        {
-          "name" : "bd",
-          "bitwidth" : 24
-        },
-        {
-          "name" : "dmac",
-          "bitwidth" : 48
-        },
-        {
-          "name" : "intf",
-          "bitwidth" : 9
-        }
-      ],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["fwd_metadata", "out_bd"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 0
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 140,
-            "column" : 8,
-            "source_fragment" : "meta.fwd_metadata.out_bd = bd"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["ethernet", "dstAddr"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 1
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 141,
-            "column" : 8,
-            "source_fragment" : "hdr.ethernet.dstAddr = dmac"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["standard_metadata", "egress_spec"]
-            },
-            {
-              "type" : "runtime_data",
-              "value" : 2
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 142,
-            "column" : 8,
-            "source_fragment" : "standard_metadata.egress_spec = intf"
-          }
-        },
         {
           "op" : "assign",
           "parameters" : [
@@ -457,8 +236,8 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 143,
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 77,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -466,71 +245,11 @@
       ]
     },
     {
-      "name" : "act",
-      "id" : 6,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 161,
-            "column" : 16,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "act_0",
-      "id" : 7,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["fwd_metadata", "l2ptr"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000000"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 157,
-            "column" : 36,
-            "source_fragment" : "0; ..."
-          }
-        }
-      ]
-    },
-    {
-      "name" : "my_drop3",
-      "id" : 8,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 73,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "rewrite_mac",
-      "id" : 9,
+      "name" : "set_dmac",
+      "id" : 1,
       "runtime_data" : [
         {
-          "name" : "smac",
+          "name" : "dmac",
           "bitwidth" : 48
         }
       ],
@@ -540,7 +259,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["ethernet", "srcAddr"]
+              "value" : ["ethernet", "dstAddr"]
             },
             {
               "type" : "runtime_data",
@@ -548,10 +267,176 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 178,
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 80,
             "column" : 8,
-            "source_fragment" : "hdr.ethernet.srcAddr = smac"
+            "source_fragment" : "hdr.ethernet.dstAddr = dmac"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "ipv4_drop",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 83,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : true
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name" : "act_0",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_0"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name" : "act_1",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "metadata.miss"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : false
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 97,
+            "column" : 12,
+            "source_fragment" : "meta.miss = false"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_2",
+      "id" : 6,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "metadata.miss"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "b2d",
+                  "left" : null,
+                  "right" : {
+                    "type" : "bool",
+                    "value" : true
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 101,
+            "column" : 16,
+            "source_fragment" : "meta.miss = true"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_3",
+      "id" : 7,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 104,
+            "column" : 16,
+            "source_fragment" : "mark_to_drop()"
           }
         }
       ]
@@ -562,67 +447,16 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1b.p4",
-        "line" : 99,
+        "filename" : "p4_programs/table-hit-miss.p4",
+        "line" : 72,
         "column" : 8,
-        "source_fragment" : "ingress"
+        "source_fragment" : "cIngress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "ipv4_acl",
-          "id" : 0,
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 111,
-            "column" : 10,
-            "source_fragment" : "ipv4_acl"
-          },
-          "key" : [
-            {
-              "match_type" : "ternary",
-              "target" : ["ipv4", "srcAddr"],
-              "mask" : null
-            },
-            {
-              "match_type" : "ternary",
-              "target" : ["ipv4", "dstAddr"],
-              "mask" : null
-            },
-            {
-              "match_type" : "ternary",
-              "target" : ["ipv4", "protocol"],
-              "mask" : null
-            },
-            {
-              "match_type" : "range",
-              "target" : ["ipv4", "ttl"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "range",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [2, 3],
-          "actions" : ["do_acl_permit", "do_acl_drop"],
-          "base_default_next" : "node_4",
-          "next_tables" : {
-            "do_acl_permit" : "node_4",
-            "do_acl_drop" : "node_4"
-          },
-          "default_entry" : {
-            "action_id" : 3,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
           "name" : "tbl_act",
-          "id" : 1,
+          "id" : 0,
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -630,17 +464,53 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [6],
-          "actions" : ["act"],
-          "base_default_next" : null,
+          "action_ids" : [5],
+          "actions" : ["act_1"],
+          "base_default_next" : "ipv4_da",
           "next_tables" : {
-            "act" : null
+            "act_1" : "ipv4_da"
           },
           "default_entry" : {
-            "action_id" : 6,
+            "action_id" : 5,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "ipv4_da",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 85,
+            "column" : 10,
+            "source_fragment" : "ipv4_da"
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "target" : ["ipv4", "dstAddr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [1, 2],
+          "actions" : ["set_dmac", "ipv4_drop"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "__HIT__" : "tbl_act_0",
+            "__MISS__" : "tbl_act_1"
+          },
+          "default_entry" : {
+            "action_id" : 2,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
           }
         },
         {
@@ -653,89 +523,109 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7],
-          "actions" : ["act_0"],
-          "base_default_next" : "ipv4_da_lpm",
+          "action_ids" : [3],
+          "actions" : ["act"],
+          "base_default_next" : "node_7",
           "next_tables" : {
-            "act_0" : "ipv4_da_lpm"
+            "act" : "node_7"
           },
           "default_entry" : {
-            "action_id" : 7,
+            "action_id" : 3,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "ipv4_da_lpm",
+          "name" : "tbl_act_1",
           "id" : 3,
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 128,
-            "column" : 10,
-            "source_fragment" : "ipv4_da_lpm"
-          },
-          "key" : [
-            {
-              "match_type" : "lpm",
-              "target" : ["ipv4", "dstAddr"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "lpm",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [4, 0],
-          "actions" : ["set_l2ptr", "my_drop1"],
-          "base_default_next" : "node_8",
-          "next_tables" : {
-            "set_l2ptr" : "node_8",
-            "my_drop1" : "node_8"
-          },
-          "default_entry" : {
-            "action_id" : 0,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        },
-        {
-          "name" : "mac_da",
-          "id" : 4,
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 145,
-            "column" : 10,
-            "source_fragment" : "mac_da"
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "target" : ["fwd_metadata", "l2ptr"],
-              "mask" : null
-            }
-          ],
+          "key" : [],
           "match_type" : "exact",
           "type" : "simple",
           "max_size" : 1024,
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [5, 1],
-          "actions" : ["set_bd_dmac_intf", "my_drop2"],
-          "base_default_next" : null,
+          "action_ids" : [4],
+          "actions" : ["act_0"],
+          "base_default_next" : "node_7",
           "next_tables" : {
-            "set_bd_dmac_intf" : null,
-            "my_drop2" : null
+            "act_0" : "node_7"
           },
           "default_entry" : {
-            "action_id" : 1,
-            "action_const" : false,
+            "action_id" : 4,
+            "action_const" : true,
             "action_data" : [],
-            "action_entry_const" : false
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_dec_ttl",
+          "id" : 4,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [0],
+          "actions" : ["dec_ttl"],
+          "base_default_next" : "node_10",
+          "next_tables" : {
+            "dec_ttl" : "node_10"
+          },
+          "default_entry" : {
+            "action_id" : 0,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_2",
+          "id" : 5,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [6],
+          "actions" : ["act_2"],
+          "base_default_next" : "node_10",
+          "next_tables" : {
+            "act_2" : "node_10"
+          },
+          "default_entry" : {
+            "action_id" : 6,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_3",
+          "id" : 6,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [7],
+          "actions" : ["act_3"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "act_3" : null
+          },
+          "default_entry" : {
+            "action_id" : 7,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
           }
         }
       ],
@@ -745,8 +635,8 @@
           "name" : "node_2",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 158,
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 96,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -762,16 +652,33 @@
             }
           },
           "false_next" : null,
-          "true_next" : "ipv4_acl"
+          "true_next" : "tbl_act"
         },
         {
-          "name" : "node_4",
+          "name" : "node_7",
           "id" : 1,
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["scalars", "tmp_0"]
+              }
+            }
+          },
+          "true_next" : "tbl_dec_ttl",
+          "false_next" : "tbl_act_2"
+        },
+        {
+          "name" : "node_10",
+          "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 160,
+            "filename" : "p4_programs/table-hit-miss.p4",
+            "line" : 103,
             "column" : 16,
-            "source_fragment" : "acl_drop"
+            "source_fragment" : "meta.miss"
           },
           "expression" : {
             "type" : "expression",
@@ -780,38 +687,12 @@
               "left" : null,
               "right" : {
                 "type" : "field",
-                "value" : ["scalars", "acl_drop"]
-              }
-            }
-          },
-          "true_next" : "tbl_act",
-          "false_next" : "tbl_act_0"
-        },
-        {
-          "name" : "node_8",
-          "id" : 2,
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 166,
-            "column" : 16,
-            "source_fragment" : "meta.fwd_metadata.l2ptr != L2PTR_UNSET"
-          },
-          "expression" : {
-            "type" : "expression",
-            "value" : {
-              "op" : "!=",
-              "left" : {
-                "type" : "field",
-                "value" : ["fwd_metadata", "l2ptr"]
-              },
-              "right" : {
-                "type" : "hexstr",
-                "value" : "0x00000000"
+                "value" : ["scalars", "metadata.miss"]
               }
             }
           },
           "false_next" : null,
-          "true_next" : "mac_da"
+          "true_next" : "tbl_act_3"
         }
       ]
     },
@@ -819,50 +700,13 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo1b.p4",
-        "line" : 173,
+        "filename" : "p4_programs/table-hit-miss.p4",
+        "line" : 110,
         "column" : 8,
-        "source_fragment" : "egress"
+        "source_fragment" : "cEgress"
       },
-      "init_table" : "send_frame",
-      "tables" : [
-        {
-          "name" : "send_frame",
-          "id" : 5,
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 180,
-            "column" : 10,
-            "source_fragment" : "send_frame"
-          },
-          "key" : [
-            {
-              "match_type" : "exact",
-              "target" : ["fwd_metadata", "out_bd"],
-              "mask" : null
-            }
-          ],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [9, 8],
-          "actions" : ["rewrite_mac", "my_drop3"],
-          "base_default_next" : null,
-          "next_tables" : {
-            "rewrite_mac" : null,
-            "my_drop3" : null
-          },
-          "default_entry" : {
-            "action_id" : 8,
-            "action_const" : false,
-            "action_data" : [],
-            "action_entry_const" : false
-          }
-        }
-      ],
+      "init_table" : null,
+      "tables" : [],
       "action_profiles" : [],
       "conditionals" : []
     }

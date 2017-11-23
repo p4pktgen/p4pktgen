@@ -11,6 +11,12 @@ from p4pktgen.switch.runtime_CLI import RuntimeAPI, PreType, thrift_connect, loa
 from p4pktgen.p4_hlir import SourceInfo
 
 
+def logf_append(s):
+    return    # Comment out this line to debug things with logf_append
+    with open('/tmp/simple_switch-err-log.txt', 'a') as f:
+        tmp = str('pid %d time %s ' % (os.getpid(), time.time()))
+        f.write(tmp + s + '\n')
+
 class SimpleSwitch:
     def __init__(self, json_file, num_ports=8):
         self.modified_tables = []
@@ -42,7 +48,17 @@ class SimpleSwitch:
         # simple_switch executable to discover why this failure
         # occurs, but haven't discovered a reason for it.  Removing
         # this file seems to avoid the problem.
-        os.remove('/tmp/bmv2-0-notifications.ipc')
+        ipc_fname = '/tmp/bmv2-0-notifications.ipc'
+        if os.path.exists(ipc_fname):
+            logf_append('Found file %s -- try to remove it' % (ipc_fname))
+            os.remove('/tmp/bmv2-0-notifications.ipc')
+            if os.path.exists(ipc_fname):
+                logf_append('After trying to remove file %s it still exists'
+                            '' % (ipc_fname))
+            else:
+                logf_append('File %s successfully removed' % (ipc_fname))
+        else:
+            logf_append('No file found: %s -- good' % (ipc_fname))
 
         # Start simple_switch
         self.proc = subprocess.Popen(

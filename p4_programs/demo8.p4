@@ -137,8 +137,6 @@ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout 
 control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     @name("_nop") action _nop() {
     }
-    @name("NoAction") action NoAction() {
-    }
     @name("rewrite_mac") action rewrite_mac(bit<48> smac) {
         hdr.ethernet.srcAddr = smac;
     }
@@ -163,8 +161,6 @@ control egress(inout headers hdr, inout metadata meta, inout standard_metadata_t
 
 control ingress(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     @name("_nop") action _nop() {
-    }
-    @name("NoAction") action NoAction() {
     }
     @name("set_l2ptr") action set_l2ptr(bit<24> l2ptr) {
         meta.fwd_metadata.l2ptr = l2ptr;
@@ -243,7 +239,7 @@ control DeparserImpl(packet_out packet, in headers hdr) {
     }
 }
 
-control verifyChecksum(in headers hdr, inout metadata meta) {
+control verifyChecksum(inout headers hdr, inout metadata meta) {
     apply {
     }
 }

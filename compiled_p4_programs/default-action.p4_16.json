@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/demo11.p4",
+  "program" : "p4_programs/default-action.p4_16.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -38,64 +38,15 @@
       ]
     },
     {
-      "name" : "ipv6_t",
+      "name" : "fwd_metadata_t",
       "id" : 3,
       "fields" : [
-        ["version", 4, false],
-        ["trafficClass", 8, false],
-        ["flowLabel", 20, false],
-        ["payloadLen", 16, false],
-        ["nextHdr", 8, false],
-        ["hopLimit", 8, false],
-        ["srcAddr", 128, false],
-        ["dstAddr", 128, false]
-      ]
-    },
-    {
-      "name" : "tcp_t",
-      "id" : 4,
-      "fields" : [
-        ["srcPort", 16, false],
-        ["dstPort", 16, false],
-        ["seqNo", 32, false],
-        ["ackNo", 32, false],
-        ["dataOffset", 4, false],
-        ["res", 4, false],
-        ["flags", 8, false],
-        ["window", 16, false],
-        ["checksum", 16, false],
-        ["urgentPtr", 16, false]
-      ]
-    },
-    {
-      "name" : "udp_t",
-      "id" : 5,
-      "fields" : [
-        ["srcPort", 16, false],
-        ["dstPort", 16, false],
-        ["length", 16, false],
-        ["checksum", 16, false]
-      ]
-    },
-    {
-      "name" : "fwd_metadata_t",
-      "id" : 6,
-      "fields" : [
-        ["l2ptr", 24, false],
-        ["out_bd", 24, false]
-      ]
-    },
-    {
-      "name" : "l3_metadata_t",
-      "id" : 7,
-      "fields" : [
-        ["lkp_outer_l4_sport", 16, false],
-        ["lkp_outer_l4_dport", 16, false]
+        ["l2ptr", 32, false]
       ]
     },
     {
       "name" : "standard_metadata",
-      "id" : 8,
+      "id" : 4,
       "fields" : [
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
@@ -149,37 +100,9 @@
       "pi_omit" : true
     },
     {
-      "name" : "ipv6",
-      "id" : 4,
-      "header_type" : "ipv6_t",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "tcp",
-      "id" : 5,
-      "header_type" : "tcp_t",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
-      "name" : "udp",
-      "id" : 6,
-      "header_type" : "udp_t",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
       "name" : "fwd_metadata",
-      "id" : 7,
+      "id" : 4,
       "header_type" : "fwd_metadata_t",
-      "metadata" : true,
-      "pi_omit" : true
-    },
-    {
-      "name" : "l3_metadata",
-      "id" : 8,
-      "header_type" : "l3_metadata_t",
       "metadata" : true,
       "pi_omit" : true
     }
@@ -253,77 +176,6 @@
           ],
           "transitions" : [
             {
-              "value" : "0x0000040506",
-              "mask" : null,
-              "next_state" : "parse_tcp"
-            },
-            {
-              "value" : "default",
-              "mask" : null,
-              "next_state" : null
-            }
-          ],
-          "transition_key" : [
-            {
-              "type" : "field",
-              "value" : ["ipv4", "fragOffset"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "version"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "ihl"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "protocol"]
-            }
-          ]
-        },
-        {
-          "name" : "parse_tcp",
-          "id" : 2,
-          "parser_ops" : [
-            {
-              "parameters" : [
-                {
-                  "type" : "regular",
-                  "value" : "tcp"
-                }
-              ],
-              "op" : "extract"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["l3_metadata", "lkp_outer_l4_sport"]
-                },
-                {
-                  "type" : "field",
-                  "value" : ["tcp", "srcPort"]
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["l3_metadata", "lkp_outer_l4_dport"]
-                },
-                {
-                  "type" : "field",
-                  "value" : ["tcp", "dstPort"]
-                }
-              ],
-              "op" : "set"
-            }
-          ],
-          "transitions" : [
-            {
               "value" : "default",
               "mask" : null,
               "next_state" : null
@@ -333,7 +185,7 @@
         },
         {
           "name" : "start",
-          "id" : 3,
+          "id" : 2,
           "parser_ops" : [],
           "transitions" : [
             {
@@ -352,12 +204,12 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo11.p4",
-        "line" : 132,
+        "filename" : "p4_programs/default-action.p4_16.p4",
+        "line" : 97,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
-      "order" : ["ethernet", "ipv4", "tcp"]
+      "order" : ["ethernet", "ipv4"]
     }
   ],
   "meter_arrays" : [],
@@ -367,50 +219,103 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "act",
+      "name" : "NoAction",
       "id" : 0,
       "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "set_l2ptr",
+      "id" : 1,
+      "runtime_data" : [
+        {
+          "name" : "l2ptr",
+          "bitwidth" : 32
+        }
+      ],
       "primitives" : [
         {
           "op" : "assign",
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["ethernet", "dstAddr"]
+              "value" : ["fwd_metadata", "l2ptr"]
             },
             {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "&",
-                  "left" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "+",
-                      "left" : {
-                        "type" : "field",
-                        "value" : ["ethernet", "srcAddr"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x000000000001"
-                      }
-                    }
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0xffffffffffff"
-                  }
-                }
-              }
+              "type" : "runtime_data",
+              "value" : 0
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo11.p4",
-            "line" : 128,
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 65,
             "column" : 8,
-            "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 1"
+            "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "set_l2ptr",
+      "id" : 2,
+      "runtime_data" : [
+        {
+          "name" : "l2ptr",
+          "bitwidth" : 32
+        }
+      ],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["fwd_metadata", "l2ptr"]
+            },
+            {
+              "type" : "runtime_data",
+              "value" : 0
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 65,
+            "column" : 8,
+            "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "my_drop",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 68,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "my_drop",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 68,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop()"
           }
         }
       ]
@@ -421,46 +326,120 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo11.p4",
-        "line" : 126,
+        "filename" : "p4_programs/default-action.p4_16.p4",
+        "line" : 63,
         "column" : 8,
         "source_fragment" : "ingress"
       },
-      "init_table" : "tbl_act",
+      "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_act",
+          "name" : "ipv4_da_lpm_no_default",
           "id" : 0,
-          "key" : [],
-          "match_type" : "exact",
+          "source_info" : {
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 80,
+            "column" : 43,
+            "source_fragment" : "ipv4_da_lpm_no_default"
+          },
+          "key" : [
+            {
+              "match_type" : "lpm",
+              "target" : ["ipv4", "dstAddr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "lpm",
           "type" : "simple",
           "max_size" : 1024,
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [0],
-          "actions" : ["act"],
-          "base_default_next" : null,
+          "action_ids" : [2, 4, 0],
+          "actions" : ["set_l2ptr", "my_drop", "NoAction"],
+          "base_default_next" : "ipv4_da_lpm_has_default",
           "next_tables" : {
-            "act" : null
+            "set_l2ptr" : "ipv4_da_lpm_has_default",
+            "my_drop" : "ipv4_da_lpm_has_default",
+            "NoAction" : "ipv4_da_lpm_has_default"
           },
           "default_entry" : {
             "action_id" : 0,
-            "action_const" : true,
+            "action_const" : false,
             "action_data" : [],
-            "action_entry_const" : true
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "ipv4_da_lpm_has_default",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 70,
+            "column" : 44,
+            "source_fragment" : "ipv4_da_lpm_has_default"
+          },
+          "key" : [
+            {
+              "match_type" : "lpm",
+              "target" : ["ipv4", "dstAddr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "lpm",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [1, 3],
+          "actions" : ["set_l2ptr", "my_drop"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "set_l2ptr" : null,
+            "my_drop" : null
+          },
+          "default_entry" : {
+            "action_id" : 3,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
           }
         }
       ],
       "action_profiles" : [],
-      "conditionals" : []
+      "conditionals" : [
+        {
+          "name" : "node_2",
+          "id" : 0,
+          "source_info" : {
+            "filename" : "p4_programs/default-action.p4_16.p4",
+            "line" : 90,
+            "column" : 12,
+            "source_fragment" : "hdr.ipv4.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["ipv4", "$valid$"]
+              }
+            }
+          },
+          "false_next" : null,
+          "true_next" : "ipv4_da_lpm_no_default"
+        }
+      ]
     },
     {
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo11.p4",
-        "line" : 121,
+        "filename" : "p4_programs/default-action.p4_16.p4",
+        "line" : 58,
         "column" : 8,
         "source_fragment" : "egress"
       },
