@@ -78,6 +78,14 @@ def model_value_to_long(model_val):
         # initialized.
         return None
 
+def source_info_to_dict(source_info):
+    if source_info is None:
+        return None
+    return OrderedDict([('filename', source_info.filename),
+                        ('line', source_info.line),
+                        ('column', source_info.column),
+                        ('source_fragment', source_info.source_fragment)])
+
 
 class Translator:
     def __init__(self, json_file, hlir, pipeline):
@@ -815,6 +823,9 @@ class Translator:
         packet_hexstr = None
         ss_cli_setup_cmds = []
         table_setup_cmd_data = []
+        uninitialized_read_data = None
+        invalid_header_write_data = None
+        actual_path_data = None
         result = None
         if smt_result != unsat:
             model = self.solver.model()
@@ -959,17 +970,25 @@ class Translator:
                          "" % (packet_len_bytes, packet_hexstr))
 
             if len(context.uninitialized_reads) != 0:
+                result = TestPathResult.UNINITIALIZED_READ
+                uninitialized_read_data = []
                 for uninitialized_read in context.uninitialized_reads:
                     var_name, source_info = uninitialized_read
                     logging.error('Uninitialized read of {} at {}'.format(
                         var_name, source_info))
-                    result = TestPathResult.UNINITIALIZED_READ
+                    uninitialized_read_data.append(OrderedDict([
+                        ("variable_name", var_name),
+                        ("source_info", source_info_to_dict(source_info))]))
             elif len(context.invalid_header_writes) != 0:
+                result = TestPathResult.INVALID_HEADER_WRITE
+                invalid_header_write_data = []
                 for invalid_header_write in context.invalid_header_writes:
                     var_name, source_info = invalid_header_write
-                    logging.error('Uninitialized write of {} at {}'.format(
+                    logging.error('Invalid header write of {} at {}'.format(
                         var_name, source_info))
-                    result = TestPathResult.INVALID_HEADER_WRITE
+                    invalid_header_write_data.append(OrderedDict([
+                        ("variable_name", var_name),
+                        ("source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
                 packet = Ether(bytes(payload))
                 extracted_path = self.test_packet(packet, table_configs,
@@ -989,6 +1008,7 @@ class Translator:
                     logging.error('Expected and actual path differ')
                     logging.error('Expected: {}'.format(expected_path))
                     logging.error('Actual:   {}'.format(extracted_path))
+                    actual_path_data = extracted_path
                     result = TestPathResult.TEST_FAILED
             else:
                 logging.warning('Packet not sent (%d bytes is shorter than'
@@ -1052,6 +1072,12 @@ class Translator:
             ("time_sec_solve", time4 - time3),
             ("time_sec_simulate_packet", time5 - time4),
             ])
+        if uninitialized_read_data:
+            test_case["uninitialized_read_data"] = uninitialized_read_data
+        if invalid_header_write_data:
+            test_case["invalid_header_write_data"] = invalid_header_write_data
+        if actual_path_data:
+            test_case["actual_path"] = map(str, actual_path_data)
 
         return (expected_path, result, test_case)
 
