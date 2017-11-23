@@ -53,6 +53,30 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    def check_demo1_no_uninit_reads(self):
+        Config().load_test_defaults()
+        results = process_json_file(
+            'compiled_p4_programs/demo1-no-uninit-reads.p4_16.json')
+        expected_results = {
+            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
+            TestPathResult.SUCCESS,
+            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'my_drop')):
+            TestPathResult.SUCCESS,
+            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'set_bd_dmac_intf')):
+            TestPathResult.SUCCESS,
+            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
+            TestPathResult.SUCCESS
+        }
+        assert results == expected_results
+
     def check_demo9b(self):
         Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/demo9b.json')
