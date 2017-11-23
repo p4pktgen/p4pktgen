@@ -8,27 +8,27 @@ class CheckSystem:
         Config().load_test_defaults()
         results = process_json_file('compiled_p4_programs/demo1b.json')
         expected_results = {
-            ('start', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (True, (u'p4_programs/demo1b.p4', 160, u'acl_drop')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (True, (u'p4_programs/demo1b.p4', 143, u'acl_drop')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_drop'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 160, u'acl_drop')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_drop'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 160, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'my_drop1'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 166, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'my_drop'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (False, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (False, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_drop'), (u'node_4', (True, (u'p4_programs/demo1b.p4', 160, u'acl_drop'))), (u'tbl_act', u'act')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_drop'), (u'node_4', (True, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act', u'act')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 160, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'my_drop1'), (u'node_8', (False, (u'p4_programs/demo1b.p4', 166, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'my_drop'), (u'node_8', (False, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 160, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (False, (u'p4_programs/demo1b.p4', 166, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (False, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 160, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 166, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'mac_da', u'set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 158, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 160, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 166, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'mac_da', u'my_drop2')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'mac_da', u'my_drop')):
             TestPathResult.SUCCESS
         }
         assert results == expected_results
