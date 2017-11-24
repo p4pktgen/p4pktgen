@@ -7,7 +7,59 @@ p4pktgen's capabilities in ways that might not be obvious.
 ## Error messages
 
 
-### UNINITIALIZED_READ
+### simple_switch process already running
+
+In some situations when `p4pktgen` quits early due to an exception or
+other error conditions, it can leave a `simple_switch` process
+running.
+
+If you do P4 development and testing using `simple_switch` on the same
+machine where running `p4pktgen`, you may also have a process running
+when you start `p4pktgen`.
+
+If `p4pktgen` tries to create a `simple_switch` process that fails to
+listen on the default TCP port 9090 (for control messages, e.g. adding
+and removing table entries), there will be error messages like these
+in the output:
+
+    Thrift: Thu Nov 23 16:34:47 2017 TServerSocket::listen() BIND 9090
+    Thrift returned an exception when trying to bind to port 9090
+    The exception is: Could not bind: Transport endpoint is not connected
+    You may have another process already using this port, maybe another instance of bmv2.
+
+One way to kill all processes named `simple_switch` on a Linux machine
+is the command:
+
+```bash
+% killall simple_switch
+```
+
+You may need to use `sudo killall simple_switch` if run from a shell
+with a non-root user, if `simple_switch` is running as a different
+user (e.g. as the super-user `root`).
+
+
+### The needed virtual Ethernet interfaces have not been created
+
+The way that `p4pktgen` starts `simple_switch`, if the necessary
+virtual Ethernet interfaces have not been created, you will see an
+error message like this:
+
+```bash
+INFO: Sending packet to veth2
+Traceback (most recent call last):
+[ ... a dozen or so lines of Python stack trace ... ]
+IOError: [Errno 19] No such device
+```
+
+You may create the necssary interfaces with this command:
+
+```bash
+% sudo ./tools/veth_setup.sh
+```
+
+
+### UNINITIALIZED_READ or INVALID_HEADER_WRITE
 
 If you see a path with a result of UNINITIALIZED_READ, it means that
 the program attempts to use the value of some header field or metadata
@@ -18,6 +70,37 @@ automatically initialized to 0, e.g. because the P4_14 language spec
 requires this.  In such cases, you can give the command line option
 `--allow-uninitialized-reads` to `p4pktgen`, and it will treat all
 such values as initialized to 0.
+
+A path with a result of INVALID_HEADER_WRITE attempts to write to a
+field in a header that is currently not valid.  The P4_14 language
+specification says that this should be a no-op, but there may be
+implementations that treat this similarly to an assignment like
+`struct_ptr->field = expression;` in C or C++, where `struct_ptr` is a
+free'd pointer.  That is, it could corrupt other state in your
+program, with no way to predict which state is corrupted.  For such
+implementations, it is critical for predictable program behavior to
+avoid making such assignments.
+
+The simplest change you could make to your program would be to
+surround such an assignment with an if condition like this:
+```
+    // P4_14 syntax
+    if (valid(ipv4)) {
+        apply(table_with_action_that_modifies_fields_in_ipv4_header);
+    }
+
+    // P4_16 syntax
+    if (hdr.ipv4.isValid()) {
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+    }
+```
+There may of course be other ways to avoid such assignments in your
+program.
+
+If you know that your P4 implementation treats such assignments as
+no-ops, you may use the command line option
+`--allow-invalid-header-writes` and `p4pktgen` will not complain about
+them.
 
 
 ### Exception: Primitive op X not supported
