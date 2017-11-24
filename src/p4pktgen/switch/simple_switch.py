@@ -129,7 +129,7 @@ class SimpleSwitch:
                 table_name = m.group(1)
                 prev_match = 'table_apply'
                 continue
-            m = re.search(r'Action ([0-9a-zA-Z_]*)$', line)
+            m = re.search(r'Action ([0-9a-zA-Z_.]*)$', line)
             if m is not None:
                 if m.group(1) != 'add_header':
                     assert prev_match == 'table_apply'
