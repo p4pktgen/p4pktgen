@@ -7,6 +7,58 @@ p4pktgen's capabilities in ways that might not be obvious.
 ## Error messages
 
 
+### simple_switch process already running
+
+In some situations when `p4pktgen` quits early due to an exception or
+other error conditions, it can leave a `simple_switch` process
+running.
+
+If you do P4 development and testing using `simple_switch` on the same
+machine where running `p4pktgen`, you may also have a process running
+when you start `p4pktgen`.
+
+If `p4pktgen` tries to create a `simple_switch` process that fails to
+listen on the default TCP port 9090 (for control messages, e.g. adding
+and removing table entries), there will be error messages like these
+in the output:
+
+    Thrift: Thu Nov 23 16:34:47 2017 TServerSocket::listen() BIND 9090
+    Thrift returned an exception when trying to bind to port 9090
+    The exception is: Could not bind: Transport endpoint is not connected
+    You may have another process already using this port, maybe another instance of bmv2.
+
+One way to kill all processes named `simple_switch` on a Linux machine
+is the command:
+
+```bash
+% killall simple_switch
+```
+
+You may need to use `sudo killall simple_switch` if run from a shell
+with a non-root user, if `simple_switch` is running as a different
+user (e.g. as the super-user `root`).
+
+
+### The needed virtual Ethernet interfaces have not been created
+
+The way that `p4pktgen` starts `simple_switch`, if the necessary
+virtual Ethernet interfaces have not been created, you will see an
+error message like this:
+
+```bash
+INFO: Sending packet to veth2
+Traceback (most recent call last):
+[ ... a dozen or so lines of Python stack trace ... ]
+IOError: [Errno 19] No such device
+```
+
+You may create the necssary interfaces with this command:
+
+```bash
+% sudo ./tools/veth_setup.sh
+```
+
+
 ### UNINITIALIZED_READ
 
 If you see a path with a result of UNINITIALIZED_READ, it means that
