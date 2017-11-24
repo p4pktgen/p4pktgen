@@ -59,7 +59,7 @@ You may create the necssary interfaces with this command:
 ```
 
 
-### UNINITIALIZED_READ
+### UNINITIALIZED_READ or INVALID_HEADER_WRITE
 
 If you see a path with a result of UNINITIALIZED_READ, it means that
 the program attempts to use the value of some header field or metadata
@@ -70,6 +70,37 @@ automatically initialized to 0, e.g. because the P4_14 language spec
 requires this.  In such cases, you can give the command line option
 `--allow-uninitialized-reads` to `p4pktgen`, and it will treat all
 such values as initialized to 0.
+
+A path with a result of INVALID_HEADER_WRITE attempts to write to a
+field in a header that is currently not valid.  The P4_14 language
+specification says that this should be a no-op, but there may be
+implementations that treat this similarly to an assignment like
+`struct_ptr->field = expression;` in C or C++, where `struct_ptr` is a
+free'd pointer.  That is, it could corrupt other state in your
+program, with no way to predict which state is corrupted.  For such
+implementations, it is critical for predictable program behavior to
+avoid making such assignments.
+
+The simplest change you could make to your program would be to
+surround such an assignment with an if condition like this:
+```
+    // P4_14 syntax
+    if (valid(ipv4)) {
+        apply(table_with_action_that_modifies_fields_in_ipv4_header);
+    }
+
+    // P4_16 syntax
+    if (hdr.ipv4.isValid()) {
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+    }
+```
+There may of course be other ways to avoid such assignments in your
+program.
+
+If you know that your P4 implementation treats such assignments as
+no-ops, you may use the command line option
+`--allow-invalid-header-writes` and `p4pktgen` will not complain about
+them.
 
 
 ### Exception: Primitive op X not supported
