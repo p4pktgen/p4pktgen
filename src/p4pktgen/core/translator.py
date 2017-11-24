@@ -24,7 +24,7 @@ from p4pktgen.util.statistics import Timer
 
 TestPathResult = Enum(
     'TestPathResult',
-    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE'
+    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE PACKET_SHORTER_THAN_MIN'
 )
 
 
@@ -1011,6 +1011,7 @@ class Translator:
                     actual_path_data = extracted_path
                     result = TestPathResult.TEST_FAILED
             else:
+                result = TestPathResult.PACKET_SHORTER_THAN_MIN
                 logging.warning('Packet not sent (%d bytes is shorter than'
                                 ' minimum %d supported)'
                                 '' % (len(payload),
@@ -1052,25 +1053,24 @@ class Translator:
         # be nicer to convert them to a type that can be more easily
         # represented as seprate parts in JSON, e.g. nested lists or
         # dicts of strings, numbers, booleans.
-
-        # TBD: Is there a simple function to convert result to a
-        # string, without "TestPathResult." at the beginning?
         test_case = OrderedDict([
             ("log_file_id", count.counter),
-            ("parser_path", map(str, path)),
-            ("parser_path_len", len(path)),
-            ("ingress_path", map(str, control_path)),
-            ("ingress_path_len", len(control_path)),
+            ("result", result.name),
             ("expected_path", map(str, expected_path)),
             ("complete_path", is_complete_control_path),
-            ("table_setup_cmd_data", table_setup_cmd_data),
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
             #("expected_output_packets", TBD),
-            ("result", str(result)),
+            ("parser_path_len", len(path)),
+            ("ingress_path_len", len(control_path)),
             ("time_sec_generate_ingress_constraints", time3 - time2),
             ("time_sec_solve", time4 - time3),
             ("time_sec_simulate_packet", time5 - time4),
+
+            # Put longer details like these later
+            ("parser_path", map(str, path)),
+            ("ingress_path", map(str, control_path)),
+            ("table_setup_cmd_data", table_setup_cmd_data),
             ])
         if uninitialized_read_data:
             test_case["uninitialized_read_data"] = uninitialized_read_data
