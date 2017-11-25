@@ -69,6 +69,7 @@ def main():
         help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
     )
     parser.add_argument(
+        '-ai',
         '--allow-invalid-header-writes',
         dest='allow_invalid_header_writes',
         action='store_true',
@@ -83,6 +84,7 @@ def main():
         help='Record statistics',
     )
     parser.add_argument(
+        '-aup',
         '--allow-unimplemented-primitives',
         dest='allow_unimplemented_primitives',
         action='store_true',
@@ -91,6 +93,7 @@ def main():
         """With this option enabled, allow analysis of paths that use primitives not yet fully implemented.  Use of such primitives only causes warning message to be issued, and the primitive operation is treated as a no-op.  Without this option (the default), use of such primitives causes an exception to be raised, typically aborting the program at that point."""
     )
     parser.add_argument(
+        '-dpl',
         '--disable-packet-length-errors',
         dest='disable_packet_length_errors',
         action='store_true',
