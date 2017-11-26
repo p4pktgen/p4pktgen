@@ -347,7 +347,7 @@ expression of an `if` statement.  `p4c-bm2-ss` has created an internal
 "node" named `node_3`.  The `True` indicates that this path represents
 that condition being evaluated as `true` rather than `false`.  The
 rest of the line is the file name, line number, and a fragment of the
-source code of the expression represnted by `node_3`, so you can have
+source code of the expression represented by `node_3`, so you can have
 a chance to understand which condition is referred to without have to
 look at the JSON file for `node_3`.
 
