@@ -7,7 +7,7 @@ below yourself.
 ## First run wth program `demo1.p4_16.p4`
 
 The first program we will try `p4pktgen` on is
-[`demo1.p4_16.p4`](p4_programs/demo1.p4_16.p4).
+[`demo1.p4_16.p4`](../p4_programs/demo1.p4_16.p4).
 
 If you have installed the open source `p4c` P4 compiler, you can
 compile this program for execution on the `simple_switch` software
