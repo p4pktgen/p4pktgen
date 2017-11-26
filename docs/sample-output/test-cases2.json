@@ -1,0 +1,616 @@
+[
+{
+  "log_file_id": 3, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm my_drop 0/32 => ", 
+    "table_add mac_da my_drop 0 => "
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.006641864776611328, 
+  "time_sec_solve": 0.005979061126708984, 
+  "time_sec_simulate_packet": 0.039910078048706055, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }
+  ]
+},
+{
+  "log_file_id": 4, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm my_drop 0/32 => ", 
+    "table_add mac_da set_bd_dmac_intf 0 => 0 0 0"
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000800000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.0037908554077148438, 
+  "time_sec_solve": 0.006041049957275391, 
+  "time_sec_simulate_packet": 0.04666495323181152, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "set_bd_dmac_intf", 
+      "action_parameters": [
+        {
+          "name": "bd", 
+          "value": 0
+        }, 
+        {
+          "name": "dmac", 
+          "value": 0
+        }, 
+        {
+          "name": "intf", 
+          "value": 0
+        }
+      ]
+    }
+  ]
+},
+{
+  "log_file_id": 6, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm set_l2ptr 0/32 => 0", 
+    "table_add mac_da my_drop 0 => "
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.002122163772583008, 
+  "time_sec_solve": 0.0062220096588134766, 
+  "time_sec_simulate_packet": 0.046607017517089844, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "set_l2ptr", 
+      "action_parameters": [
+        {
+          "name": "l2ptr", 
+          "value": 0
+        }
+      ]
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }
+  ]
+},
+{
+  "log_file_id": 7, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm set_l2ptr 0/32 => 0", 
+    "table_add mac_da set_bd_dmac_intf 0 => 0 0 0"
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000800000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.002810955047607422, 
+  "time_sec_solve": 0.006504058837890625, 
+  "time_sec_simulate_packet": 0.04656100273132324, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "set_l2ptr", 
+      "action_parameters": [
+        {
+          "name": "l2ptr", 
+          "value": 0
+        }
+      ]
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "set_bd_dmac_intf", 
+      "action_parameters": [
+        {
+          "name": "bd", 
+          "value": 0
+        }, 
+        {
+          "name": "dmac", 
+          "value": 0
+        }, 
+        {
+          "name": "intf", 
+          "value": 0
+        }
+      ]
+    }
+  ]
+},
+{
+  "log_file_id": 10, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm my_drop 0/32 => ", 
+    "table_add mac_da my_drop 0 => "
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 14, 
+      "packet_hexstr": "0000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 2, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.0007240772247314453, 
+  "time_sec_solve": 0.005124807357788086, 
+  "time_sec_simulate_packet": 0.04020810127258301, 
+  "parser_path": [
+    "('start', start -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }
+  ]
+},
+{
+  "log_file_id": 11, 
+  "result": "INVALID_HEADER_WRITE", 
+  "expected_path": [
+    "start", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm my_drop 0/32 => ", 
+    "table_add mac_da set_bd_dmac_intf 0 => 0 0 0"
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 14, 
+      "packet_hexstr": "0000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 2, 
+  "ingress_path_len": 2, 
+  "invalid_header_write_data": [
+    {
+      "variable_name": "ipv4.ttl", 
+      "source_info": {
+        "filename": "p4_programs/demo1.p4_16.p4", 
+        "line": 104, 
+        "column": 8, 
+        "source_fragment": "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
+      }
+    }
+  ], 
+  "time_sec_generate_ingress_constraints": 0.0021178722381591797, 
+  "time_sec_solve": 0.004899024963378906, 
+  "time_sec_simulate_packet": 0.003304004669189453, 
+  "parser_path": [
+    "('start', start -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "set_bd_dmac_intf", 
+      "action_parameters": [
+        {
+          "name": "bd", 
+          "value": 0
+        }, 
+        {
+          "name": "dmac", 
+          "value": 0
+        }, 
+        {
+          "name": "intf", 
+          "value": 0
+        }
+      ]
+    }
+  ]
+},
+{
+  "log_file_id": 13, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm set_l2ptr 0/32 => 0", 
+    "table_add mac_da my_drop 0 => "
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 14, 
+      "packet_hexstr": "0000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 2, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.0009009838104248047, 
+  "time_sec_solve": 0.004832029342651367, 
+  "time_sec_simulate_packet": 0.03919386863708496, 
+  "parser_path": [
+    "('start', start -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "set_l2ptr", 
+      "action_parameters": [
+        {
+          "name": "l2ptr", 
+          "value": 0
+        }
+      ]
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }
+  ]
+},
+{
+  "log_file_id": 14, 
+  "result": "INVALID_HEADER_WRITE", 
+  "expected_path": [
+    "start", 
+    "sink", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm set_l2ptr 0/32 => 0", 
+    "table_add mac_da set_bd_dmac_intf 0 => 0 0 0"
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 14, 
+      "packet_hexstr": "0000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 2, 
+  "ingress_path_len": 2, 
+  "invalid_header_write_data": [
+    {
+      "variable_name": "ipv4.ttl", 
+      "source_info": {
+        "filename": "p4_programs/demo1.p4_16.p4", 
+        "line": 104, 
+        "column": 8, 
+        "source_fragment": "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
+      }
+    }
+  ], 
+  "time_sec_generate_ingress_constraints": 0.0023419857025146484, 
+  "time_sec_solve": 0.007097005844116211, 
+  "time_sec_simulate_packet": 0.0034661293029785156, 
+  "parser_path": [
+    "('start', start -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "set_l2ptr", 
+      "action_parameters": [
+        {
+          "name": "l2ptr", 
+          "value": 0
+        }
+      ]
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "set_bd_dmac_intf", 
+      "action_parameters": [
+        {
+          "name": "bd", 
+          "value": 0
+        }, 
+        {
+          "name": "dmac", 
+          "value": 0
+        }, 
+        {
+          "name": "intf", 
+          "value": 0
+        }
+      ]
+    }
+  ]
+}
+]
