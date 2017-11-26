@@ -19,7 +19,7 @@ switch using this command:
 
 That command has already been run for this program, and the output has
 been placed into the file
-[`demo1.p4_16.json`](compiled_p4_programs/demo1.p4_16.json).
+[`demo1.p4_16.json`](../compiled_p4_programs/demo1.p4_16.json).
 
 The program is written in the P4_16 version of P4, and is
 intentionally short, to make it quicker to understand the program in
@@ -74,15 +74,15 @@ Redirecting to a file makes it easy to examine later in a text editor.
 
 All output files from running `p4pktgen` with these options, generated
 by the author while writing this documentation, are in the directory
-[`docs/sample-output`](docs/sample-output/).  The first run results
+[`docs/sample-output`](sample-output/).  The first run results
 are in these files:
 
-* [`log1.txt`](docs/sample-output/log1.txt)
-* [`test-cases1.json`](docs/sample-output/test-cases1.json)
-* [`test1.pcap`](docs/sample-output/test1.pcap)
+* [`log1.txt`](sample-output/log1.txt)
+* [`test-cases1.json`](sample-output/test-cases1.json)
+* [`test1.pcap`](sample-output/test1.pcap)
 
 For now, we will focus on the file named
-[`test-cases.json`](docs/sample-output/test-cases1.json).  It is a
+[`test-cases.json`](sample-output/test-cases1.json).  It is a
 list of test cases, each described by one JSON object in curly braces.
 The first of these is shown below:
 
@@ -127,7 +127,7 @@ The first of these is shown below:
 ```
 
 More details about all of these keys and values are given in [this
-file](docs/reference-test-cases-file.md), but briefly, with this test
+file](reference-test-cases-file.md), but briefly, with this test
 case `p4pktgen` analyzed the path of execution described by the value
 associated with the key `expected_path`.  This path begins with the
 start state of the parser, enters the `parse_ipv4` parser state where
@@ -194,9 +194,9 @@ program.
 
 Already-generated output files from this command are stored here:
 
-* [`log2.txt`](docs/sample-output/log2.txt)
-* [`test-cases2.json`](docs/sample-output/test-cases2.json)
-* [`test2.pcap`](docs/sample-output/test2.pcap)
+* [`log2.txt`](sample-output/log2.txt)
+* [`test-cases2.json`](sample-output/test-cases2.json)
+* [`test2.pcap`](sample-output/test2.pcap)
 
 The first test case in `test-cases2.json` is nearly identical to the
 one we discussed above, except now the `result` key has value
@@ -268,7 +268,7 @@ want to avoid the uninitialized reads while we are at it.
 ## Third run, with program `demo1-no-uninit-reads.p4_16.p4`
 
 The second program we will try `p4pktgen` on is
-[`demo1-no-uninit-reads.p4_16.p4`](p4_programs/demo1-no-uninit-reads.p4_16.p4).
+[`demo1-no-uninit-reads.p4_16.p4`](../p4_programs/demo1-no-uninit-reads.p4_16.p4).
 It is nearly the same as `demo1.p4_16.p4`, but look for most of the
 differences in the `ingress` control `apply` block.  We have added a
 new metadata field `meta.fwd_metadata.dropped` that we explicitly
@@ -289,9 +289,9 @@ To run `p4pktgen` on this program:
 
 Already-generated output files from this command are stored here:
 
-* [`log3.txt`](docs/sample-output/log3.txt)
-* [`test-cases3.json`](docs/sample-output/test-cases3.json)
-* [`test3.pcap`](docs/sample-output/test3.pcap)
+* [`log3.txt`](sample-output/log3.txt)
+* [`test-cases3.json`](sample-output/test-cases3.json)
+* [`test3.pcap`](sample-output/test3.pcap)
 
 The first test case from `test-cases3.json` is shown below:
 
