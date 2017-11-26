@@ -352,12 +352,12 @@ a chance to understand which condition is referred to without have to
 look at the JSON file for `node_3`.
 
 So this execution path represents parsing a packet with both an
-Ethernet and IPv4 header, initializing `dropped` to `false`, the
+Ethernet and IPv4 header, initializing `dropped` to `false`, then
 evaluating the `if` condition `hdr.ipv4.isValid()` as `true`, which it
 should always do when the input packet has an IPv4 header.  Next it
 applies table `ipv4_da_lpm`, matching a table entry with action
-`my_drop`, which we can see in the P4_16 source code will assign the
-value `dropped` the value `true`.
+`my_drop`, which we can see in the P4_16 source code will assign to
+field `dropped` the value `true`.
 
 Next is evaluating the `if` condition `!meta.fwd_metadata.dropped` and
 trying to get the value `true`.  This is not possible, since every
