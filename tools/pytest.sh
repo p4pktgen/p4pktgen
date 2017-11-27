@@ -11,6 +11,10 @@ DEBUG="-d"
 
 set -x
 /bin/rm -f test.pcap
+# Remove any compiled Python files from src before running tests,
+# to help catch situations where a Python source file has been removed,
+# but things still work because its .pyc file is still around.
+find src -name '*.pyc' | xargs rm
 set +x
 source my-venv/bin/activate
 set -x
