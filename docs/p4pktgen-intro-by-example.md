@@ -52,12 +52,6 @@ There is also an `egress` control, but the current version of
 ignores the contents of the controls `DeparserImpl`, `verifyChecksum`,
 and `computeChecksum`, so we will not discuss them further.
 
-`p4pktgen` can generate packets that cause the parser to give errors,
-such as the too-short packets mentioned above.  However, that
-`p4pktgen` feature still has some issues, so we will run it with the
-command line option `-dpl` to avoid generating such packets (the long
-option name is `--disable-packet-length-errors`).
-
 ```bash
 # Start a new shell running as the super-user
 % sudo bash
@@ -65,7 +59,7 @@ option name is `--disable-packet-length-errors`).
 # Set up the shell environment variables needed for running p4pktgen
 % source my-venv/bin/activate
 
-% p4pktgen -dpl compiled_p4_programs/demo1.p4_16.json >& log1.txt
+% p4pktgen compiled_p4_programs/demo1.p4_16.json >& log1.txt
 ```
 
 Without redirecting the output to a file with the `>& log1.txt` part
@@ -189,7 +183,7 @@ our second `p4pktgen` run, to see what the results will be for this
 program.
 
 ```bash
-% p4pktgen -dpl -au compiled_p4_programs/demo1.p4_16.json >& log2.txt
+% p4pktgen -au compiled_p4_programs/demo1.p4_16.json >& log2.txt
 ```
 
 Already-generated output files from this command are stored here:
@@ -284,7 +278,7 @@ metadata field.
 To run `p4pktgen` on this program:
 
 ```bash
-% p4pktgen -dpl compiled_p4_programs/demo1-no-uninit-reads.p4_16.json >& log3.txt
+% p4pktgen compiled_p4_programs/demo1-no-uninit-reads.p4_16.json >& log3.txt
 ```
 
 Already-generated output files from this command are stored here:

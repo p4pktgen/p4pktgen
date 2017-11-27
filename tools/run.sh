@@ -12,12 +12,12 @@
 # causing p4pktgen to fail are probably obsolete.
 
 
-#OPTS=""
+OPTS=""
 #OPTS="-d"
-#OPTS="-d --disable-packet-length-errors"
-OPTS="--disable-packet-length-errors"
+#OPTS="-d --enable-packet-length-errors"
+#OPTS="--enable-packet-length-errors"
 #OPTS="-d --dump-test-case"
-#OPTS="-d --dump-test-case --disable-packet-length-errors"
+#OPTS="-d --dump-test-case --enable-packet-length-errors"
 #OPTS="-d --allow-uninitialized-reads"
 #OPTS="-d --allow-uninitialized-reads --allow-unimplemented-primitives"
 #OPTS="--allow-uninitialized-reads --allow-unimplemented-primitives"
