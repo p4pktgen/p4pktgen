@@ -53,26 +53,6 @@ struct headers {
     ipv4_t     ipv4;
 }
 
-// Why bother creating an action that just does one primitive action?
-// That is, why not just use 'mark_to_drop' as one of the possible
-// actions when defining a table?  Because the P4_16 compiler does not
-// allow primitive actions to be used directly as actions of tables.
-// You must use 'compound actions', i.e. ones explicitly defined with
-// the 'action' keyword like below.
-
-action my_drop0() {
-    mark_to_drop();
-}
-action my_drop1() {
-    mark_to_drop();
-}
-action my_drop2() {
-    mark_to_drop();
-}
-action my_drop3() {
-    mark_to_drop();
-}
-
 parser ParserImpl(packet_in packet,
                   out headers hdr,
                   inout metadata meta,
@@ -125,15 +105,18 @@ control ingress(inout headers hdr,
     action set_l2ptr(bit<32> l2ptr) {
         meta.fwd_metadata.l2ptr = l2ptr;
     }
+    action my_drop() {
+        mark_to_drop();
+    }
     table ipv4_da_lpm {
         key = {
             hdr.ipv4.dstAddr: lpm;
         }
         actions = {
             set_l2ptr;
-            my_drop1;
+            my_drop;
         }
-        default_action = my_drop1;
+        default_action = my_drop;
     }
 
     action set_bd_dmac_intf(bit<24> bd, bit<48> dmac, bit<9> intf) {
@@ -148,9 +131,9 @@ control ingress(inout headers hdr,
         }
         actions = {
             set_bd_dmac_intf;
-            my_drop2;
+            my_drop;
         }
-        default_action = my_drop2;
+        default_action = my_drop;
     }
 
     apply {
@@ -177,15 +160,18 @@ control egress(inout headers hdr,
     action rewrite_mac(bit<48> smac) {
         hdr.ethernet.srcAddr = smac;
     }
+    action my_drop() {
+        mark_to_drop();
+    }
     table send_frame {
         key = {
             meta.fwd_metadata.out_bd: exact;
         }
         actions = {
             rewrite_mac;
-            my_drop3;
+            my_drop;
         }
-        default_action = my_drop3;
+        default_action = my_drop;
     }
 
     apply {

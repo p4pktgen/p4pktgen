@@ -1,0 +1,380 @@
+[
+{
+  "log_file_id": 5, 
+  "result": "NO_PACKET_FOUND", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+  ], 
+  "complete_path": false, 
+  "ss_cli_setup_cmds": [], 
+  "input_packets": [], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 4, 
+  "time_sec_generate_ingress_constraints": 0.0028400421142578125, 
+  "time_sec_solve": 0.0012879371643066406, 
+  "time_sec_simulate_packet": 0.0001461505889892578, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+  ], 
+  "table_setup_cmd_data": []
+},
+{
+  "log_file_id": 6, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm my_drop 0/32 => "
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 4, 
+  "time_sec_generate_ingress_constraints": 0.002221822738647461, 
+  "time_sec_solve": 0.00554203987121582, 
+  "time_sec_simulate_packet": 0.03905606269836426, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'my_drop')", 
+    "(u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }
+  ]
+},
+{
+  "log_file_id": 9, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm set_l2ptr 0/32 => 0", 
+    "table_add mac_da my_drop 0 => "
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 5, 
+  "time_sec_generate_ingress_constraints": 0.002602100372314453, 
+  "time_sec_solve": 0.006011009216308594, 
+  "time_sec_simulate_packet": 0.04824090003967285, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))", 
+    "(u'mac_da', u'my_drop')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "set_l2ptr", 
+      "action_parameters": [
+        {
+          "name": "l2ptr", 
+          "value": 0
+        }
+      ]
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "my_drop", 
+      "action_parameters": []
+    }
+  ]
+},
+{
+  "log_file_id": 10, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [
+    "table_add ipv4_da_lpm set_l2ptr 0/32 => 0", 
+    "table_add mac_da set_bd_dmac_intf 0 => 0 0 0"
+  ], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 34, 
+      "packet_hexstr": "00000000000000000000000008000000000000000000800000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 5, 
+  "time_sec_generate_ingress_constraints": 0.005800008773803711, 
+  "time_sec_solve": 0.008698225021362305, 
+  "time_sec_simulate_packet": 0.04993081092834473, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))", 
+    "(u'mac_da', u'set_bd_dmac_intf')"
+  ], 
+  "table_setup_cmd_data": [
+    {
+      "command": "table_add", 
+      "table_name": "ipv4_da_lpm", 
+      "keys": [
+        {
+          "match_kind": "lpm", 
+          "key_field_name": "ipv4.dstAddr", 
+          "value": 0, 
+          "prefix_length": 32
+        }
+      ], 
+      "action_name": "set_l2ptr", 
+      "action_parameters": [
+        {
+          "name": "l2ptr", 
+          "value": 0
+        }
+      ]
+    }, 
+    {
+      "command": "table_add", 
+      "table_name": "mac_da", 
+      "keys": [
+        {
+          "match_kind": "exact", 
+          "key_field_name": "fwd_metadata.l2ptr", 
+          "value": 0
+        }
+      ], 
+      "action_name": "set_bd_dmac_intf", 
+      "action_parameters": [
+        {
+          "name": "bd", 
+          "value": 0
+        }, 
+        {
+          "name": "dmac", 
+          "value": 0
+        }, 
+        {
+          "name": "intf", 
+          "value": 0
+        }
+      ]
+    }
+  ]
+},
+{
+  "log_file_id": 11, 
+  "result": "NO_PACKET_FOUND", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [], 
+  "input_packets": [], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 4, 
+  "time_sec_generate_ingress_constraints": 0.0026788711547851562, 
+  "time_sec_solve": 0.0012540817260742188, 
+  "time_sec_simulate_packet": 0.00010991096496582031, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'ipv4_da_lpm', u'set_l2ptr')", 
+    "(u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+  ], 
+  "table_setup_cmd_data": []
+},
+{
+  "log_file_id": 12, 
+  "result": "NO_PACKET_FOUND", 
+  "expected_path": [
+    "start", 
+    "parse_ipv4", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [], 
+  "input_packets": [], 
+  "parser_path_len": 3, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.0018889904022216797, 
+  "time_sec_solve": 0.0012760162353515625, 
+  "time_sec_simulate_packet": 0.000102996826171875, 
+  "parser_path": [
+    "('start', start -> parse_ipv4)", 
+    "(u'parse_ipv4', parse_ipv4 -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))"
+  ], 
+  "table_setup_cmd_data": []
+},
+{
+  "log_file_id": 15, 
+  "result": "NO_PACKET_FOUND", 
+  "expected_path": [
+    "start", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))"
+  ], 
+  "complete_path": false, 
+  "ss_cli_setup_cmds": [], 
+  "input_packets": [], 
+  "parser_path_len": 2, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.0011029243469238281, 
+  "time_sec_solve": 0.0005259513854980469, 
+  "time_sec_simulate_packet": 0.00010800361633300781, 
+  "parser_path": [
+    "('start', start -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))"
+  ], 
+  "table_setup_cmd_data": []
+},
+{
+  "log_file_id": 16, 
+  "result": "SUCCESS", 
+  "expected_path": [
+    "start", 
+    "sink", 
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))"
+  ], 
+  "complete_path": true, 
+  "ss_cli_setup_cmds": [], 
+  "input_packets": [
+    {
+      "port": 0, 
+      "packet_len_bytes": 14, 
+      "packet_hexstr": "0000000000000000000000000000"
+    }
+  ], 
+  "parser_path_len": 2, 
+  "ingress_path_len": 2, 
+  "time_sec_generate_ingress_constraints": 0.0011451244354248047, 
+  "time_sec_solve": 0.004509925842285156, 
+  "time_sec_simulate_packet": 0.03234601020812988, 
+  "parser_path": [
+    "('start', start -> sink)", 
+    "('sink', None)"
+  ], 
+  "ingress_path": [
+    "(u'tbl_act', u'act')", 
+    "(u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))"
+  ], 
+  "table_setup_cmd_data": []
+}
+]

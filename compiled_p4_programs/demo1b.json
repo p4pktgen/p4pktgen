@@ -196,7 +196,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4_programs/demo1b.p4",
-        "line" : 196,
+        "line" : 182,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
@@ -210,42 +210,8 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "my_drop1",
-      "id" : 0,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 67,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "my_drop2",
-      "id" : 1,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 70,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
       "name" : "do_acl_permit",
-      "id" : 2,
+      "id" : 0,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -272,7 +238,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 106,
+            "line" : 86,
             "column" : 8,
             "source_fragment" : "acl_drop = false"
           }
@@ -281,7 +247,7 @@
     },
     {
       "name" : "do_acl_drop",
-      "id" : 3,
+      "id" : 1,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -308,7 +274,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 109,
+            "line" : 89,
             "column" : 8,
             "source_fragment" : "acl_drop = true"
           }
@@ -317,7 +283,7 @@
     },
     {
       "name" : "set_l2ptr",
-      "id" : 4,
+      "id" : 2,
       "runtime_data" : [
         {
           "name" : "l2ptr",
@@ -339,9 +305,43 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 126,
+            "line" : 106,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "my_drop",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/demo1b.p4",
+            "line" : 109,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop()"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "my_drop",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/demo1b.p4",
+            "line" : 109,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop()"
           }
         }
       ]
@@ -378,7 +378,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 140,
+            "line" : 123,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
           }
@@ -397,7 +397,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 141,
+            "line" : 124,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
           }
@@ -416,7 +416,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 142,
+            "line" : 125,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
           }
@@ -458,7 +458,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 143,
+            "line" : 126,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -475,7 +475,7 @@
           "parameters" : [],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 161,
+            "line" : 144,
             "column" : 16,
             "source_fragment" : "mark_to_drop()"
           }
@@ -501,7 +501,7 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 157,
+            "line" : 140,
             "column" : 36,
             "source_fragment" : "0; ..."
           }
@@ -509,25 +509,8 @@
       ]
     },
     {
-      "name" : "my_drop3",
-      "id" : 8,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
-            "line" : 73,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
       "name" : "rewrite_mac",
-      "id" : 9,
+      "id" : 8,
       "runtime_data" : [
         {
           "name" : "smac",
@@ -549,9 +532,26 @@
           ],
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 178,
+            "line" : 161,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "my_drop",
+      "id" : 9,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "drop",
+          "parameters" : [],
+          "source_info" : {
+            "filename" : "p4_programs/demo1b.p4",
+            "line" : 164,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop()"
           }
         }
       ]
@@ -563,7 +563,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4_programs/demo1b.p4",
-        "line" : 99,
+        "line" : 79,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -574,7 +574,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 111,
+            "line" : 91,
             "column" : 10,
             "source_fragment" : "ipv4_acl"
           },
@@ -606,7 +606,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2, 3],
+          "action_ids" : [0, 1],
           "actions" : ["do_acl_permit", "do_acl_drop"],
           "base_default_next" : "node_4",
           "next_tables" : {
@@ -614,7 +614,7 @@
             "do_acl_drop" : "node_4"
           },
           "default_entry" : {
-            "action_id" : 3,
+            "action_id" : 1,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -671,7 +671,7 @@
           "id" : 3,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 128,
+            "line" : 111,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
           },
@@ -688,15 +688,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4, 0],
-          "actions" : ["set_l2ptr", "my_drop1"],
+          "action_ids" : [2, 3],
+          "actions" : ["set_l2ptr", "my_drop"],
           "base_default_next" : "node_8",
           "next_tables" : {
             "set_l2ptr" : "node_8",
-            "my_drop1" : "node_8"
+            "my_drop" : "node_8"
           },
           "default_entry" : {
-            "action_id" : 0,
+            "action_id" : 3,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -707,7 +707,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 145,
+            "line" : 128,
             "column" : 10,
             "source_fragment" : "mac_da"
           },
@@ -724,15 +724,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [5, 1],
-          "actions" : ["set_bd_dmac_intf", "my_drop2"],
+          "action_ids" : [5, 4],
+          "actions" : ["set_bd_dmac_intf", "my_drop"],
           "base_default_next" : null,
           "next_tables" : {
             "set_bd_dmac_intf" : null,
-            "my_drop2" : null
+            "my_drop" : null
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 4,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -746,7 +746,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 158,
+            "line" : 141,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -769,7 +769,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 160,
+            "line" : 143,
             "column" : 16,
             "source_fragment" : "acl_drop"
           },
@@ -792,7 +792,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 166,
+            "line" : 149,
             "column" : 16,
             "source_fragment" : "meta.fwd_metadata.l2ptr != L2PTR_UNSET"
           },
@@ -820,7 +820,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4_programs/demo1b.p4",
-        "line" : 173,
+        "line" : 156,
         "column" : 8,
         "source_fragment" : "egress"
       },
@@ -831,7 +831,7 @@
           "id" : 5,
           "source_info" : {
             "filename" : "p4_programs/demo1b.p4",
-            "line" : 180,
+            "line" : 166,
             "column" : 10,
             "source_fragment" : "send_frame"
           },
@@ -848,15 +848,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [9, 8],
-          "actions" : ["rewrite_mac", "my_drop3"],
+          "action_ids" : [8, 9],
+          "actions" : ["rewrite_mac", "my_drop"],
           "base_default_next" : null,
           "next_tables" : {
             "rewrite_mac" : null,
-            "my_drop3" : null
+            "my_drop" : null
           },
           "default_entry" : {
-            "action_id" : 8,
+            "action_id" : 9,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false

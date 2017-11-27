@@ -433,7 +433,8 @@ class P4_HLIR(object):
         self.actions = {}
         for action_json in json_obj['actions']:
             action = Action(action_json)
-            self.actions[action.name] = action
+            assert (action.name, action.id) not in self.actions
+            self.actions[(action.name, action.id)] = action
 
         # Get the pipelines
         self.pipelines = {}
@@ -546,19 +547,37 @@ class Table:
         self.direct_meters = json_obj['direct_meters']
 
         self.action_ids = []
-        if 'action_ids' in json_obj:
-            for action_id in json_obj['action_ids']:
-                self.action_ids.append(int(action_id))
+        for action_id in json_obj['action_ids']:
+            self.action_ids.append(int(action_id))
 
         self.action_names = []
         for action_name in json_obj['actions']:
             self.action_names.append(action_name)
 
+        # Action names should be unique within a single table, but the
+        # same action name can be defined differently in different P4
+        # control blocks.  The bmv2 JSON file uses the action_id to
+        # specify an action uniquely, even if different actions in
+        # different parts of the program have the same name.  Use the
+        # (action_name, action_id) pair in p4pktgen, since for
+        # debugging the action_name is useful to see when the action
+        # name is unique.
+        assert len(self.action_ids) == len(self.action_names)
+        self.action_name_to_id = {}
+        for i in range(len(self.action_ids)):
+            if self.action_names[i] in self.action_name_to_id:
+                logging.error("Same action name %s appears twice"
+                              " for table %s"
+                              "", self.action_names[i], self.name)
+                assert False
+            self.action_name_to_id[self.action_names[i]] = self.action_ids[i]
+
         self.base_default_next_name = json_obj['base_default_next']
 
         self.next_tables = {}
         for action_name, next_table_name in json_obj['next_tables'].items():
-            self.next_tables[action_name] = next_table_name
+            action_id = self.action_name_to_id[action_name]
+            self.next_tables[(action_name, action_id)] = next_table_name
 
         self.default_entry = None
         if 'default_entry' in json_obj:

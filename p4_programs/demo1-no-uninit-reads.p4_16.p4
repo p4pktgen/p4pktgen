@@ -41,6 +41,7 @@ header ipv4_t {
 
 struct fwd_metadata_t {
     bit<32> l2ptr;
+    bool    dropped;
     bit<24> out_bd;
 }
 
@@ -84,6 +85,7 @@ control ingress(inout headers hdr,
         meta.fwd_metadata.l2ptr = l2ptr;
     }
     action my_drop() {
+        meta.fwd_metadata.dropped = true;
         mark_to_drop();
     }
     table ipv4_da_lpm {
@@ -115,8 +117,13 @@ control ingress(inout headers hdr,
     }
 
     apply {
-        ipv4_da_lpm.apply();
-        mac_da.apply();
+        meta.fwd_metadata.dropped = false;
+        if (hdr.ipv4.isValid()) {
+            ipv4_da_lpm.apply();
+            if (!meta.fwd_metadata.dropped) {
+                mac_da.apply();
+            }
+        }
     }
 }
 

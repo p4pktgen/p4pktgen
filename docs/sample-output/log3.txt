@@ -1,0 +1,427 @@
++ /bin/rm -f test.pcap
++ set +x
++ p4pktgen --disable-packet-length-errors compiled_p4_programs/demo1-no-uninit-reads.p4_16.json
+INFO: Found 2 parser paths, longest with length 2
+INFO: Counted 7 control paths
+INFO: path = ('start', start -> parse_ipv4) -> (u'parse_ipv4', parse_ipv4 -> sink) -> ('sink', None)
+INFO: Generate parser constraints: 0.015 sec
+INFO: 
+INFO: BEGIN 1 Exp path (len 3+0=3) complete_path False: ['start', u'parse_ipv4', 'sink']
+INFO: control_path = []
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: meta_meta.packet_len: 272
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink']
+INFO: END   1 Exp path (len 3+0=3) complete_path False TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink']
+INFO: 0.047 sec = 0.003 gen ingress constraints + 0.009 solve + 0.035 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 2 Exp path (len 3+1=4) complete_path False: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act')]
+INFO: control_path = [(u'tbl_act', u'act')]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: meta_meta.packet_len: 272
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act')]
+INFO: END   2 Exp path (len 3+1=4) complete_path False TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act')]
+INFO: 0.045 sec = 0.003 gen ingress constraints + 0.007 solve + 0.036 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 3 Exp path (len 3+2=5) complete_path False: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: meta_meta.packet_len: 272
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: END   3 Exp path (len 3+2=5) complete_path False TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: 0.047 sec = 0.002 gen ingress constraints + 0.006 solve + 0.039 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 4 Exp path (len 3+3=6) complete_path False: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop')]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop')]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 1
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: meta_meta.packet_len: 272
+INFO: standard_metadata.egress_spec: 511
+INFO: table_add ipv4_da_lpm my_drop 0/32 => 
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop')]
+INFO: END   4 Exp path (len 3+3=6) complete_path False TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop')]
+INFO: 0.049 sec = 0.002 gen ingress constraints + 0.007 solve + 0.040 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 5 Exp path (len 3+4=7) complete_path False: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: Unable to find packet for path: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: END   5 Exp path (len 3+4=7) complete_path False TestPathResult.NO_PACKET_FOUND: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: 0.004 sec = 0.003 gen ingress constraints + 0.001 solve + 0.000 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 6 Exp path (len 3+4=7) complete_path True: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 1
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: meta_meta.packet_len: 272
+INFO: standard_metadata.egress_spec: 511
+INFO: table_add ipv4_da_lpm my_drop 0/32 => 
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: END   6 Exp path (len 3+4=7) complete_path True TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: 0.047 sec = 0.002 gen ingress constraints + 0.006 solve + 0.039 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 7 Exp path (len 3+3=6) complete_path False: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr')]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr')]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: fwd_metadata.l2ptr: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: ipv4_da_lpm.set_l2ptr.l2ptr.0: 0
+INFO: meta_meta.packet_len: 272
+INFO: table_add ipv4_da_lpm set_l2ptr 0/32 => 0
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr')]
+INFO: END   7 Exp path (len 3+3=6) complete_path False TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr')]
+INFO: 0.060 sec = 0.003 gen ingress constraints + 0.007 solve + 0.050 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 8 Exp path (len 3+4=7) complete_path False: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: fwd_metadata.l2ptr: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: ipv4_da_lpm.set_l2ptr.l2ptr.0: 0
+INFO: meta_meta.packet_len: 272
+INFO: table_add ipv4_da_lpm set_l2ptr 0/32 => 0
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: END   8 Exp path (len 3+4=7) complete_path False TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: 0.048 sec = 0.003 gen ingress constraints + 0.006 solve + 0.039 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 9 Exp path (len 3+5=8) complete_path True: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'my_drop')]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'my_drop')]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 1
+INFO: fwd_metadata.l2ptr: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 0
+INFO: ipv4.version: 0
+INFO: ipv4_da_lpm.set_l2ptr.l2ptr.0: 0
+INFO: meta_meta.packet_len: 272
+INFO: standard_metadata.egress_spec: 511
+INFO: table_add ipv4_da_lpm set_l2ptr 0/32 => 0
+INFO: table_add mac_da my_drop 0 => 
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'my_drop')]
+INFO: END   9 Exp path (len 3+5=8) complete_path True TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'my_drop')]
+INFO: 0.057 sec = 0.003 gen ingress constraints + 0.006 solve + 0.048 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 10 Exp path (len 3+5=8) complete_path True: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'set_bd_dmac_intf')]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'set_bd_dmac_intf')]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 2048
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: fwd_metadata.l2ptr: 0
+INFO: fwd_metadata.out_bd: 0
+INFO: ipv4.$valid$: 1
+INFO: ipv4.diffserv: 0
+INFO: ipv4.dstAddr: 0
+INFO: ipv4.flags: 0
+INFO: ipv4.fragOffset: 0
+INFO: ipv4.hdrChecksum: 0
+INFO: ipv4.identification: 0
+INFO: ipv4.ihl: 0
+INFO: ipv4.protocol: 0
+INFO: ipv4.srcAddr: 0
+INFO: ipv4.totalLen: 0
+INFO: ipv4.ttl: 127
+INFO: ipv4.version: 0
+INFO: ipv4_da_lpm.set_l2ptr.l2ptr.0: 0
+INFO: mac_da.set_bd_dmac_intf.bd.0: 0
+INFO: mac_da.set_bd_dmac_intf.dmac.1: 0
+INFO: mac_da.set_bd_dmac_intf.intf.2: 0
+INFO: meta_meta.packet_len: 272
+INFO: standard_metadata.egress_spec: 0
+INFO: table_add ipv4_da_lpm set_l2ptr 0/32 => 0
+INFO: table_add mac_da set_bd_dmac_intf 0 => 0 0 0
+INFO: packet (34 bytes) 00000000000000000000000008000000000000000000800000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'set_bd_dmac_intf')]
+INFO: END   10 Exp path (len 3+5=8) complete_path True TestPathResult.SUCCESS: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'set_bd_dmac_intf')]
+INFO: 0.064 sec = 0.006 gen ingress constraints + 0.009 solve + 0.050 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 11 Exp path (len 3+4=7) complete_path True: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: Unable to find packet for path: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: END   11 Exp path (len 3+4=7) complete_path True TestPathResult.NO_PACKET_FOUND: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))]
+INFO: 0.004 sec = 0.003 gen ingress constraints + 0.001 solve + 0.000 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 12 Exp path (len 3+2=5) complete_path True: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: Unable to find packet for path: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: END   12 Exp path (len 3+2=5) complete_path True TestPathResult.NO_PACKET_FOUND: ['start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: 0.003 sec = 0.002 gen ingress constraints + 0.001 solve + 0.000 gen pkt, table entries, sim packet
+INFO: path = ('start', start -> sink) -> ('sink', None)
+INFO: Generate parser constraints: 0.012 sec
+INFO: 
+INFO: BEGIN 13 Exp path (len 2+0=2) complete_path False: ['start', 'sink']
+INFO: control_path = []
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 0
+INFO: ethernet.srcAddr: 0
+INFO: ipv4.$valid$: 0
+INFO: meta_meta.packet_len: 112
+INFO: packet (14 bytes) 0000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', 'sink']
+INFO: END   13 Exp path (len 2+0=2) complete_path False TestPathResult.SUCCESS: ['start', 'sink']
+INFO: 0.039 sec = 0.001 gen ingress constraints + 0.004 solve + 0.034 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 14 Exp path (len 2+1=3) complete_path False: ['start', 'sink', (u'tbl_act', u'act')]
+INFO: control_path = [(u'tbl_act', u'act')]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 0
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: ipv4.$valid$: 0
+INFO: meta_meta.packet_len: 112
+INFO: packet (14 bytes) 0000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', 'sink', (u'tbl_act', u'act')]
+INFO: END   14 Exp path (len 2+1=3) complete_path False TestPathResult.SUCCESS: ['start', 'sink', (u'tbl_act', u'act')]
+INFO: 0.046 sec = 0.001 gen ingress constraints + 0.005 solve + 0.040 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 15 Exp path (len 2+2=4) complete_path False: ['start', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: Unable to find packet for path: ['start', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: END   15 Exp path (len 2+2=4) complete_path False TestPathResult.NO_PACKET_FOUND: ['start', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: 0.002 sec = 0.001 gen ingress constraints + 0.001 solve + 0.000 gen pkt, table entries, sim packet
+INFO: 
+INFO: BEGIN 16 Exp path (len 2+2=4) complete_path True: ['start', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: control_path = [(u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: ethernet.$valid$: 1
+INFO: ethernet.dstAddr: 0
+INFO: ethernet.etherType: 0
+INFO: ethernet.srcAddr: 0
+INFO: fwd_metadata.dropped: 0
+INFO: ipv4.$valid$: 0
+INFO: meta_meta.packet_len: 112
+INFO: packet (14 bytes) 0000000000000000000000000000
+INFO: Sending packet to veth2
+.INFO: Test successful: ['start', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: END   16 Exp path (len 2+2=4) complete_path True TestPathResult.SUCCESS: ['start', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))]
+INFO: 0.038 sec = 0.001 gen ingress constraints + 0.005 solve + 0.032 gen pkt, table entries, sim packet
+Obtaining JSON from switch...
+Done
+[]
+
+Sent 1 packets.
+[]
+
+Sent 1 packets.
+[]
+
+Sent 1 packets.
+[]
+Adding entry to lpm match table ipv4_da_lpm
+match key:           LPM-00:00:00:00/32
+action:              my_drop
+runtime data:        
+Entry has been added with handle 0
+
+Sent 1 packets.
+[]
+[]
+Adding entry to lpm match table ipv4_da_lpm
+match key:           LPM-00:00:00:00/32
+action:              my_drop
+runtime data:        
+Entry has been added with handle 0
+
+Sent 1 packets.
+[]
+Adding entry to lpm match table ipv4_da_lpm
+match key:           LPM-00:00:00:00/32
+action:              set_l2ptr
+runtime data:        00:00:00:00
+Entry has been added with handle 0
+
+Sent 1 packets.
+[]
+Adding entry to lpm match table ipv4_da_lpm
+match key:           LPM-00:00:00:00/32
+action:              set_l2ptr
+runtime data:        00:00:00:00
+Entry has been added with handle 0
+
+Sent 1 packets.
+[]
+Adding entry to lpm match table ipv4_da_lpm
+match key:           LPM-00:00:00:00/32
+action:              set_l2ptr
+runtime data:        00:00:00:00
+Entry has been added with handle 0
+Adding entry to exact match table mac_da
+match key:           EXACT-00:00:00:00
+action:              my_drop
+runtime data:        
+Entry has been added with handle 0
+
+Sent 1 packets.
+[]
+Adding entry to lpm match table ipv4_da_lpm
+match key:           LPM-00:00:00:00/32
+action:              set_l2ptr
+runtime data:        00:00:00:00
+Entry has been added with handle 0
+Adding entry to exact match table mac_da
+match key:           EXACT-00:00:00:00
+action:              set_bd_dmac_intf
+runtime data:        00:00:00	00:00:00:00:00:00	00:00
+Entry has been added with handle 0
+
+Sent 1 packets.
+[]
+[]
+[]
+
+Sent 1 packets.
+[]
+
+Sent 1 packets.
+[]
+[]
+
+Sent 1 packets.
+TestPathResult.NO_PACKET_FOUND: 4
+TestPathResult.SUCCESS: 4
