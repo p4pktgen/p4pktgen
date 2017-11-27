@@ -127,10 +127,8 @@ If you see an error message like this in the output:
 
 there is a known issue where this can occur due to the way that
 execution paths through the parser are represented.  Until this
-problem is more fully fixed, you should be able to avoid it by giving
-`p4pktgen` the command line option `--disable-packet-length-errors`,
-which will cause `p4pktgen` not to create packets that exercise parser
-error cases.
+problem is more fully fixed, you should be able to avoid it by _not_
+using the command line option `--enable-packet-length-errors`.
 
 
 ## P4 programs using features not yet supported by p4pktgen

@@ -1,6 +1,3 @@
-+ /bin/rm -f test.pcap
-+ set +x
-+ p4pktgen --disable-packet-length-errors compiled_p4_programs/demo1-no-uninit-reads.p4_16.json
 INFO: Found 2 parser paths, longest with length 2
 INFO: Counted 7 control paths
 INFO: path = ('start', start -> parse_ipv4) -> (u'parse_ipv4', parse_ipv4 -> sink) -> ('sink', None)

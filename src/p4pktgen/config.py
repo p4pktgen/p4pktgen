@@ -55,9 +55,9 @@ class Config:
         self.record_statistics = args.record_statistics
         self.allow_unimplemented_primitives = args.allow_unimplemented_primitives
         self.dump_test_case = args.dump_test_case
+        self.no_packet_length_errs = not args.enable_packet_length_errors
         # TBD: Make the values below configurable via command line
         # options.
-        self.no_packet_length_errs = args.disable_packet_length_errors
         self.min_packet_len_generated = 14
         self.max_packet_len_generated = 1536
 
