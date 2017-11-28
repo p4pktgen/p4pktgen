@@ -31,7 +31,7 @@ set -x
 
 #p4pktgen ${OPTS} compiled_p4_programs/demo1.p4_16.json
 # This one exhibited the bug with missing action ids, now fixed
-p4pktgen ${OPTS} compiled_p4_programs/demo1-no-uninit-reads.p4_16.json
+#p4pktgen ${OPTS} compiled_p4_programs/demo1-no-uninit-reads.p4_16.json
 #p4pktgen ${OPTS} compiled_p4_programs/demo1-action-names-uniquified.p4_16.json
 #p4pktgen ${OPTS} compiled_p4_programs/demo1b.json
 
@@ -100,7 +100,10 @@ p4pktgen ${OPTS} compiled_p4_programs/demo1-no-uninit-reads.p4_16.json
 # Looking better!
 #p4pktgen ${OPTS} compiled_p4_programs/chksum.json
 
-#p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental-wrong-rfc1624-eqn2-issue983-workaround.json
+#p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental-wrong-rfc1624-eqn2-p4c-2017-11-13.json
+#p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental-wrong-rfc1624-eqn2-p4c-2017-11-14.json
+#p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental-wrong-rfc1624-eqn2-issue983-workaround-p4c-2017-11-13.json
+p4pktgen ${OPTS} compiled_p4_programs/chksum-incremental-wrong-rfc1624-eqn2-issue983-workaround-p4c-2017-11-14.json
 
 #p4pktgen ${OPTS} compiled_p4_programs/chksum2.json
 #p4pktgen ${OPTS} compiled_p4_programs/chksum3.json

@@ -116,8 +116,6 @@ parser IngressParserImpl(packet_in buffer,
         bit<16> word2 = hdr.ipv4.dstAddr[31:16];
         bit<16> word3 = hdr.ipv4.dstAddr[15:0];
 
-        // remove them from ck_sum by adding ~ of each using one's
-        // complement sum
         bit<32> tmp2a = (
             (((bit<32>) ck_sum) & 0xffff) +
             (((bit<32>) word0) & 0xffff) +
@@ -199,26 +197,27 @@ control ingress(inout headers hdr,
     //InternetChecksum() ck;
     bit<16> ck_sum;
     apply {
+        if (!hdr.ipv4.isValid()) {
+            exit;
+        }
         user_meta.fwd_metadata.received_ipv4_hdr_checksum = hdr.ipv4.hdrChecksum;
         user_meta.fwd_metadata.new_ipv4_checksum_from_scratch = 0;
         debug_table_0.apply();
-        if (hdr.ipv4.isValid()) {
-            if (! (hdr.ipv4.version == 4 &&
-                    hdr.ipv4.ihl == 5 &&
-                    hdr.ipv4.totalLen == 20 &&
-//                    ((hdr.ipv4.protocol == 6 && hdr.ipv4.totalLen == 20+20) ||
-//                        (hdr.ipv4.protocol == 17 && hdr.ipv4.totalLen == 20+8)) &&
-                    hdr.ipv4.flags == 0 &&
-                    hdr.ipv4.fragOffset == 0 &&
-                    hdr.ipv4.ttl >= 2 &&
-                    hdr.ipv4.hdrChecksum == user_meta.fwd_metadata.ipv4_hdr_correct_checksum &&
-                    hdr.ipv4.srcAddr != 0 &&
-                    hdr.ipv4.dstAddr != 0))
-            {
-                exit;
-            }
-            nat_v4.apply();
+        if (! (hdr.ipv4.version == 4 &&
+                hdr.ipv4.ihl == 5 &&
+                hdr.ipv4.totalLen == 20 &&
+//                ((hdr.ipv4.protocol == 6 && hdr.ipv4.totalLen == 20+20) ||
+//                 (hdr.ipv4.protocol == 17 && hdr.ipv4.totalLen == 20+8)) &&
+                hdr.ipv4.flags == 0 &&
+                hdr.ipv4.fragOffset == 0 &&
+                hdr.ipv4.ttl >= 2 &&
+                hdr.ipv4.hdrChecksum == user_meta.fwd_metadata.ipv4_hdr_correct_checksum &&
+                hdr.ipv4.srcAddr != 0 &&
+                hdr.ipv4.dstAddr != 0))
+        {
+            exit;
         }
+        nat_v4.apply();
 
         // Do an incremental calculation of the outgoing IPv4 header
         // checksum.  This is a continuation of a wrong way to do it,
@@ -226,7 +225,7 @@ control ingress(inout headers hdr,
         ck_sum = user_meta.fwd_metadata.incremental_checksum;
         // Add in effect of new src and dst IPv4 addresses.
         ones_comp_sum_b80.apply(ck_sum,
-            ck_sum ++ ~hdr.ipv4.srcAddr ++ ~hdr.ipv4.dstAddr);
+            ck_sum ++ (~hdr.ipv4.srcAddr & 0xffff_ffff) ++ (~hdr.ipv4.dstAddr & 0xffff_ffff));
         hdr.ipv4.hdrChecksum = ck_sum;
         
 
@@ -258,18 +257,70 @@ control ingress(inout headers hdr,
         user_meta.fwd_metadata.new_ipv4_checksum_from_scratch = ~ck_sum;
 
         debug_table_1.apply();
+
+        // The one's complement sum of one or more numbers can only be
+        // +0 if all of the numbers being summed are +0 (+0 in one's
+        // complement is represented as all 0 bits).
+
+        // Thus a correct IPv4 header checksum, which is the bit-wise
+        // negation of a one's complement sum, can never be 0xffff,
+        // because at least the 16-bit word of the IPv4 header
+        // containing the version field cannot be 0.
+
+        // It is possible for a correct IPv4 header checksum to be 0,
+        // because it is possible for the one's complement sum of its
+        // 16-bit words to be 0xffff, which is then bit-wise negated
+        // to get 0 before being placed into the IPv4 header checksum
+        // field.
+        if (user_meta.fwd_metadata.new_ipv4_checksum_from_scratch == 0xffff) {
+            // Impossibility #1 - This should be impossible
+            exit;
+        }
+
+        // The value of user_meta.fwd_metadata.incremental_checksum,
+        // as calculated above, cannot be 0, because one of the things
+        // it includes in its sum is the correct received IPv4 header
+        // checksum, which cannot be 0, as explained immediately
+        // above.
+        if (user_meta.fwd_metadata.incremental_checksum == 0) {
+            // Impossibility #2 - This should be impossible
+            exit;
+        }
+
+        // The value hdr.ipv4.hdrChecksum, as calculated incrementally
+        // above using RFC 1624 Eqn. 2, cannot be 0, because it is a
+        // one's complement sum of several values that include
+        // user_meta.fwd_metadata.incremental_checksum, and as
+        // explained immediately above, it cannot be 0 if the received
+        // IPv4 header checksum is correct.
+        if (hdr.ipv4.hdrChecksum == 0) {
+            // Impossibility #3 - This should be impossible
+            exit;
+        }
+
         // The "& 0xffff" parts of the next condition should be
         // redundant in a correct P4_16 implementation.  They are
         // there in hopes that they work around issue #983, assuming
         // that may be causing problems here.
         if ((hdr.ipv4.hdrChecksum & 0xffff) != (user_meta.fwd_metadata.new_ipv4_checksum_from_scratch & 0xffff)) {
+            // This should be possible, because RFC 1624 Eqn. 2 is an
+            // incorrect way to calculate the header checksum
+            // incrementally.  p4pktgen should be able to find an
+            // example input packet that demonstrates this can happen.
             hdr.ethernet.dstAddr = 0xbad1bad1bad1;
         } else {
             if ((hdr.ipv4.hdrChecksum & 0xffff) == 0xffff) {
-                // This should be impossible
+                // Impossibility #4 - This should be impossible,
+                // because
+                // user_meta.fwd_metadata.new_ipv4_checksum_from_scratch
+                // cannot be 0xffff from "Impossibility #1" above, and
+                // hdr.ipv4.hdrChecksum is == to it at this point.
                 hdr.ethernet.dstAddr = 0xbad2bad2bad2;
             } else if ((hdr.ipv4.hdrChecksum & 0xffff) == 0x0000) {
-                // This should be possible
+                // Impossibility #5 - This would be possible if
+                // hdr.ipv4.hdrChecksum were calculated correctly, but
+                // because of Impossibility #3 above, it should be
+                // impossible.
                 hdr.ethernet.dstAddr = 0xc000c000c000;
             } else {
                 // This is the common case
