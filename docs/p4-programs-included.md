@@ -8,8 +8,8 @@ they are here, where they came from, etc.
   search key fields at all.  The particular table added was copied
   from a P4_16 version of switch.p4.  Issue now resolved:
   https://bitbucket.org/p4pktgen/p4pktgen/issues/27/tables-with-zero-key-fields-need-expected
-* chksum - See TBD for a more detailed discussion of the various
-  chksum programs.
+* chksum - See [below](#description-of-the-chksum-programs) for a more
+  detailed discussion of the various chksum programs.
 * demo10b.p4 - See demo10.p4
 * demo10.p4 - Created as a test case for this now-resolved issue:
   https://bitbucket.org/p4pktgen/p4pktgen/issues/16/sample-p4-programs-where-perhaps-the
