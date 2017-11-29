@@ -7,4 +7,4 @@ echo ""
 echo ""
 
 /bin/rm -f log.txt
-simple_switch --log-file log --log-flush --use-files 0 -i 0@0 ../compiled_p4_programs/chksum.json
+simple_switch --log-file log --log-flush --use-files 0 -i 0@0 chksum.json

@@ -6,7 +6,7 @@ from p4pktgen.core.translator import TestPathResult
 class CheckSystem:
     def check_demo1b(self):
         Config().load_test_defaults()
-        results = process_json_file('compiled_p4_programs/demo1b.json')
+        results = process_json_file('examples/demo1b.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
@@ -36,7 +36,7 @@ class CheckSystem:
     def check_demo1(self):
         Config().load_test_defaults()
         results = process_json_file(
-            'compiled_p4_programs/demo1-action-names-uniquified.p4_16.json')
+            'examples/demo1-action-names-uniquified.p4_16.json')
         expected_results = {
             ('start', 'sink', (u'ipv4_da_lpm', u'set_l2ptr')):
             TestPathResult.UNINITIALIZED_READ,
@@ -56,7 +56,7 @@ class CheckSystem:
     def check_demo1_no_uninit_reads(self):
         Config().load_test_defaults()
         results = process_json_file(
-            'compiled_p4_programs/demo1-no-uninit-reads.p4_16.json')
+            'examples/demo1-no-uninit-reads.p4_16.json')
         expected_results = {
             ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
             TestPathResult.NO_PACKET_FOUND,
@@ -79,7 +79,7 @@ class CheckSystem:
 
     def check_demo9b(self):
         Config().load_test_defaults()
-        results = process_json_file('compiled_p4_programs/demo9b.json')
+        results = process_json_file('examples/demo9b.json')
         expected_results = {
             ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
@@ -120,7 +120,7 @@ class CheckSystem:
 
     def check_config_table(self):
         Config().load_test_defaults()
-        results = process_json_file('compiled_p4_programs/config-table.json')
+        results = process_json_file('examples/config-table.json')
         expected_results = {
             ('start', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
@@ -144,7 +144,7 @@ class CheckSystem:
     def check_demo1_rm_header(self):
         Config().load_test_defaults()
         results = process_json_file(
-            'compiled_p4_programs/demo1_rm_header.json')
+            'examples/demo1_rm_header.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act')):
             TestPathResult.INVALID_HEADER_WRITE,
@@ -156,7 +156,7 @@ class CheckSystem:
     def check_add_remove_header(self):
         Config().load_test_defaults()
         results = process_json_file(
-            'compiled_p4_programs/add-remove-header.json')
+            'examples/add-remove-header.json')
         expected_results = {
             ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
@@ -188,7 +188,7 @@ class CheckSystem:
         # This test case exercises variable-length extract, lookahead,
         # and verify statements in the parser.
         results = process_json_file(
-            'compiled_p4_programs/checksum-ipv4-with-options.json')
+            'examples/checksum-ipv4-with-options.json')
         expected_results = {
             ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()'))), (u'node_3', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 130, u'hdr.ipv4.ihl == 14')))):
             TestPathResult.SUCCESS,

@@ -97,7 +97,7 @@ Features supported by `p4pktgen`:
 
 + Probably works:
   + search key field expressions with masks, like in program
-    `p4_programs/table-key-mask.p4`, table `ipv4_da`.  This seems to
+    `examples/table-key-mask.p4`, table `ipv4_da`.  This seems to
     work, even though `p4pktgen` does not pay attention to the mask
     yet, simply because the table matching in `simple_switch` works by
     taking the search key field ANDed with the mask, and comparing

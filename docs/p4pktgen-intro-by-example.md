@@ -7,19 +7,19 @@ below yourself.
 ## First run wth program `demo1.p4_16.p4`
 
 The first program we will try `p4pktgen` on is
-[`demo1.p4_16.p4`](../p4_programs/demo1.p4_16.p4).
+[`demo1.p4_16.p4`](../examples/demo1.p4_16.p4).
 
 If you have installed the open source `p4c` P4 compiler, you can
 compile this program for execution on the `simple_switch` software
 switch using this command:
 
 ```bash
-% p4c-bm2-ss p4_programs/demo1.p4_16.p4 -o <name of JSON file to write>
+% p4c-bm2-ss examples/demo1.p4_16.p4 -o <name of JSON file to write>
 ```
 
 That command has already been run for this program, and the output has
 been placed into the file
-[`demo1.p4_16.json`](../compiled_p4_programs/demo1.p4_16.json).
+[`demo1.p4_16.json`](../examples/demo1.p4_16.json).
 
 The program is written in the P4_16 version of P4, and is
 intentionally short, to make it quicker to understand the program in
@@ -59,7 +59,7 @@ and `computeChecksum`, so we will not discuss them further.
 # Set up the shell environment variables needed for running p4pktgen
 % source my-venv/bin/activate
 
-% p4pktgen compiled_p4_programs/demo1.p4_16.json >& log1.txt
+% p4pktgen examples/demo1.p4_16.json >& log1.txt
 ```
 
 Without redirecting the output to a file with the `>& log1.txt` part
@@ -109,7 +109,7 @@ The first of these is shown below:
     {
       "variable_name": "fwd_metadata.l2ptr", 
       "source_info": {
-        "filename": "p4_programs/demo1.p4_16.p4", 
+        "filename": "examples/demo1.p4_16.p4", 
         "line": 106, 
         "column": 10, 
         "source_fragment": "mac_da"
@@ -157,7 +157,7 @@ being initialized in this path.  The value for the key
 `uninitialized_read_data` gives more details about which fields these
 are.  There is only one in this case, name `fwd_metadata.l2ptr`, and
 where it is used uninitialized should be at or near line 106, column
-10 in the file `p4_programs/demo1.p4_16.p4`.  That line contains only
+10 in the file `examples/demo1.p4_16.p4`.  That line contains only
 `table mac_da` in the P4 program, but look a couple of lines below
 that in the P4 program and note that the key of this table contains
 the field `meta.fwd_metadata.l2ptr`.  This value was never initialized
@@ -183,7 +183,7 @@ our second `p4pktgen` run, to see what the results will be for this
 program.
 
 ```bash
-% p4pktgen -au compiled_p4_programs/demo1.p4_16.json >& log2.txt
+% p4pktgen -au examples/demo1.p4_16.json >& log2.txt
 ```
 
 Already-generated output files from this command are stored here:
@@ -233,7 +233,7 @@ file, but search forward in the file for the string
     {
       "variable_name": "ipv4.ttl", 
       "source_info": {
-        "filename": "p4_programs/demo1.p4_16.p4", 
+        "filename": "examples/demo1.p4_16.p4", 
         "line": 104, 
         "column": 8, 
         "source_fragment": "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
@@ -262,7 +262,7 @@ want to avoid the uninitialized reads while we are at it.
 ## Third run, with program `demo1-no-uninit-reads.p4_16.p4`
 
 The second program we will try `p4pktgen` on is
-[`demo1-no-uninit-reads.p4_16.p4`](../p4_programs/demo1-no-uninit-reads.p4_16.p4).
+[`demo1-no-uninit-reads.p4_16.p4`](../examples/demo1-no-uninit-reads.p4_16.p4).
 It is nearly the same as `demo1.p4_16.p4`, but look for most of the
 differences in the `ingress` control `apply` block.  We have added a
 new metadata field `meta.fwd_metadata.dropped` that we explicitly
@@ -278,7 +278,7 @@ metadata field.
 To run `p4pktgen` on this program:
 
 ```bash
-% p4pktgen compiled_p4_programs/demo1-no-uninit-reads.p4_16.json >& log3.txt
+% p4pktgen examples/demo1-no-uninit-reads.p4_16.json >& log3.txt
 ```
 
 Already-generated output files from this command are stored here:
@@ -298,9 +298,9 @@ The first test case from `test-cases3.json` is shown below:
     "parse_ipv4", 
     "sink", 
     "(u'tbl_act', u'act')", 
-    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'node_3', (True, (u'examples/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
     "(u'ipv4_da_lpm', u'my_drop')", 
-    "(u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
+    "(u'node_5', (True, (u'examples/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))"
   ], 
   "complete_path": false, 
   "ss_cli_setup_cmds": [], 
@@ -333,7 +333,7 @@ continue.
 This element of `expected_path`:
 
 ```json
-    "(u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
+    "(u'node_3', (True, (u'examples/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))", 
 ```
 
 represents a "condition node", i.e. the execution of the condition

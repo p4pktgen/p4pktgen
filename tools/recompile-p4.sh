@@ -7,8 +7,9 @@
 
 ls -l `which p4c-bm2-ss`
 
-for j in demo1-action-names-uniquified.p4_16 demo1.p4_16 demo2.p4_16 demo8 demo9b demo9 demo10b demo10 demo11 demo14 demo15 demo16 tcp-options-parser2
+for j in examples/*.p4
 do
-    echo "+ p4c-bm2-ss p4_programs/${j}.p4 -o compiled_p4_programs/${j}.json"
-    p4c-bm2-ss p4_programs/${j}.p4 -o compiled_p4_programs/${j}.json
+    k=x/`basename $j .p4`.json
+    echo "+ p4c-bm2-ss ${j} -o ${k}"
+    p4c-bm2-ss ${j} -o ${k}
 done
