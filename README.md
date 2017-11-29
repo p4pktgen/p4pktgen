@@ -24,7 +24,7 @@ is required to adapt the test cases to run on other implementations).
 
 * [Installation instructions](#installing-and-running-p4pktgen)
 * [Running p4pktgen for the first time](docs/p4pktgen-intro-by-example.md)
-* [P4 language features supported](README-P4-language-features.md)
+* [P4 language features supported](docs/p4-language-feature-support.md)
 * [Tips & tricks](docs/tips-and-tricks.md)
 * [Bugs found using p4pktgen](docs/success-stories.md)
 * [Reference for contents of test case JSON files](docs/reference-test-cases-file.md)

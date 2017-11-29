@@ -48,7 +48,7 @@ checksum calculations on the IPv4, TCP, and/or UDP headers were
 developed and tested using p4pktgen.
 
 They are in the `p4_programs` directory, and all of their names begin
-with `chksum`.  See [this file](chksum-programs.md) for more details
+with `chksum`.  See [here](docs/p4-programs-included.md) for more details
 on the differences between them, and what they are intended to do.
 
 The program `p4_programs/chksum-incremental-wrong-rfc1624-eqn2.p4`
