@@ -4,7 +4,8 @@ class Config:
     def __init__(self):
         self.__dict__ = self.__shared_state
 
-    def load_test_defaults(self, no_packet_length_errs=True):
+    def load_test_defaults(self, no_packet_length_errs=True,
+                           run_simple_switch=True):
         self.interface = 'veth2'
         self.debug = False
         self.silent = False
@@ -14,6 +15,7 @@ class Config:
         self.allow_unimplemented_primitives = False
         self.dump_test_case = False
         self.no_packet_length_errs = no_packet_length_errs
+        self.run_simple_switch = run_simple_switch
 
         # Physical Ethernet ports have a minimum frame size of 64
         # bytes, which is 14 bytes of header, 46 bytes of payload,
@@ -56,6 +58,7 @@ class Config:
         self.allow_unimplemented_primitives = args.allow_unimplemented_primitives
         self.dump_test_case = args.dump_test_case
         self.no_packet_length_errs = not args.enable_packet_length_errors
+        self.run_simple_switch = args.run_simple_switch
         # TBD: Make the values below configurable via command line
         # options.
         self.min_packet_len_generated = 14
@@ -93,3 +96,6 @@ class Config:
 
     def get_max_packet_len_generated(self):
         return self.max_packet_len_generated
+
+    def get_run_simple_switch(self):
+        return self.run_simple_switch
