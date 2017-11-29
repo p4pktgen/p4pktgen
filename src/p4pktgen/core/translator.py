@@ -545,27 +545,13 @@ class Translator:
                 context.set_field_value(header_name, '$valid$', BitVecVal(
                     0, 1))
                 context.remove_header_fields(header_name)
-            elif (primitive.op == 'modify_field_rng_uniform'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'modify_field_with_hash_based_offset'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'clone_ingress_pkt_to_egress'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'clone_egress_pkt_to_egress'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'count'
-                  and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            elif (primitive.op == 'execute_meter'
+            elif (primitive.op in ['modify_field_rng_uniform',
+                                   'modify_field_with_hash_based_offset',
+                                   'clone_ingress_pkt_to_egress',
+                                   'clone_egress_pkt_to_egress',
+                                   'count',
+                                   'execute_meter',
+                                   'generate_digest' ]
                   and Config().get_allow_unimplemented_primitives()):
                 logging.warning('Primitive op {} allowed but treated as no-op'.
                                 format(primitive.op))
