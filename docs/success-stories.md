@@ -47,13 +47,13 @@ Several variations of P4 programs that do incremental vs. full
 checksum calculations on the IPv4, TCP, and/or UDP headers were
 developed and tested using p4pktgen.
 
-They are in the `p4_programs` directory, and all of their names begin
+They are in the `examples` directory, and all of their names begin
 with `chksum`.  See
 [here](p4-programs-included.md#description-of-the-chksum-programs) for
 more details on the differences between them, and what they are
 intended to do.
 
-The program `p4_programs/chksum-incremental-wrong-rfc1624-eqn2.p4`
+The program `examples/chksum-incremental-wrong-rfc1624-eqn2.p4`
 does incremntal checksum calculation incorrectly, using a method
 described in [RFC 1624](https://tools.ietf.org/html/rfc1624) as
 "Eqn. 2".  Its incorrectness is subtle enough that it was published in
@@ -61,7 +61,7 @@ an earlier RFC without being corrected for several years.  p4pktgen
 can find an example demonstrating that it is wrong in about 37 sec of
 Z3 solver time, plus 5 to 6 sec of generating constraints.
 
-The program `p4_programs/chksum-incremental1-small.p4` does
+The program `examples/chksum-incremental1-small.p4` does
 incremental checksum calculation correctly, but only on about half of
 the IPv4 header, not all of it.  It takes about 5 mins of solver time
 to fail to find an example that the full vs. incremental calculation

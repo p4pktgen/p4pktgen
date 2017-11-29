@@ -164,7 +164,7 @@ control paths.  They include 'complete_path False' or 'complete_path
 True' to distinguish those cases.
 
 ```bash
-% p4pktgen --allow-uninitialized-reads --allow-unimplemented-primitives compiled_p4_programs/switch-p416-nohdrstacks.json
+% p4pktgen --allow-uninitialized-reads --allow-unimplemented-primitives examples/switch-p416-nohdrstacks.json
 ```
 
 `--allow-uninitialized-reads` is not surprising, since I suspect that

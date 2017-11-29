@@ -28,7 +28,7 @@ class P4_Top():
         # Parse input_file
         [name, version, extension] = input_file.split(".")
         name = name.split("/")
-        outfile_name = "compiled_p4_programs/" + name[-1] + "." + version + ".json"
+        outfile_name = "examples/" + name[-1] + "." + version + ".json"
 
         call_list = ["-o", outfile_name, input_file]
         

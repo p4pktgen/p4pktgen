@@ -1,6 +1,6 @@
 #! /bin/bash
 
-if [ ! -d p4_programs -o ! -d compiled_p4_programs -o ! -d tools ]
+if [ ! -d examples -o ! -d tools -o ! -d docs ]
 then
     1>&2 echo "You should run this script inside the root directory of"
     1>&2 echo "your copy of the p4pktgen repository."
