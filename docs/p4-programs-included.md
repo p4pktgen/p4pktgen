@@ -89,7 +89,7 @@ forward_v4 action.
 It also has an if statement comparing the results of these two ways of
 calculating the IPv4 header checksum:
 
-        if ((hdr.ipv4.hdrChecksum & 0xffff) != (user_meta.fwd_metadata.new_ipv4_checksum_from_scratch & 0xffff)) {
+        if (hdr.ipv4.hdrChecksum != user_meta.fwd_metadata.new_ipv4_checksum_from_scratch) {
 
 I was hoping to use p4pktgen to prove that these two ways of
 calculating the checksum were always equivalent (or finding a bug in
