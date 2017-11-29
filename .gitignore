@@ -1,9 +1,7 @@
-<<<<<<< HEAD
 # Compiled Python code
 *.pyc
 #vim swp files
 *.swp
-=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -103,4 +101,3 @@ ENV/
 
 # mypy
 .mypy_cache/
->>>>>>> master

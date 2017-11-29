@@ -38,7 +38,6 @@ then
 fi
 
 warning() {
-    1>&2 echo "No 'lsb_release' found in your command path."
     1>&2 echo "This software has only been tested on Ubuntu 16.04 so far."
     1>&2 echo "Proceed installing manually at your own risk of"
     1>&2 echo "significant time spent figuring out how to make it all work, or"
@@ -49,6 +48,7 @@ warning() {
 lsb_release >& /dev/null
 if [ $? != 0 ]
 then
+    1>&2 echo "No 'lsb_release' found in your command path."
     warning
     exit 1
 fi
@@ -56,6 +56,9 @@ fi
 if [ `lsb_release -si` != "Ubuntu" -o `lsb_release -sr` != "16.04" ]
 then
     warning
+    1>&2 echo ""
+    1>&2 echo "Here is what command 'lsb_release -a' shows this OS to be:"
+    lsb_release -a
     exit 1
 fi
 
