@@ -89,7 +89,10 @@ def source_info_to_dict(source_info):
 
 class Translator:
     def __init__(self, json_file, hlir, pipeline):
-        self.switch = SimpleSwitch(json_file)
+        if Config().get_run_simple_switch():
+            self.switch = SimpleSwitch(json_file)
+        else:
+            self.switch = None
         self.solver = Solver()
         self.solver.push()
         self.context = None
@@ -108,7 +111,8 @@ class Translator:
         self.context = self.context_history.pop()
 
     def cleanup(self):
-        self.switch.shutdown()
+        if Config().get_run_simple_switch():
+            self.switch.shutdown()
 
     def equalize_bv_size(self, bvs):
         target_size = max([bv.size() for bv in bvs])
@@ -976,17 +980,20 @@ class Translator:
                         ("variable_name", var_name),
                         ("source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
-                packet = Ether(bytes(payload))
-                extracted_path = self.test_packet(packet, table_configs,
-                                                  source_info_to_node_name)
+                if Config().get_run_simple_switch():
+                    packet = Ether(bytes(payload))
+                    extracted_path = self.test_packet(packet, table_configs,
+                                                      source_info_to_node_name)
 
-                if is_complete_control_path:
-                    match = (expected_path == extracted_path)
+                    if is_complete_control_path:
+                        match = (expected_path == extracted_path)
+                    else:
+                        len1 = len(expected_path)
+                        len2 = len(extracted_path)
+                        match = (expected_path == extracted_path[0:len1]
+                                 ) and len1 <= len2
                 else:
-                    len1 = len(expected_path)
-                    len2 = len(extracted_path)
-                    match = (expected_path == extracted_path[0:len1]
-                             ) and len1 <= len2
+                    match = True
                 if match:
                     logging.info('Test successful: {}'.format(expected_path))
                     result = TestPathResult.SUCCESS
