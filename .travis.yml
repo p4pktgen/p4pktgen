@@ -4,7 +4,7 @@ cache:
   - ccache
 
 compiler:
-  - gcc
+  - clang
 
 addons:
   apt:
