@@ -1,0 +1,39 @@
+language: cpp
+cache:
+  - apt
+  - ccache
+
+compiler:
+  - gcc
+
+addons:
+  apt:
+    packages:
+      - curl
+      - git
+      - libjudy-dev
+      - libgmp-dev
+      - libpcap-dev
+      - libboost-dev
+      - libboost-program-options-dev
+      - libboost-system-dev
+      - libboost-filesystem-dev
+      - libboost-thread-dev
+      - libevent-dev
+      - libtool
+      - flex
+      - bison
+      - pkg-config
+      - libssl-dev
+      - libboost-program-options
+      - libboost-system
+      - libboost-filesystem
+      - libboost-thread
+      - libgmp10
+      - libjudydebian1
+      - libpcap0.8
+      - python
+
+script:
+  - git clone https://github.com/p4lang/behavioral-model.git
+  - cd behavioral-model && ./autogen.sh && ./configure && make && sudo make install
