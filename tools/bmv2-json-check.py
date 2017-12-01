@@ -158,11 +158,11 @@ check_for_dup_ids_and_names_across_pipelines(
     jsondat, 'pipelines', 'conditional', 'conditionals')
 
 total_errors = 0
-for type_name in id_errors:
+for type_name in sorted(id_errors.keys()):
     print("Found %d duplicate id errors among objects of type '%s'"
           "" % (id_errors[type_name], type_name))
     total_errors += id_errors[type_name]
-for type_name in name_errors:
+for type_name in sorted(name_errors.keys()):
     print("Found %d duplicate name errors among objects of type '%s'"
           "" % (name_errors[type_name], type_name))
     total_errors += name_errors[type_name]
@@ -278,7 +278,7 @@ def check_expr_op_types(expr):
             arg2info = check_expr_op_types(expr['right'])
             check_one_type(arg2info, 'bitvec', 'right', expr)
             return {'type': 'bitvec'}
-        if op in ['&', '|', '^', '+', '-', '*', '<<', '>>']:
+        if op in ['&', '|', '^', '+', '-', '*', '<<', '>>', 'two_comp_mod']:
             arg1info = check_expr_op_types(expr['left'])
             check_one_type(arg1info, 'bitvec', 'left', expr)
             arg2info = check_expr_op_types(expr['right'])
