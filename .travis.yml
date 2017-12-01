@@ -14,7 +14,7 @@ addons:
       - libjudy-dev
       - libgmp-dev
       - libpcap-dev
-      - libboost-dev
+      - libboost-all-dev
       - libevent-dev
       - libtool
       - flex
@@ -32,3 +32,4 @@ script:
   - git clone https://github.com/p4lang/behavioral-model.git
   - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure && make && sudo make install
   - sudo ldconfig
+  - simple_switch --version
