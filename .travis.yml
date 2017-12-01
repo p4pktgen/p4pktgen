@@ -30,4 +30,4 @@ script:
   - ccache -M 1G
   - ccache -z
   - git clone https://github.com/p4lang/behavioral-model.git
-  - cd behavioral-model && ./autogen.sh && ./configure && make && sudo make install
+  - cd behavioral-model && travis/install-thrift.sh && travis/install-nanomsg.sh && ./autogen.sh && ./configure && make && sudo make install
