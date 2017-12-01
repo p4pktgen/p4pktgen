@@ -25,15 +25,17 @@ addons:
       - bison
       - pkg-config
       - libssl-dev
-      - libboost-program-options
-      - libboost-system
-      - libboost-filesystem
-      - libboost-thread
+      - libboost-program-options1.58.0
+      - libboost-system1.58.0
+      - libboost-filesystem1.58.0
+      - libboost-thread1.58.0
       - libgmp10
       - libjudydebian1
       - libpcap0.8
       - python
 
 script:
+  - ccache -M 1G
+  - ccache -z
   - git clone https://github.com/p4lang/behavioral-model.git
   - cd behavioral-model && ./autogen.sh && ./configure && make && sudo make install
