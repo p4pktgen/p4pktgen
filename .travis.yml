@@ -32,6 +32,6 @@ script:
   - ccache -M 1G
   - ccache -z
   - git clone https://github.com/p4lang/behavioral-model.git
-  - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure && make CXX=-Wno-sign-compare && sudo make install
+  - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure 'CXX=-Wno-sign-compare' && make && sudo make install
   - sudo ldconfig
   - simple_switch --version
