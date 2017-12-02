@@ -7,6 +7,7 @@ import copy
 import logging
 import math
 import pprint as pp
+import tempfile
 import time
 
 from enum import Enum
@@ -89,7 +90,7 @@ def source_info_to_dict(source_info):
 
 class Translator:
     def __init__(self, json_file, hlir, pipeline):
-        self.switch = SimpleSwitch(json_file)
+        self.json_file = json_file
         self.solver = Solver()
         self.solver.push()
         self.context = None
@@ -976,8 +977,8 @@ class Translator:
                         ("variable_name", var_name),
                         ("source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
-                packet = Ether(bytes(payload))
-                extracted_path = self.test_packet(packet, table_configs,
+                #packet = Ether(bytes(payload))
+                extracted_path = self.test_packet(payload, table_configs,
                                                   source_info_to_node_name)
 
                 if is_complete_control_path:
@@ -1075,8 +1076,12 @@ class Translator:
         returns the parser states that the packet traverses based on the output of
         simple_switch."""
 
+        tmpdir = tempfile.mkdtemp(dir=".")
+        self.switch = SimpleSwitch(self.json_file, tmpdir)
         # Log packet
-        wrpcap('test.pcap', packet, append=True)
+        # TBD: To do this, we may need to use RawPcapWriter the way
+        # that the SimpleSwitch class does.
+        #wrpcap('test.pcap', packet, append=True)
 
         for table, action, values, key_data, params, priority in table_configs:
             # Extract values of parameters, without the names
@@ -1087,9 +1092,13 @@ class Translator:
                 self.switch.table_add(table, action, values, param_vals,
                                       priority)
 
-        extracted_path = self.switch.send_packet(packet,
-                                                 source_info_to_node_name)
+        extracted_path = self.switch.send_and_check_only_1_packet(
+            packet, source_info_to_node_name)
 
         self.switch.clear_tables()
+        self.switch.shutdown()
+        # Don't remove "." !!!
+        if tmpdir != ".":
+            os.removedirs(tmpdir)
 
         return extracted_path
