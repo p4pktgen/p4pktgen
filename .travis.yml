@@ -37,8 +37,10 @@ script:
   - ccache -z
   - git clone https://github.com/p4lang/behavioral-model.git
   - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure 'CXXFLAGS=-Wno-sign-compare' && make && sudo make install
+  - cd ..
   - sudo ldconfig
   - simple_switch --version
   - pip install virtualenv
   - tools/install.sh
   - pytest
+  - ccache -s
