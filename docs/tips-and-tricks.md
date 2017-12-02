@@ -1,6 +1,11 @@
-# p4pktgen tips and tricks
+# p4pktgen errors, tips, and tricks
 
-Here we describe a few techniques you can use to take advantage of
+Here we describe some common error messages you might see when using
+p4pktgen, and what you can do about them.
+
+After that, in section [P4 programs using features not yet supported
+by p4pktgen](#p4-programs-using-features-not-yet-supported-by-p4pktgen),
+we describe a few techniques you can use to take advantage of
 p4pktgen's capabilities in ways that might not be obvious.
 
 
@@ -120,12 +125,12 @@ results of the random number generator can affect the way packets are
 processed.
 
 A simple example of this is shown in the program
-`p4_programs/random-demo.p4`, where table `drop_decision` has only 1
-action `rand_drop_decision`.  As shown below, that action generates a
-32-bit random number using the `random` function (see Note 1).  If the
-least significant 16 bits of the result are less than 0x7000, it
-assigns 1 to the metadata field `rand_drop`, otherwise it assigns 0 to
-that field.
+[`examples/random-demo.p4`](../examples/random-demo.p4), where table
+`drop_decision` has only 1 action `rand_drop_decision`.  As shown
+below, that action generates a 32-bit random number using the `random`
+function (see Note 1).  If the least significant 16 bits of the result
+are less than 0x7000, it assigns 1 to the metadata field `rand_drop`,
+otherwise it assigns 0 to that field.
 
 ```
     action rand_drop_decision() {
@@ -159,7 +164,8 @@ whether the `if` condition is evaluated as true or false.
 
 A workaround to both of these issues is to modify the definition of
 action `rand_drop_decision` slightly, as shown here (it can also be
-found in the example program `p4_programs/random-demo-modified.p4`):
+found in the example program
+[`examples/random-demo-modified.p4`](../examples/random-demo-modified.p4)):
 
 ```
     action rand_drop_decision(bit<32> p4pktgen_hack_tmp_rand) {
@@ -229,12 +235,15 @@ compiler `p4c-bm2-ss`.
 
 The same technique described in the previous section also works for
 programs that use meters.  See the example program
-`p4_programs/meter-demo.p4`, which is by design nearly identical to
-`p4_programs/random-demo.p4`, except it does an `execute_meter` call
-instead of `random`.  The same kind of change as demonstrated in
-`p4_programs/meter-demo-modified.p4` enables `p4pktgen` to control the
-`packet_color` value returned by the meter, and to exercise all
-execution paths in the program that can be reached.
+[`examples/meter-demo.p4`](../examples/meter-demo.p4), which is by
+design nearly identical to
+[`examples/random-demo.p4`](../examples/random-demo.p4), except it
+does an `execute_meter` call instead of `random`.  The same kind of
+change as demonstrated in
+[`examples/meter-demo-modified.p4`](../examples/meter-demo-modified.p4)
+enables `p4pktgen` to control the `packet_color` value returned by the
+meter, and to exercise all execution paths in the program that can be
+reached.
 
 This action in the original program:
 ```
