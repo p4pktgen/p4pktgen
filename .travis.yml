@@ -27,6 +27,9 @@ addons:
       - libjudydebian1
       - libpcap0.8
       - python
+      - virtualenv
+      - python-tk
+      - graphviz
 
 script:
   - ccache -M 1G
@@ -35,3 +38,5 @@ script:
   - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure 'CXXFLAGS=-Wno-sign-compare' && make && sudo make install
   - sudo ldconfig
   - simple_switch --version
+  - tools/install.sh
+  - pytest
