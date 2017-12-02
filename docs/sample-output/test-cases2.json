@@ -23,9 +23,9 @@
   ], 
   "parser_path_len": 3, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.006641864776611328, 
-  "time_sec_solve": 0.005979061126708984, 
-  "time_sec_simulate_packet": 0.039910078048706055, 
+  "time_sec_generate_ingress_constraints": 0.0017578601837158203, 
+  "time_sec_solve": 0.00587010383605957, 
+  "time_sec_simulate_packet": 0.03181600570678711, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -89,9 +89,9 @@
   ], 
   "parser_path_len": 3, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.0037908554077148438, 
-  "time_sec_solve": 0.006041049957275391, 
-  "time_sec_simulate_packet": 0.04666495323181152, 
+  "time_sec_generate_ingress_constraints": 0.0033550262451171875, 
+  "time_sec_solve": 0.00820612907409668, 
+  "time_sec_simulate_packet": 0.030241966247558594, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -168,9 +168,9 @@
   ], 
   "parser_path_len": 3, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.002122163772583008, 
-  "time_sec_solve": 0.0062220096588134766, 
-  "time_sec_simulate_packet": 0.046607017517089844, 
+  "time_sec_generate_ingress_constraints": 0.0019359588623046875, 
+  "time_sec_solve": 0.006912946701049805, 
+  "time_sec_simulate_packet": 0.029629945755004883, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -239,9 +239,9 @@
   ], 
   "parser_path_len": 3, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.002810955047607422, 
-  "time_sec_solve": 0.006504058837890625, 
-  "time_sec_simulate_packet": 0.04656100273132324, 
+  "time_sec_generate_ingress_constraints": 0.0030710697174072266, 
+  "time_sec_solve": 0.007191896438598633, 
+  "time_sec_simulate_packet": 0.03348708152770996, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -322,9 +322,9 @@
   ], 
   "parser_path_len": 2, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.0007240772247314453, 
-  "time_sec_solve": 0.005124807357788086, 
-  "time_sec_simulate_packet": 0.04020810127258301, 
+  "time_sec_generate_ingress_constraints": 0.0009160041809082031, 
+  "time_sec_solve": 0.005497932434082031, 
+  "time_sec_simulate_packet": 0.025609970092773438, 
   "parser_path": [
     "('start', start -> sink)", 
     "('sink', None)"
@@ -397,9 +397,9 @@
       }
     }
   ], 
-  "time_sec_generate_ingress_constraints": 0.0021178722381591797, 
-  "time_sec_solve": 0.004899024963378906, 
-  "time_sec_simulate_packet": 0.003304004669189453, 
+  "time_sec_generate_ingress_constraints": 0.0021948814392089844, 
+  "time_sec_solve": 0.006510019302368164, 
+  "time_sec_simulate_packet": 0.0039370059967041016, 
   "parser_path": [
     "('start', start -> sink)", 
     "('sink', None)"
@@ -474,9 +474,9 @@
   ], 
   "parser_path_len": 2, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.0009009838104248047, 
-  "time_sec_solve": 0.004832029342651367, 
-  "time_sec_simulate_packet": 0.03919386863708496, 
+  "time_sec_generate_ingress_constraints": 0.0010869503021240234, 
+  "time_sec_solve": 0.00504302978515625, 
+  "time_sec_simulate_packet": 0.02510690689086914, 
   "parser_path": [
     "('start', start -> sink)", 
     "('sink', None)"
@@ -554,9 +554,9 @@
       }
     }
   ], 
-  "time_sec_generate_ingress_constraints": 0.0023419857025146484, 
-  "time_sec_solve": 0.007097005844116211, 
-  "time_sec_simulate_packet": 0.0034661293029785156, 
+  "time_sec_generate_ingress_constraints": 0.002396821975708008, 
+  "time_sec_solve": 0.005777120590209961, 
+  "time_sec_simulate_packet": 0.005351066589355469, 
   "parser_path": [
     "('start', start -> sink)", 
     "('sink', None)"

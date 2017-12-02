@@ -6,7 +6,6 @@ class Config:
 
     def load_test_defaults(self, no_packet_length_errs=True,
                            run_simple_switch=True):
-        self.interface = 'veth2'
         self.debug = False
         self.silent = False
         self.allow_uninitialized_reads = False
@@ -16,6 +15,13 @@ class Config:
         self.dump_test_case = False
         self.no_packet_length_errs = no_packet_length_errs
         self.run_simple_switch = run_simple_switch
+
+        # TBD: Now that we are using pcap files instead of veth
+        # interfaces to get packets into simple_switch, we should be
+        # able to reduce the minimum packet size supported, since I
+        # think bmv2stf.py can handle it.  Delete/update all of these
+        # detailed comments below if we successfully test smaller
+        # packets than 14 bytes.
 
         # Physical Ethernet ports have a minimum frame size of 64
         # bytes, which is 14 bytes of header, 46 bytes of payload,
@@ -49,7 +55,6 @@ class Config:
         self.max_packet_len_generated = 1536
 
     def load_args(self, args):
-        self.interface = args.interface
         self.debug = args.debug
         self.silent = args.silent
         self.allow_uninitialized_reads = args.allow_uninitialized_reads
@@ -63,9 +68,6 @@ class Config:
         # options.
         self.min_packet_len_generated = 14
         self.max_packet_len_generated = 1536
-
-    def get_interface(self):
-        return self.interface
 
     def get_debug(self):
         return self.debug

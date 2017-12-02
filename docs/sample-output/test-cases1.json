@@ -34,9 +34,9 @@
       }
     }
   ], 
-  "time_sec_generate_ingress_constraints": 0.002056121826171875, 
-  "time_sec_solve": 0.0058019161224365234, 
-  "time_sec_simulate_packet": 0.005824089050292969, 
+  "time_sec_generate_ingress_constraints": 0.0016138553619384766, 
+  "time_sec_solve": 0.005851030349731445, 
+  "time_sec_simulate_packet": 0.0061190128326416016, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -111,9 +111,9 @@
       }
     }
   ], 
-  "time_sec_generate_ingress_constraints": 0.0028820037841796875, 
-  "time_sec_solve": 0.006207942962646484, 
-  "time_sec_simulate_packet": 0.0071680545806884766, 
+  "time_sec_generate_ingress_constraints": 0.0027489662170410156, 
+  "time_sec_solve": 0.006335020065307617, 
+  "time_sec_simulate_packet": 0.006492137908935547, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -190,9 +190,9 @@
   ], 
   "parser_path_len": 3, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.0020520687103271484, 
-  "time_sec_solve": 0.0069348812103271484, 
-  "time_sec_simulate_packet": 0.05157899856567383, 
+  "time_sec_generate_ingress_constraints": 0.0023059844970703125, 
+  "time_sec_solve": 0.007960796356201172, 
+  "time_sec_simulate_packet": 0.032729148864746094, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -261,9 +261,9 @@
   ], 
   "parser_path_len": 3, 
   "ingress_path_len": 2, 
-  "time_sec_generate_ingress_constraints": 0.0038390159606933594, 
-  "time_sec_solve": 0.00898885726928711, 
-  "time_sec_simulate_packet": 0.05865907669067383, 
+  "time_sec_generate_ingress_constraints": 0.0030350685119628906, 
+  "time_sec_solve": 0.008064985275268555, 
+  "time_sec_simulate_packet": 0.03971290588378906, 
   "parser_path": [
     "('start', start -> parse_ipv4)", 
     "(u'parse_ipv4', parse_ipv4 -> sink)", 
@@ -357,9 +357,9 @@
       "source_info": null
     }
   ], 
-  "time_sec_generate_ingress_constraints": 0.0007979869842529297, 
-  "time_sec_solve": 0.004703998565673828, 
-  "time_sec_simulate_packet": 0.0018301010131835938, 
+  "time_sec_generate_ingress_constraints": 0.0007090568542480469, 
+  "time_sec_solve": 0.004778146743774414, 
+  "time_sec_simulate_packet": 0.0024988651275634766, 
   "parser_path": [
     "('start', start -> sink)", 
     "('sink', None)"
@@ -420,9 +420,9 @@
       "source_info": null
     }
   ], 
-  "time_sec_generate_ingress_constraints": 0.0007040500640869141, 
-  "time_sec_solve": 0.00444793701171875, 
-  "time_sec_simulate_packet": 0.002722024917602539, 
+  "time_sec_generate_ingress_constraints": 0.0016129016876220703, 
+  "time_sec_solve": 0.005067110061645508, 
+  "time_sec_simulate_packet": 0.0031969547271728516, 
   "parser_path": [
     "('start', start -> sink)", 
     "('sink', None)"
