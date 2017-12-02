@@ -63,8 +63,7 @@ then
 fi
 
 set -ex
-pip install --ignore-installed virtualenv
-sudo apt-get install --yes python-tk graphviz
+sudo apt-get install --yes virtualenv python-tk graphviz
 virtualenv my-venv --system-site-packages
 source my-venv/bin/activate
 pip install -r requirements.txt
