@@ -6,43 +6,32 @@ cache:
 compiler:
   - gcc
 
-before_install:
-  - eval "${MATRIX_EVAL}"
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - curl
+      - git
+      - libjudy-dev
+      - libgmp-dev
+      - libpcap-dev
+      - libboost-all-dev
+      - libevent-dev
+      - libtool
+      - flex
+      - bison
+      - pkg-config
+      - libssl-dev
+      - libgmp10
+      - libjudydebian1
+      - libpcap0.8
+      - python
 
 script:
   - ccache -M 1G
   - ccache -z
   - git clone https://github.com/p4lang/behavioral-model.git
-  - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure --with-pdfixed --with-stress-tests --enable-debugger && make && sudo make install
+  - cd behavioral-model && bash travis/install-thrift.sh && bash travis/install-nanomsg.sh && ./autogen.sh && ./configure 'CXXFLAGS=-O0 -g' && make && sudo make install
   - sudo ldconfig
   - simple_switch --version
-
-matrix:
-  fast_finish: true
-  include:
-    # Test with GCC7
-    - addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - curl
-            - git
-            - libjudy-dev
-            - libgmp-dev
-            - libpcap-dev
-            - libboost-all-dev
-            - libevent-dev
-            - libtool
-            - flex
-            - bison
-            - pkg-config
-            - libssl-dev
-            - libgmp10
-            - libjudydebian1
-            - libpcap0.8
-            - python
-            - g++-6
-          env:
-            - MATRIX_EVAL='CC=gcc-6 && CXX=g++-6'
-            - TRAVIS_CVC4=yes TRAVIS_WITH_LFSC=yes TRAVIS_CVC4_CONFIG='debug --with-lfsc --disable-debug-symbols' TEST_GROUP=0
