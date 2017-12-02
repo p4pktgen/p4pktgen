@@ -47,9 +47,6 @@ and likely requires changes to run on other operating systems.
 
 ## Installing and running p4pktgen
 
-Running p4pktgen currently requires root privileges because Linux
-does not allow unprivileged users to send raw Ethernet packets.
-
 Run p4pktgen's install script as follows:
 ```bash
 % ./tools/install.sh

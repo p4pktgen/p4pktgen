@@ -327,13 +327,13 @@ class SimpleSwitch:
         # simple_switch.  Later should generalize to enable sending
         # packets into any of several ports.
         intf_num = 0
-        logging.info('Sending packet to {}'.format(intf_num))
+        logging.info('Sending packet to port {}'.format(intf_num))
         self.intf_info[intf_num]['pcap_in_fp']._write_packet(packet)
         for i in sorted(self.intf_info):
             self.intf_info[i]['pcap_in_fp'].flush()
             self.intf_info[i]['pcap_in_fp'].close()
-        logging.info('Finished _write_packet() to %s',
-                     self.intf_info[intf_num]['pcap_in_fname'])
+        logging.debug('Finished _write_packet() to %s',
+                      self.intf_info[intf_num]['pcap_in_fname'])
 
         # Extract the parse states from the simple_switch output
         extracted_path = []

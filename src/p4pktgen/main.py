@@ -40,13 +40,6 @@ def main():
         default=False,
         help='Only print error messages')
     parser.add_argument(
-        '-i',
-        '--interface',
-        dest='interface',
-        type=str,
-        default='veth2',
-        help='Interface to send the packets to')
-    parser.add_argument(
         '-f',
         '--format',
         dest='format',

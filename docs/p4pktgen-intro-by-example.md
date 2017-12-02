@@ -53,9 +53,6 @@ ignores the contents of the controls `DeparserImpl`, `verifyChecksum`,
 and `computeChecksum`, so we will not discuss them further.
 
 ```bash
-# Start a new shell running as the super-user
-% sudo bash
-
 # Set up the shell environment variables needed for running p4pktgen
 % source my-venv/bin/activate
 
@@ -73,7 +70,6 @@ are in these files:
 
 * [`log1.txt`](sample-output/log1.txt)
 * [`test-cases1.json`](sample-output/test-cases1.json)
-* [`test1.pcap`](sample-output/test1.pcap)
 
 For now, we will focus on the file named
 [`test-cases.json`](sample-output/test-cases1.json).  It is a
@@ -190,7 +186,6 @@ Already-generated output files from this command are stored here:
 
 * [`log2.txt`](sample-output/log2.txt)
 * [`test-cases2.json`](sample-output/test-cases2.json)
-* [`test2.pcap`](sample-output/test2.pcap)
 
 The first test case in `test-cases2.json` is nearly identical to the
 one we discussed above, except now the `result` key has value
@@ -285,7 +280,6 @@ Already-generated output files from this command are stored here:
 
 * [`log3.txt`](sample-output/log3.txt)
 * [`test-cases3.json`](sample-output/test-cases3.json)
-* [`test3.pcap`](sample-output/test3.pcap)
 
 The first test case from `test-cases3.json` is shown below:
 

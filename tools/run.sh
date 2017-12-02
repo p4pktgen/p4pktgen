@@ -2,14 +2,10 @@
 
 # Not-so-tiny convenience bash script that allows one to run:
 
-# sudo tools/run.sh
+# ./tools/run.sh
 
-# instead of having a shell always running as root.  It can also help
-# with easily switching between different combinations of command line
-# options to p4pktgen.
-
-# WARNING: Some of the comments below about which JSON files are
-# causing p4pktgen to fail are probably obsolete.
+# It can help to easily switch between different combinations of
+# command line options to p4pktgen.
 
 
 OPTS=""

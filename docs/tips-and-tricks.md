@@ -39,26 +39,6 @@ with a non-root user, if `simple_switch` is running as a different
 user (e.g. as the super-user `root`).
 
 
-### The needed virtual Ethernet interfaces have not been created
-
-The way that `p4pktgen` starts `simple_switch`, if the necessary
-virtual Ethernet interfaces have not been created, you will see an
-error message like this:
-
-```bash
-INFO: Sending packet to veth2
-Traceback (most recent call last):
-[ ... a dozen or so lines of Python stack trace ... ]
-IOError: [Errno 19] No such device
-```
-
-You may create the necssary interfaces with this command:
-
-```bash
-% sudo ./tools/veth_setup.sh
-```
-
-
 ### UNINITIALIZED_READ or INVALID_HEADER_WRITE
 
 If you see a path with a result of UNINITIALIZED_READ, it means that

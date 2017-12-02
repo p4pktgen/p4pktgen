@@ -152,17 +152,6 @@ Note: this software has been developed and tested on Ubuntu 16.04 and
 likely requires changes to run on other operating systems.
 
 
-## Any time you reboot your machine
-
-Before running p4pktgen, make sure that you created the necesary
-virtual ethernet interfaces.  This can be done using the following
-command from the top level p4pktgen directory:
-
-```bash
-% sudo ./tools/veth_setup.sh
-```
-
-
 ## Any time you create a new shell and want to run p4pktgen
 
 In any new shell you create, you will need to activate the Python venv

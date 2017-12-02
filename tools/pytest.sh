@@ -2,9 +2,11 @@
 
 # Tiny convenience bash script that allows one to run:
 
-# sudo tools/pytest.sh
+# ./tools/pytest.sh
 
-# instead of having a shell always running as root.
+# It will remove all .pyc files from the src directory first, which
+# can help catch cases in which you have changed dependencies between
+# source files, but left the .pyc files behind.
 
 DEBUG="-d"
 #DEBUG=""
