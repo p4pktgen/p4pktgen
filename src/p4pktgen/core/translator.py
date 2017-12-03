@@ -155,154 +155,86 @@ class Translator:
         if isinstance(type_value, TypeValueRuntimeData):
             return context.get_runtime_data(type_value.index)
         if isinstance(type_value, TypeValueExpression):
-            if type_value.op == 'not':
-                return Not(
-                    self.type_value_to_smt(context, type_value.right,
-                                           sym_packet, pos))
-            elif type_value.op == 'and':
-                return And(
-                    self.type_value_to_smt(context, type_value.left,
-                                           sym_packet, pos),
-                    self.type_value_to_smt(context, type_value.right,
-                                           sym_packet, pos))
-            elif type_value.op == 'or':
-                return Or(
-                    self.type_value_to_smt(context, type_value.left,
-                                           sym_packet, pos),
-                    self.type_value_to_smt(context, type_value.right,
-                                           sym_packet, pos))
-            elif type_value.op == 'd2b':
-                return If(
-                    self.type_value_to_smt(context, type_value.right,
-                                           sym_packet, pos) == 1,
-                    BoolVal(True), BoolVal(False))
-            elif type_value.op == 'b2d':
-                return If(
-                    self.type_value_to_smt(context, type_value.right,
-                                           sym_packet, pos),
-                    BitVecVal(1, 1), BitVecVal(0, 1))
+            if type_value.op in ['and', 'or']:
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
+                if type_value.op == 'and':
+                    return And(lhs, rhs)
+                elif type_value.op == 'or':
+                    return Or(lhs, rhs)
+            elif type_value.op in ['not', '~', 'd2b', 'b2d']:
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
+                if type_value.op == 'not':
+                    return Not(rhs)
+                elif type_value.op == '~':
+                    return ~rhs
+                elif type_value.op == 'd2b':
+                    return If(rhs == 1, BoolVal(True), BoolVal(False))
+                elif type_value.op == 'b2d':
+                    return If(rhs, BitVecVal(1, 1), BitVecVal(0, 1))
             elif type_value.op == 'valid':
                 assert isinstance(type_value.right, TypeValueHeader)
                 return If(
                     context.get_header_field(type_value.right.header_name,
                                              '$valid$') == BitVecVal(1, 1),
                     BoolVal(True), BoolVal(False))
-            elif type_value.op == '==':
+            elif type_value.op in ['==', '!=', '&', '|', '^', '+', '-', '*']:
                 lhs = self.type_value_to_smt(context, type_value.left,
                                              sym_packet, pos)
                 rhs = self.type_value_to_smt(context, type_value.right,
                                              sym_packet, pos)
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs == rhs
-            elif type_value.op == '!=':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs != rhs
-            elif type_value.op == '&':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs & rhs
-            elif type_value.op == '|':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs | rhs
-            elif type_value.op == '^':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs ^ rhs
-            elif type_value.op == '~':
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                return ~rhs
-            elif type_value.op == '+':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs + rhs
-            elif type_value.op == '-':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs - rhs
-            elif type_value.op == '*':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs * rhs
+                if type_value.op == '==':
+                    return lhs == rhs
+                elif type_value.op == '!=':
+                    return lhs != rhs
+                elif type_value.op == '&':
+                    return lhs & rhs
+                elif type_value.op == '|':
+                    return lhs | rhs
+                elif type_value.op == '^':
+                    return lhs ^ rhs
+                elif type_value.op == '+':
+                    return lhs + rhs
+                elif type_value.op == '-':
+                    return lhs - rhs
+                elif type_value.op == '*':
+                    return lhs * rhs
             # P4_16 operators '/' and '%' give errors during compilation
             # unless both operands are known at compile time.  In that
             # case, the compiler precalculates the result and puts that
             # constant in the JSON file.
-            elif type_value.op == '>':
+            elif type_value.op in ['>', '<', '>=', '<=']:
+                lhs = self.type_value_to_smt(context, type_value.left,
+                                             sym_packet, pos)
+                rhs = self.type_value_to_smt(context, type_value.right,
+                                             sym_packet, pos)
+                lhs, rhs = self.equalize_bv_size([lhs, rhs])
                 # XXX: signed/unsigned?
+                if type_value.op == '>':
+                    return UGT(lhs, rhs)
+                elif type_value.op == '<':
+                    return ULT(lhs, rhs)
+                elif type_value.op == '>=':
+                    return UGE(lhs, rhs)
+                elif type_value.op == '<=':
+                    return ULE(lhs, rhs)
+            elif type_value.op in ['<<', '>>']:
                 lhs = self.type_value_to_smt(context, type_value.left,
                                              sym_packet, pos)
                 rhs = self.type_value_to_smt(context, type_value.right,
                                              sym_packet, pos)
+                # P4_16 does not require that lhs and rhs of <<
+                # operator be equal bit widths, but I believe that the
+                # Z3 SMT solver does.
                 lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return UGT(lhs, rhs)
-            elif type_value.op == '<':
-                # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return ULT(lhs, rhs)
-            elif type_value.op == '>=':
-                # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return UGE(lhs, rhs)
-            elif type_value.op == '<=':
-                # XXX: signed/unsigned?
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return ULE(lhs, rhs)
-            elif type_value.op == '<<':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                # P4_16 does not require that lhs and rhs of << operator
-                # be equal bit widths, but I believe that the Z3 SMT
-                # solver does.
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs << rhs
-            elif type_value.op == '>>':
-                lhs = self.type_value_to_smt(context, type_value.left,
-                                             sym_packet, pos)
-                rhs = self.type_value_to_smt(context, type_value.right,
-                                             sym_packet, pos)
-                # P4_16 does not require that lhs and rhs of >> operator
-                # be equal bit widths, but I believe that the Z3 SMT
-                # solver does.
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
-                return lhs >> rhs
+                if type_value.op == '<<':
+                    return lhs << rhs
+                elif type_value.op == '>>':
+                    return lhs >> rhs
             elif type_value.op == '?':
                 condition = self.type_value_to_smt(context, type_value.cond,
                                                    sym_packet, pos)
@@ -369,15 +301,6 @@ class Translator:
             dest_size = dest_field.size
             rhs_expr = self.type_value_to_smt(context, parser_op.value[1],
                                               sym_packet, new_pos)
-            #logging.debug("jdbg parser_op %s .value %s"
-            #              #" .value[0] %s"
-            #              " .value[0].size %s"
-            #              " rhs_expr.size() %s"
-            #              "" % (parser_op, parser_op.value
-            #                    #, parser_op.value[0]
-            #                    , parser_op.value[0].size
-            #                    , rhs_expr.size()
-            #              ))
             if dest_size != rhs_expr.size():
                 logging.debug("parser op 'set' lhs/rhs width mismatch"
                               " (%d != %d bits) lhs %s"
@@ -1047,7 +970,7 @@ class Translator:
 
         # Instead of calling str() on every element of a path, might
         # be nicer to convert them to a type that can be more easily
-        # represented as seprate parts in JSON, e.g. nested lists or
+        # represented as separate parts in JSON, e.g. nested lists or
         # dicts of strings, numbers, booleans.
         test_case = OrderedDict([
             ("log_file_id", count.counter),
