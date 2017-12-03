@@ -11,7 +11,6 @@ import tempfile
 import time
 
 from enum import Enum
-from scapy.all import *
 from z3 import *
 
 from p4pktgen.config import Config
@@ -813,6 +812,7 @@ class Translator:
         self.total_solver_time += time4 - time3
 
         packet_hexstr = None
+        payload = None
         ss_cli_setup_cmds = []
         table_setup_cmd_data = []
         uninitialized_read_data = None
@@ -983,7 +983,6 @@ class Translator:
                         ("source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
                 if Config().get_run_simple_switch():
-                    packet = Ether(bytes(payload))
                     extracted_path = self.test_packet(payload, table_configs,
                                                       source_info_to_node_name)
 
@@ -1031,6 +1030,8 @@ class Translator:
         if packet_hexstr is None:
             input_packets = []
         else:
+            # TBD: Currently we always send packets into port 0.
+            # Should generalize that later.
             input_packets = [OrderedDict([
                 ("port", 0),
                 ("packet_len_bytes", packet_len_bytes),
@@ -1077,7 +1078,10 @@ class Translator:
         test_case["ingress_path"] = map(str, control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data
 
-        return (expected_path, result, test_case)
+        payloads = []
+        if payload:
+            payloads.append(payload)
+        return (expected_path, result, test_case, payloads)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):
         """This function starts simple_switch, sends a packet to the switch and
@@ -1086,10 +1090,6 @@ class Translator:
 
         tmpdir = tempfile.mkdtemp(dir=".")
         self.switch = SimpleSwitch(self.json_file, tmpdir)
-        # Log packet
-        # TBD: To do this, we may need to use RawPcapWriter the way
-        # that the SimpleSwitch class does.
-        #wrpcap('test.pcap', packet, append=True)
 
         for table, action, values, key_data, params, priority in table_configs:
             # Extract values of parameters, without the names

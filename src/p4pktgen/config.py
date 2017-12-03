@@ -49,7 +49,7 @@ class Config:
 
         # TBD: Create the necessary constraints to use the values
         # below as their names would imply.
-        self.min_packet_len_generated = 14
+        self.min_packet_len_generated = 1
         # TBD: Use this value in SMT variable creation to limit the
         # size of the packet BitVec variable.
         self.max_packet_len_generated = 1536
@@ -66,7 +66,7 @@ class Config:
         self.run_simple_switch = args.run_simple_switch
         # TBD: Make the values below configurable via command line
         # options.
-        self.min_packet_len_generated = 14
+        self.min_packet_len_generated = 1
         self.max_packet_len_generated = 1536
 
     def get_debug(self):

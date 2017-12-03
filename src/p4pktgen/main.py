@@ -6,6 +6,7 @@ from collections import defaultdict
 import time
 
 import matplotlib.pyplot as plt
+from scapy.all import *
 from graphviz import Digraph
 
 from p4_top import P4_Top
@@ -284,6 +285,10 @@ def process_json_file(input_file, debug=False):
     test_cases_json_fname = 'test-cases.json'
     test_casesf = open(test_cases_json_fname, 'w')
     test_casesf.write('[\n')
+    test_pcapf = RawPcapWriter('test.pcap', linktype=0)
+    test_pcapf._write_header(None)
+    # The only reason first_time is a list is so we can mutate the
+    # global value inside of a sub-method.
     first_time = [True]
     for parser_path in parser_paths:
         translator.generate_parser_constraints(parser_path + [('sink', None)])
@@ -292,9 +297,10 @@ def process_json_file(input_file, debug=False):
             print([x for x, y in zip(old_control_path, control_path) if x == y])
             count.inc()
             translator.push()
-            expected_path, result, test_case = translator.generate_constraints(
-                parser_path + [('sink', None)], control_path,
-                source_info_to_node_name, count, is_complete_control_path)
+            expected_path, result, test_case, packet_lst = \
+                translator.generate_constraints(
+                    parser_path + [('sink', None)], control_path,
+                    source_info_to_node_name, count, is_complete_control_path)
             translator.pop()
 
             if result == TestPathResult.SUCCESS and is_complete_control_path:
@@ -319,11 +325,12 @@ def process_json_file(input_file, debug=False):
                 # some test case output data for p4pktgen runs that
                 # the user kills before it completes, e.g. because it
                 # takes too long to complete.
-                if first_time[0]:
-                    first_time[0] = False
-                else:
+                if not first_time[0]:
                     test_casesf.write(',\n')
                 json.dump(test_case, test_casesf, indent=2)
+                for p in packet_lst:
+                    test_pcapf._write_packet(p)
+                test_pcapf.flush()
                 result_path = [n[0]
                                for n in parser_path] + ['sink'] + control_path
                 result_path_tuple = tuple(result_path)
@@ -334,6 +341,7 @@ def process_json_file(input_file, debug=False):
                     assert False
                 results[tuple(result_path)] = result
                 stats[result] += 1
+                first_time[0] = False
 
             go_deeper = (result == TestPathResult.SUCCESS)
             old_control_path[0] = control_path
@@ -343,6 +351,7 @@ def process_json_file(input_file, debug=False):
             in_pipeline.init_table_name, None, callback=eval_control_path)
     test_casesf.write('\n]\n')
     test_casesf.close()
+    test_pcapf.close()
     translator.cleanup()
 
     if timing_file is not None:
