@@ -16,13 +16,6 @@ class Config:
         self.no_packet_length_errs = no_packet_length_errs
         self.run_simple_switch = run_simple_switch
 
-        # TBD: Now that we are using pcap files instead of veth
-        # interfaces to get packets into simple_switch, we should be
-        # able to reduce the minimum packet size supported, since I
-        # think bmv2stf.py can handle it.  Delete/update all of these
-        # detailed comments below if we successfully test smaller
-        # packets than 14 bytes.
-
         # Physical Ethernet ports have a minimum frame size of 64
         # bytes, which is 14 bytes of header, 46 bytes of payload,
         # and 4 bytes of CRC (p4pktgen and simple_switch don't
@@ -31,21 +24,17 @@ class Config:
         # It appears that virtual Ethernet interfaces allow
         # frames as short as 14 bytes, and perhaps shorter.
 
-        # I tried setting the value to 1, but got an error from
-        # Scapy's Ether() method call below on a shorter payload,
-        # complaining that an unpack needed at least 6 bytes.
+        # Scapy's Ether() method does not support packets shorter than
+        # 6 bytes, but we no longer call Ether() on packets that
+        # p4pktgen creates, so it is not a problem to generate shorter
+        # packets.
 
-        # I tried replacing the call to Ether() with a call to
-        # Raw().  Scapy does not give an error for a 1-byte
-        # packet, but it appears that when it is sent to
-        # simple_switch through the veth interface using Scapy's
-        # sendp, simple_switch treats it as if it received a
-        # 60-byte packet.  I don't know why.
+        # TBD exactly what sizes of packets are supported to be sent
+        # through a Linux virtual Ethernet interface.  It might be 60
+        # bytes, because of the minimum Ethernet frame size.
 
-        # For now, using 14 as the minimum length seems
-        # reasonable.  The worst that happens is that we can't
-        # generate tests for extract() failing in the middle of
-        # the Ethernet header.
+        # The Ethernet minimum size does not seem to apply for packets
+        # sent to simple_switch via pcap files.
 
         # TBD: Create the necessary constraints to use the values
         # below as their names would imply.
