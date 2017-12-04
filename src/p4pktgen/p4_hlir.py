@@ -439,10 +439,8 @@ class P4_HLIR(object):
         # Get the pipelines
         self.pipelines = {}
         for pipeline_json in json_obj['pipelines']:
-            # XXX: Also parse egress
-            if pipeline_json['name'] != 'egress':
-                pipeline = Pipeline(self, pipeline_json)
-                self.pipelines[pipeline.name] = pipeline
+            pipeline = Pipeline(self, pipeline_json)
+            self.pipelines[pipeline.name] = pipeline
 
         self.hdr_stacks = None
         self.hdr_union_types = None
