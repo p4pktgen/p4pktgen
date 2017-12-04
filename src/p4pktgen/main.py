@@ -204,9 +204,7 @@ def generate_graphviz_graph(pipeline, graph):
             edge_label_str = ""
             edge_color = "black"
             edge_style = "solid"
-            if neighbor is None:
-                neighbor_str = "null"
-            elif node in pipeline.conditionals:
+            if node in pipeline.conditionals:
                 if neighbor is None:
                     neighbor_str = "null"
                 else:
