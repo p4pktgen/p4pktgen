@@ -24,7 +24,8 @@ class Graph:
     def __repr__(self):
         return self.graph.__repr__()
 
-    def generate_all_paths(self, v_start, v_end, callback=None):
+    def generate_all_paths(self, v_start, v_end, callback=None,
+                           neighbor_order_callback=None):
         path_so_far = []
         all_paths = []
         # num_paths is a 1-element list just to make it
@@ -49,7 +50,15 @@ class Graph:
                                  (num_paths[0]))
                 return
 
-            for t in self.get_neighbors(node):
+            neighbors = self.get_neighbors(node)
+            if neighbor_order_callback is not None:
+                custom_order = neighbor_order_callback(node, neighbors)
+                # TBD: Consider checking that the two sets of
+                # neighbors are identical, rather than this less
+                # sophisticated check.
+                assert len(custom_order) == len(neighbors)
+                neighbors = custom_order
+            for t in neighbors:
                 transition_name = t
                 neighbor = t.dst
                 path_so_far.append((node, transition_name))
@@ -86,6 +95,7 @@ class Graph:
         exponentially large."""
 
         num_paths_to_end = {}
+        num_edges = [0]
 
         # XXX: does not work with cycles
         def count_all_paths_(node):
@@ -93,6 +103,7 @@ class Graph:
                 return 1
             if node in num_paths_to_end:
                 return num_paths_to_end[node]
+            num_edges[0] += len(self.get_neighbors(node))
             count = 0
             for t in self.get_neighbors(node):
                 transition_name = t
@@ -107,4 +118,8 @@ class Graph:
             num_paths_to_end[node] = count
             return count
 
-        return count_all_paths_(v_start)
+        num_paths = count_all_paths_(v_start)
+        # + 1 because "None" node at end is not included in dict
+        # num_paths_to_end
+        num_nodes = len(num_paths_to_end) + 1
+        return num_paths, num_nodes, num_edges[0]
