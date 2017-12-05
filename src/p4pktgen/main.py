@@ -270,12 +270,13 @@ def log_control_path_stats(stats_per_control_path_edge,
                  " in a SUCCESS test case:",
                  num_control_path_edges)
     num_edges_with_count = defaultdict(int)
-    num_edges_without_counts = 0
+    num_edges_with_counts = 0
     for e in sorted(stats_per_control_path_edge.keys()):
-        num_edges_without_counts += 1
+        num_edges_with_counts += 1
         cnt = stats_per_control_path_edge[e]
         num_edges_with_count[cnt] += 1
         logging.info("    %d %s" % (cnt, e))
+    num_edges_without_counts = num_control_path_edges - num_edges_with_counts
     num_edges_with_count[0] += num_edges_without_counts
     logging.info("Number of control path edges covered N times:")
     for c in sorted(num_edges_with_count.keys()):
@@ -431,7 +432,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             custom_order = sorted(
                 neighbors, key=lambda t: stats_per_control_path_edge[(node, t)])
             if Config().get_debug():
-                logging.debug("Edges out of node %d"
+                logging.debug("Edges out of node %s"
                               " ordered from least used to most:", node)
                 for n in custom_order:
                     edge = (node, n)
