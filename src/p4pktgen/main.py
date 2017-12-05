@@ -15,7 +15,7 @@ from config import Config
 from core.translator import Translator
 from p4pktgen.core.translator import TestPathResult
 from p4pktgen.util.statistics import Counter, Average
-from p4pktgen.hlir.transition import TransitionType
+from p4pktgen.hlir.transition import TransitionType, BoolTransition
 
 
 def main():
@@ -105,6 +105,15 @@ def main():
         """With this option given, test packets and table entries generated are run through the bmv2 simple_switch software switch, to see if the generated packet follows the expected path of execution.  Useful for finding bugs in p4pktgen, p4c, and/or simple_switch.  Test cases with different behavior in simple_switch than expected have result type TEST_FAILED.  Without this option (the default), do not run bmv2 simple_switch, and no test cases will have result TEST_FAILED."""
     )
     parser.add_argument(
+        '-gg',
+        '--generate-graphs',
+        dest='generate_graphs',
+        action='store_true',
+        default=False,
+        help=
+        """With this option given, generate ingress and egress control flow graphs using the Graphviz library, and do not generate test cases.  Without this option given (the default), do not generate graphs."""
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
@@ -126,7 +135,8 @@ def main():
     assert args.format in ['json', 'p4']
 
     if args.format == 'json':
-        process_json_file(args.input_file, args.debug)
+        process_json_file(args.input_file, debug=args.debug,
+                          generate_graphs=args.generate_graphs)
     else:
         # XXX: revisit
         top.build_from_p4(args.input_file, args.flags)
@@ -166,11 +176,10 @@ def generate_graphviz_graph(pipeline, graph):
             node_str = node
             shape = 'oval'
             if len(neighbors) > 0:
-                assert isinstance(neighbors[0], tuple)
-                assert len(neighbors[0]) == 2
+                assert isinstance(neighbors[0], BoolTransition)
                 # True/False branch of the edge
-                assert isinstance(neighbors[0][0].val, bool)
-                si = neighbors[0][0].source_info
+                assert isinstance(neighbors[0].val, bool)
+                si = neighbors[0].source_info
                 # Quick and dirty check for whether the condition uses
                 # a valid bit, but only for P4_16 programs, and only
                 # if the entire condition is in the source_fragment,
@@ -189,26 +198,25 @@ def generate_graphviz_graph(pipeline, graph):
         if node_color is None:
             node_color = "black"
         dot.node(node_str, node_label_str, shape=shape, color=node_color)
-        for neighbor in neighbors:
+        for t in neighbors:
+            transition = t
+            neighbor = t.dst
             edge_label_str = ""
             edge_color = "black"
             edge_style = "solid"
-            if neighbor is None:
-                neighbor_str = "null"
-            elif node in pipeline.conditionals:
-                if neighbor[1] is None:
+            if node in pipeline.conditionals:
+                if neighbor is None:
                     neighbor_str = "null"
                 else:
-                    neighbor_str = str(neighbor[1])
-                assert isinstance(neighbor[0].val, bool)
-                edge_label_str = str(neighbor[0].val)
+                    neighbor_str = str(neighbor)
+                assert isinstance(transition.val, bool)
+                edge_label_str = str(transition.val)
                 edge_style = "dashed"
             else:
                 # Check for whether an action uses any add_header or
                 # remove_header primitive actions.  These correspond
                 # to the same named primitives in P4_14 programs, or
                 # to setValid() or setInvalid() method calls in P4_16 programs.
-                transition = neighbor[0]
                 assert transition.transition_type == TransitionType.ACTION_TRANSITION
                 primitive_ops = [p.op for p in transition.action.primitives]
                 change_hdr_valid = (("add_header" in primitive_ops) or
@@ -228,17 +236,19 @@ def generate_graphviz_graph(pipeline, graph):
                     if remove_header_count > 0:
                         edge_label_str += "-%d" % (remove_header_count)
 
-                if neighbor[1] is None:
+                if neighbor is None:
                     neighbor_str = "null"
                 else:
-                    neighbor_str = str(neighbor[1])
+                    neighbor_str = str(neighbor)
             assert isinstance(neighbor_str, str)
             dot.edge(node_str, neighbor_str, edge_label_str, color=edge_color,
                      style=edge_style)
-    dot.render('{}_dot.gv'.format(pipeline.name), view=False)
+    fname = '{}_dot.gv'.format(pipeline.name)
+    dot.render(fname, view=False)
+    logging.info("Wrote files %s and %s.pdf", fname, fname)
 
 
-def process_json_file(input_file, debug=False):
+def process_json_file(input_file, debug=False, generate_graphs=False):
     top = P4_Top(debug)
     top.build_from_json(input_file)
 
@@ -250,11 +260,14 @@ def process_json_file(input_file, debug=False):
     in_pipeline = hlir.pipelines['ingress']
     graph, source_info_to_node_name = in_pipeline.generate_CFG()
     logging.debug(graph)
+
     # Graphviz visualization
-    """generate_graphviz_graph(in_pipeline, graph)
-    eg_pipeline = hlir.pipelines['egress']
-    eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
-    generate_graphviz_graph(eg_pipeline, eg_graph)"""
+    if generate_graphs:
+        generate_graphviz_graph(in_pipeline, graph)
+        eg_pipeline = hlir.pipelines['egress']
+        eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
+        generate_graphviz_graph(eg_pipeline, eg_graph)
+        return
 
     parser_paths = parser_graph.generate_all_paths(
         hlir.parsers['parser'].init_state, 'sink')
