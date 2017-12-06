@@ -8,6 +8,10 @@ by p4pktgen](#p4-programs-using-features-not-yet-supported-by-p4pktgen),
 we describe a few techniques you can use to take advantage of
 p4pktgen's capabilities in ways that might not be obvious.
 
+The following section covers [other topics](#other-topics), such as
+options to reduce the number of test cases generated for larger
+programs.
+
 
 ## Error messages
 
@@ -268,3 +272,87 @@ of hash functions available with the `hash` function available in
 `v1model.p4`, this technique would not be useful.  Until such
 enhancements are made, however, this kind of modification can also be
 used for hash function calculation.
+
+
+## Other topics
+
+### Too many paths through ingress control
+
+One of the first things `p4pktgen` does is calculate the number of
+paths through the parser, and the number of paths through the ingress
+control block.  These counts can be calculated much more quickly than
+the paths can be enumerated.
+
+Here are those lines of output for the small demo program
+[`demo1-no-uninit-reads.p4_16.p4`](../examples/demo1-no-uninit-reads.p4_16.p4):
+
+    INFO: Found 2 parser paths, longest with length 2
+    INFO: Counted 7 paths, 6 nodes, 9 edges in ingress control flow graph
+
+Combined, there are at most 2 times 7, or 14, possible combinations of
+paths through the parser and ingress control block.  In most programs,
+many of those combinations are impossible and give `NO_PACKET_FOUND`
+results.
+
+Below are the corresponding lines of output for a much larger program
+[`switch-p416-nohdrstacks.p4`](../examples/switch-p416-nohdrstacks.p4).
+This is most of an open source P4_14 `switch.p4` program that
+implements many packet forwarding features (see
+[here](p4-programs-included.md#steps-to-create-switch-p416-md) for how
+it was converted to P4_16).
+
+    INFO: Found 3427 parser paths, longest with length 14
+    INFO: Counted 4270735858600458233115446476800 paths, 133 nodes, 417 edges in ingress control flow graph
+
+3427 parser paths is certainly not a tiny number, but quite manageable
+to enumerate them all.
+
+The number of paths through the ingress control is not a mistake.  It
+is over 4 times 10 to the 30th power.
+
+Consider of a case where you have a P4 program with two tables invoked
+on after the other, each with 4 possible actions.  This is counted as
+4 times 4 or 16 paths by `p4pktgen`.  If instead you have N tables
+with 4 actions each, the number of paths is 4 to the N-th power.  The
+ingress control block of this subset of `switch.p4` has 81 tables,
+plus many `if` statements that create additional paths of execution.
+
+Even if 99.9% of those ingress control paths are quickly eliminated as
+`NO_PACKET_FOUND`, there are more than you want wait to create, or run
+through a system being tested.
+
+`p4pktgen` implements an option to specify the maximum number of
+ingress control paths to generate test cases for, for each path
+through the parser.  For example, the command line below, using the
+option `--max-paths-per-parser-path 1` tells `p4pktgen` to generate
+only 1 test case for each parser path (sometimes it generates 2
+instead of 1 for the same parser path -- TBD exactly why, but it isn't
+much extra).
+
+There is another command line option `--try-least-used-branches-first`
+shown there as well, which can be useful for programs like this.
+Every time `p4pktgen` generates a SUCCESS test case, it keeps a count
+of how many times each edge in the ingress control flow graph has been
+part of such a path.  When analyzing later parser paths, it then
+considers the edges out of a node in the order from least used to most
+used.  This can help generate sets of test cases that provide
+significantly higher branch coverage.  Without that option, it often
+happens that the same edges are chosen repeatedly, because the edges
+out of anode are considered in the same order every time.
+
+```bash
+% p4pktgen
+      --allow-uninitialized-reads
+      --allow-unimplemented-primitives
+      --max-paths-per-parser-path 1
+      --try-least-used-branches-first
+      examples/switch-p416-nohdrstacks.json
+```
+
+This command was run on a 2016 model MacBookPro with 2.2 GHz Intel
+Core i7 (model MacBookPro11,4), and took about 24 hours to complete.
+This is one parser path about every 25 seconds.  `p4pktgen` will often
+generate test cases much faster than that, but in this case, every
+time it starts over with a new parser path, it must search through a
+fairly long ingress control block to find an execution path for which
+it can find a packet that gets all the way through to the end.
