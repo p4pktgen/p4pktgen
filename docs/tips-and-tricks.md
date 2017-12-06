@@ -298,27 +298,27 @@ Below are the corresponding lines of output for a much larger program
 [`switch-p416-nohdrstacks.p4`](../examples/switch-p416-nohdrstacks.p4).
 This is most of an open source P4_14 `switch.p4` program that
 implements many packet forwarding features (see
-[here](p4-programs-included.md#steps-to-create-switch-p416-md) for how
+[here](p4-programs-included.md#steps-to-create-switch-p416p4) for how
 it was converted to P4_16).
 
     INFO: Found 3427 parser paths, longest with length 14
     INFO: Counted 4270735858600458233115446476800 paths, 133 nodes, 417 edges in ingress control flow graph
 
-3427 parser paths is certainly not a tiny number, but quite manageable
-to enumerate them all.
+3427 parser paths is certainly not a tiny number, but it is quite
+manageable to enumerate them all.
 
 The number of paths through the ingress control is not a mistake.  It
 is over 4 times 10 to the 30th power.
 
-Consider of a case where you have a P4 program with two tables invoked
-on after the other, each with 4 possible actions.  This is counted as
+Consider a case where you have a P4 program with two tables invoked
+one after the other, each with 4 possible actions.  This is counted as
 4 times 4 or 16 paths by `p4pktgen`.  If instead you have N tables
 with 4 actions each, the number of paths is 4 to the N-th power.  The
 ingress control block of this subset of `switch.p4` has 81 tables,
 plus many `if` statements that create additional paths of execution.
 
 Even if 99.9% of those ingress control paths are quickly eliminated as
-`NO_PACKET_FOUND`, there are more than you want wait to create, or run
+`NO_PACKET_FOUND`, there are more than you want to create, or run
 through a system being tested.
 
 `p4pktgen` implements an option to specify the maximum number of
@@ -330,15 +330,16 @@ instead of 1 for the same parser path -- TBD exactly why, but it isn't
 much extra).
 
 There is another command line option `--try-least-used-branches-first`
-shown there as well, which can be useful for programs like this.
-Every time `p4pktgen` generates a SUCCESS test case, it keeps a count
-of how many times each edge in the ingress control flow graph has been
-part of such a path.  When analyzing later parser paths, it then
-considers the edges out of a node in the order from least used to most
-used.  This can help generate sets of test cases that provide
-significantly higher branch coverage.  Without that option, it often
-happens that the same edges are chosen repeatedly, because the edges
-out of anode are considered in the same order every time.
+shown there as well, which can be useful in combination with the
+option above.  Every time `p4pktgen` generates a SUCCESS test case, it
+keeps a count of how many times each edge in the ingress control flow
+graph has been part of such a path.  When analyzing later parser
+paths, it then considers the edges out of a node in the order from
+least used to most used.  This can help generate sets of test cases
+that provide significantly higher branch coverage.  Without this
+option, it often happens that the same ingress control flow edges are
+chosen repeatedly, because the edges out of a node are considered in
+the same order every time.
 
 ```bash
 % p4pktgen
@@ -349,10 +350,11 @@ out of anode are considered in the same order every time.
       examples/switch-p416-nohdrstacks.json
 ```
 
-This command was run on a 2016 model MacBookPro with 2.2 GHz Intel
-Core i7 (model MacBookPro11,4), and took about 24 hours to complete.
-This is one parser path about every 25 seconds.  `p4pktgen` will often
-generate test cases much faster than that, but in this case, every
-time it starts over with a new parser path, it must search through a
-fairly long ingress control block to find an execution path for which
-it can find a packet that gets all the way through to the end.
+This command was run on a 2015 model MacBookPro with 2.2 GHz Intel
+Core i7 (model MacBookPro11,4).  It took about 24 hours to complete.
+This is roughly one parser path every 25 seconds.  `p4pktgen` will
+often generate test cases much faster than that, but in this case,
+every time it starts over with a new parser path, it must search
+through a fairly long ingress control block to find an execution path
+for which it can find a packet that gets all the way through to the
+end.

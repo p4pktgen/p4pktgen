@@ -50,7 +50,7 @@ entries.  See this issue: https://bitbucket.org/p4pktgen/p4pktgen/issues/24/add-
 * switch-p416.p4 - A particular version of the P4_14 switch.p4 program
   from the p4lang/switch Github repository, auto-converted to P4_16
   source code using the `p4test` program from the p4lang/p4c Github
-  repository.  See notes [below](#steps-to-create-switch-p416-p4) for
+  repository.  See notes [below](#steps-to-create-switch-p416p4) for
   exactly how it was created.
 * switch-p416-nohdrstacks.p4 - A hand-edited version of switch-p416.p4
   that removes all uses of header stacks, and the 4 tables that have
