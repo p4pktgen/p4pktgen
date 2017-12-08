@@ -307,7 +307,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         translator.generate_parser_constraints(parser_path + [('sink', None)])
 
         def eval_control_path(control_path, is_complete_control_path):
-            print([x for x, y in zip(old_control_path, control_path) if x == y])
             count.inc()
             translator.push()
             expected_path, result, test_case, packet_lst = \
@@ -348,9 +347,11 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                                for n in parser_path] + ['sink'] + control_path
                 result_path_tuple = tuple(result_path)
                 if result_path_tuple in results and results[result_path_tuple] != result:
-                    print("result_path %s with result %s is already recorded in results"
-                          " while trying to record different result %s"
-                          "" % (result_path, results[result_path_tuple], result))
+                    logging.error("result_path %s with result %s"
+                                  " is already recorded in results"
+                                  " while trying to record different result %s"
+                                  "" % (result_path, results[result_path_tuple],
+                                        result))
                     assert False
                 results[tuple(result_path)] = result
                 stats[result] += 1
@@ -380,11 +381,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         print('{{ {} }}'.format(', '.join(str_items)))
 
     return results
-    """
-    paths = list(nx.all_simple_paths(parser_graph, source=hlir.parsers['parser'].init_state, target=P4_HLIR.PACKET_TOO_SHORT))
-    for path in paths:
-        generate_constraints(hlir, path, args.json_file)
-    """
 
 
 if __name__ == '__main__':
