@@ -50,7 +50,8 @@ entries.  See this issue: https://bitbucket.org/p4pktgen/p4pktgen/issues/24/add-
 * switch-p416.p4 - A particular version of the P4_14 switch.p4 program
   from the p4lang/switch Github repository, auto-converted to P4_16
   source code using the `p4test` program from the p4lang/p4c Github
-  repository.  See notes below for exactly how it was created.
+  repository.  See notes [below](#steps-to-create-switch-p416p4) for
+  exactly how it was created.
 * switch-p416-nohdrstacks.p4 - A hand-edited version of switch-p416.p4
   that removes all uses of header stacks, and the 4 tables that have
   an `action_profile()` or `action_selector()` implementation.  This
@@ -152,16 +153,11 @@ that compiler fix to work as desired.
 
 At the time of writing, the following command line options are
 required in order to get a mostly successful run on
-switch-p416-nohdrstacks.json, albeit one that will probably not
+`switch-p416-nohdrstacks.json`, albeit one that will probably not
 complete any time in our lifetime.  You may want to run it in one
 shell with output redirected to a file (or in the background), and
 look at that output file as it is being generated in another
 shell/window.
-
-Lines containing ' END ' show the results of all control paths for
-which constraints are generated, whether they are partial or complete
-control paths.  They include 'complete_path False' or 'complete_path
-True' to distinguish those cases.
 
 ```bash
 % p4pktgen --allow-uninitialized-reads --allow-unimplemented-primitives examples/switch-p416-nohdrstacks.json
@@ -176,8 +172,8 @@ specification.
 primitive operations used in the program to be treated as no-ops,
 rather than causing an exception to be raised.
 
-Using the `-d` option for extra debug output probably also works, but
-hasn't been tested much.
+See [here](tips-and-tricks.md#too-many-paths-through-ingress-control)
+for more useful command line options while analyzing this program.
 
 
 # Steps to create switch-p416.p4
