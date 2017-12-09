@@ -1,6 +1,6 @@
-= Notes on Z3 SMT solver
+# Notes on Z3 SMT solver
 
-== Unusual model values for some variables without 'significant' constraints
+## Unusual model values for some variables without 'significant' constraints
 
 Unusual thing about the Z3 solver.  If a variable has no 'interesting'
 constraints on it, you can solve them, but the model comes back with a
@@ -15,10 +15,6 @@ An example:
 ```python
 % source my-venv/bin/active
 % python
-[23:11:52] $ python
-Python 2.7.12 (default, Nov 20 2017, 18:23:56) 
-[GCC 5.4.0 20160609] on linux2
-Type "help", "copyright", "credits" or "license" for more information.
 >>> from z3 import *
 >>> x=BitVec('x', 32)
 >>> s=Solver()
