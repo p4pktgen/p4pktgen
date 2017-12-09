@@ -2,7 +2,7 @@ from __future__ import print_function
 import argparse
 import json
 import logging
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import time
 
 import matplotlib.pyplot as plt
@@ -104,6 +104,22 @@ def main():
         help=
         """With this option given, test packets and table entries generated are run through the bmv2 simple_switch software switch, to see if the generated packet follows the expected path of execution.  Useful for finding bugs in p4pktgen, p4c, and/or simple_switch.  Test cases with different behavior in simple_switch than expected have result type TEST_FAILED.  Without this option (the default), do not run bmv2 simple_switch, and no test cases will have result TEST_FAILED."""
     )
+    parser.add_argument(
+        '-mpp',
+        '--max-paths-per-parser-path',
+        dest='max_paths_per_parser_path',
+        type=int,
+        default=None,
+        help=
+        """With this option specified, generate at most the specified number of control paths for each parser path.  This can be useful for programs with more control paths than you wish to enumerate, or simply for reducing the number of test cases generated.  Without this option specified, the default behavior is to generate test cases for all control paths."""
+    )
+    parser.add_argument(
+        '-tlubf',
+        '--try-least-used-branches-first',
+        dest='try_least_used_branches_first',
+        action='store_true',
+        default=False,
+        help="""This option is only expected to be useful if you specify options that limit the number of paths generated to fewer than all of them, e.g. --max-paths-per-parser-path.  When enabled, then whenever multiple branches are considered for evaluation (e.g. the true/false branch of an if statement, or the multiple actions possible when applying a table), they will be considered in order from least used to most used, where by 'used' we mean how many times that edge of the control path has appeared in previously generated complete paths with result SUCCESS.  This may help in covering more branches in the code.  Without this option, the default behavior is to always consider these possibilities in the same order every time the branch is considered.""")
     parser.add_argument(
         '-gg',
         '--generate-graphs',
@@ -248,6 +264,26 @@ def generate_graphviz_graph(pipeline, graph):
     logging.info("Wrote files %s and %s.pdf", fname, fname)
 
 
+def log_control_path_stats(stats_per_control_path_edge,
+                           num_control_path_edges):
+    logging.info("Number of times each of %d control path edges has occurred"
+                 " in a SUCCESS test case:",
+                 num_control_path_edges)
+    num_edges_with_count = defaultdict(int)
+    num_edges_with_counts = 0
+    for e in sorted(stats_per_control_path_edge.keys()):
+        num_edges_with_counts += 1
+        cnt = stats_per_control_path_edge[e]
+        num_edges_with_count[cnt] += 1
+        logging.info("    %d %s" % (cnt, e))
+    num_edges_without_counts = num_control_path_edges - num_edges_with_counts
+    num_edges_with_count[0] += num_edges_without_counts
+    logging.info("Number of control path edges covered N times:")
+    for c in sorted(num_edges_with_count.keys()):
+        logging.info("    %d edges occurred in %d SUCCESS test cases"
+                     "" % (num_edges_with_count[c], c))
+
+
 def process_json_file(input_file, debug=False, generate_graphs=False):
     top = P4_Top(debug)
     top.build_from_json(input_file)
@@ -276,8 +312,12 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))
 
-    num_control_paths = graph.count_all_paths(in_pipeline.init_table_name)
-    logging.info("Counted %d control paths" % (num_control_paths))
+    num_control_paths, num_control_path_nodes, num_control_path_edges = \
+        graph.count_all_paths(in_pipeline.init_table_name)
+    logging.info("Counted %d paths, %d nodes, %d edges"
+                 " in ingress control flow graph"
+                 "" % (num_control_paths, num_control_path_nodes,
+                       num_control_path_edges))
 
     timing_file = None
     if Config().get_record_statistics():
@@ -290,8 +330,10 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
     start_time = time.time()
     count = Counter('path_count')
-    results = {}
+    results = OrderedDict()
     stats = defaultdict(int)
+    last_time_printed_stats_per_control_path_edge = [time.time()]
+    stats_per_control_path_edge = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
     old_control_path = [[]]
     # TBD: Make this filename specifiable via command line option
@@ -303,8 +345,13 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     # The only reason first_time is a list is so we can mutate the
     # global value inside of a sub-method.
     first_time = [True]
+    parser_path_num = 0
     for parser_path in parser_paths:
+        parser_path_num += 1
+        logging.info("Analyzing parser_path %d of %d: %s"
+                     "" % (parser_path_num, len(parser_paths), parser_path))
         translator.generate_parser_constraints(parser_path + [('sink', None)])
+        stats_per_parser_path = defaultdict(int)
 
         def eval_control_path(control_path, is_complete_control_path):
             count.inc()
@@ -354,15 +401,58 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                                         result))
                     assert False
                 results[tuple(result_path)] = result
+                if result == TestPathResult.SUCCESS and is_complete_control_path:
+                    for x in control_path:
+                        stats_per_control_path_edge[x] += 1
+                    now = time.time()
+                    # Use real time to avoid printing these details
+                    # too often in the output log.
+                    if now - last_time_printed_stats_per_control_path_edge[0] >= 30:
+                        log_control_path_stats(stats_per_control_path_edge,
+                                               num_control_path_edges)
+                        last_time_printed_stats_per_control_path_edge[0] = now
                 stats[result] += 1
+                stats_per_parser_path[result] += 1
                 first_time[0] = False
 
-            go_deeper = (result == TestPathResult.SUCCESS)
+            tmp_num = Config().get_max_paths_per_parser_path()
+            if (tmp_num and
+                stats_per_parser_path[TestPathResult.SUCCESS] >= tmp_num):
+                logging.info(
+                    "Already found %d packets for parser path %d of %d."
+                    "  Backing off so we can get to next parser path ASAP"
+                    "" % (stats_per_parser_path[TestPathResult.SUCCESS],
+                          parser_path_num, len(parser_paths)))
+                go_deeper = False
+            else:
+                go_deeper = (result == TestPathResult.SUCCESS)
             old_control_path[0] = control_path
             return go_deeper
 
+        def order_neighbors_by_least_used(node, neighbors):
+            custom_order = sorted(
+                neighbors, key=lambda t: stats_per_control_path_edge[(node, t)])
+            if Config().get_debug():
+                logging.debug("Edges out of node %s"
+                              " ordered from least used to most:", node)
+                for n in custom_order:
+                    edge = (node, n)
+                    logging.debug("    %d %s"
+                                  "" % (stats_per_control_path_edge[edge],
+                                        edge))
+            return custom_order
+
+        if Config().get_try_least_used_branches_first():
+            order_cb_fn = order_neighbors_by_least_used
+        else:
+            # Use default order built into generate_all_paths()
+            order_cb_fn = None
         graph.generate_all_paths(
-            in_pipeline.init_table_name, None, callback=eval_control_path)
+            in_pipeline.init_table_name, None, callback=eval_control_path,
+            neighbor_order_callback=order_cb_fn)
+    logging.info("Final statistics on use of control path edges:")
+    log_control_path_stats(stats_per_control_path_edge,
+                           num_control_path_edges)
     test_casesf.write('\n]\n')
     test_casesf.close()
     test_pcapf.close()
