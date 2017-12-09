@@ -60,7 +60,7 @@ def main():
         dest='allow_uninitialized_reads',
         action='store_true',
         default=False,
-        help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
+        help='Allow uninitialized reads (reads of uninitialized fields return 0)'
     )
     parser.add_argument(
         '-ai',
