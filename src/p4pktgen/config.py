@@ -43,6 +43,12 @@ class Config:
         # size of the packet BitVec variable.
         self.max_packet_len_generated = 1536
 
+        # None means no limit on the number of packets generated per
+        # parser path, other than the number of paths in the ingress
+        # control block.
+        self.max_paths_per_parser_path = None
+        self.try_least_used_branches_first = False
+
     def load_args(self, args):
         self.debug = args.debug
         self.silent = args.silent
@@ -57,6 +63,8 @@ class Config:
         # options.
         self.min_packet_len_generated = 1
         self.max_packet_len_generated = 1536
+        self.max_paths_per_parser_path = args.max_paths_per_parser_path
+        self.try_least_used_branches_first = args.try_least_used_branches_first
 
     def get_debug(self):
         return self.debug
@@ -90,3 +98,9 @@ class Config:
 
     def get_run_simple_switch(self):
         return self.run_simple_switch
+
+    def get_max_paths_per_parser_path(self):
+        return self.max_paths_per_parser_path
+
+    def get_try_least_used_branches_first(self):
+        return self.try_least_used_branches_first
