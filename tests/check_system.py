@@ -213,3 +213,16 @@ class CheckSystem:
             TestPathResult.SUCCESS
         }
         assert results == expected_results
+
+    # Fill in expected results for this test case, and change name to
+    # have prefix 'check_' instead of 'xfail_', after p4pktgen has
+    # been modified to generate correct results for it.  It generates
+    # incorrect results for this program now, because p4pktgen does
+    # not correctly handle multiple possible transitions from parser
+    # state A to parser state B.
+    def xfail_parser_parallel_paths(self):
+        Config().load_test_defaults()
+        results = process_json_file('examples/parser-parallel-paths.json')
+        expected_results = {
+        }
+        assert results == expected_results
