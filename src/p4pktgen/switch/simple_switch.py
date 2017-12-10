@@ -365,19 +365,47 @@ class SimpleSwitch:
                 prev_match = 'parse_exception'
                 continue
             m = re.search(
-                r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" is (.*)', line)
+                r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" (?:\((.*)\) )?is (.*)', line)
             if m is not None:
                 filename = m.group(1)
                 lineno = int(m.group(2))
                 source_frag = m.group(3)
-                condition_value = m.group(4)
-                # Map file name, line number, and source fragment back to
-                # a node name.
-                source_info = SourceInfo(filename, source_frag, lineno)
-                logging.debug("filename '%s' lineno=%d source_frag='%s'"
-                              "" % (filename, lineno, source_frag))
-                assert source_info in source_info_to_node_name
-                node_name = source_info_to_node_name[source_info]
+                condition_node_name = m.group(4)
+                condition_value = m.group(5)
+                if condition_node_name is not None:
+                    node_name = condition_node_name
+                else:
+                    # If the node name is not in simple_switch's console
+                    # log, try to map file name, line number, and source
+                    # fragment back to a node name.  Give an error if
+                    # there are duplicate occurrences of the same source
+                    # info for different condition nodes in the bmv2 JSON
+                    # file.
+                    source_info = SourceInfo(filename, source_frag, lineno)
+                    logging.debug("filename '%s' lineno=%d source_frag='%s'"
+                                  "" % (filename, lineno, source_frag))
+                    assert source_info in source_info_to_node_name
+                    assert len(source_info_to_node_name[source_info]) > 0
+                    node_names = source_info_to_node_name[source_info]
+                    if len(node_names) > 1:
+                        logging.error(
+                            "JSON file contains multiple different conditions"
+                            " with the same expression '%s' in the same file"
+                            " '%s' on the same line %d."
+                            "  It is not possible to convert simple_switch"
+                            " log output lines back to unique node names."
+                            "  Consider changing your P4 source code"
+                            " to avoid this situation, or upgrade to a newer"
+                            " version of p4lang/behavioral-model code that"
+                            " includes unique node names in the console log"
+                            " for condition evaluation lines."
+                            "" % (source_frag, filename, lineno))
+                        logging.error("Here is a list of all node names"
+                                      " with the same source info: %s"
+                                      "" % (', '.join(node_names)))
+                        assert False
+                    else:
+                        node_name = node_names[0]
                 assert condition_value == 'true' or condition_value == 'false'
                 if condition_value == 'true':
                     condition_value = True
