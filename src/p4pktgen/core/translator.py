@@ -569,24 +569,16 @@ class Translator:
         logging.info('path = {}'.format(' -> '.join(
             [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
+            assert isinstance(
+                path_transition,
+                P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
+            ) or isinstance(path_transition, ParserOpTransition)
+
             node = path_transition.src
             next_node = path_transition.dst
             logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
-
-            # Find correct transition
-            # XXX: decide what to do with sink
-            transition = None
-            for current_transition in parse_state.transitions:
-                # XXX: this only really works if there are not two
-                # transitions to the same state
-                if current_transition.next_state_name == next_node or (
-                        current_transition.next_state_name is None
-                        and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
-                    transition = current_transition
-
-            assert transition is not None
 
             skip_select = False
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
@@ -628,7 +620,7 @@ class Translator:
                     # case that we care about
                     other_constraints = []
                     for current_transition in parse_state.transitions:
-                        if current_transition != transition:
+                        if current_transition != path_transition:
                             other_constraints.append(
                                 self.parser_transition_key_constraint(
                                     sym_transition_key, current_transition.
@@ -641,10 +633,10 @@ class Translator:
                         "Other constraints: {}".format(other_constraints))
 
                     # The constraint for the case that we are interested in
-                    if transition.value is not None:
+                    if path_transition.value is not None:
                         constraint = self.parser_transition_key_constraint(
-                            sym_transition_key, transition.value,
-                            transition.mask)
+                            sym_transition_key, path_transition.value,
+                            path_transition.mask)
                         constraints.append(constraint)
 
                 logging.debug(sym_transition_key)
@@ -689,6 +681,8 @@ class Translator:
         logging.info('control_path = {}'.format(control_path))
 
         for transition in control_path:
+            assert isinstance(transition, Edge)
+
             table_name = transition.src
             if transition.transition_type == TransitionType.BOOL_TRANSITION:
                 t_val = transition.val
