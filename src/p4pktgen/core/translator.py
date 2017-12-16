@@ -78,13 +78,14 @@ def model_value_to_long(model_val):
         # initialized.
         return None
 
+
 def source_info_to_dict(source_info):
     if source_info is None:
         return None
-    return OrderedDict([('filename', source_info.filename),
-                        ('line', source_info.line),
-                        ('column', source_info.column),
-                        ('source_fragment', source_info.source_fragment)])
+    return OrderedDict(
+        [('filename', source_info.filename), ('line', source_info.line),
+         ('column', source_info.column), ('source_fragment',
+                                          source_info.source_fragment)])
 
 
 class Translator:
@@ -93,7 +94,7 @@ class Translator:
             self.json_file = json_file
         else:
             self.json_file = None
-            
+
         self.solver = Solver()
         self.solver.push()
         self.context = None
@@ -473,14 +474,13 @@ class Translator:
                 context.set_field_value(header_name, '$valid$', BitVecVal(
                     0, 1))
                 context.remove_header_fields(header_name)
-            elif (primitive.op in ['modify_field_rng_uniform',
-                                   'modify_field_with_hash_based_offset',
-                                   'clone_ingress_pkt_to_egress',
-                                   'clone_egress_pkt_to_egress',
-                                   'count',
-                                   'execute_meter',
-                                   'generate_digest' ]
-                  and Config().get_allow_unimplemented_primitives()):
+            elif (primitive.op in [
+                    'modify_field_rng_uniform',
+                    'modify_field_with_hash_based_offset',
+                    'clone_ingress_pkt_to_egress',
+                    'clone_egress_pkt_to_egress', 'count', 'execute_meter',
+                    'generate_digest'
+            ] and Config().get_allow_unimplemented_primitives()):
                 logging.warning('Primitive op {} allowed but treated as no-op'.
                                 format(primitive.op))
             else:
@@ -568,24 +568,17 @@ class Translator:
         pos = BitVecVal(0, 32)
         logging.info('path = {}'.format(' -> '.join(
             [str(n) for n in list(parser_path)])))
-        for (node, path_transition), (next_node, _) in zip(
-                parser_path, parser_path[1:]):
+        for path_transition in parser_path:
+            assert isinstance(
+                path_transition,
+                P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
+            ) or isinstance(path_transition, ParserOpTransition)
+
+            node = path_transition.src
+            next_node = path_transition.dst
             logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
-
-            # Find correct transition
-            # XXX: decide what to do with sink
-            transition = None
-            for current_transition in parse_state.transitions:
-                # XXX: this only really works if there are not two
-                # transitions to the same state
-                if current_transition.next_state_name == next_node or (
-                        current_transition.next_state_name is None
-                        and next_node in ['sink', P4_HLIR.PACKET_TOO_SHORT]):
-                    transition = current_transition
-
-            assert transition is not None
 
             skip_select = False
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
@@ -627,7 +620,7 @@ class Translator:
                     # case that we care about
                     other_constraints = []
                     for current_transition in parse_state.transitions:
-                        if current_transition != transition:
+                        if current_transition != path_transition:
                             other_constraints.append(
                                 self.parser_transition_key_constraint(
                                     sym_transition_key, current_transition.
@@ -640,10 +633,10 @@ class Translator:
                         "Other constraints: {}".format(other_constraints))
 
                     # The constraint for the case that we are interested in
-                    if transition.value is not None:
+                    if path_transition.value is not None:
                         constraint = self.parser_transition_key_constraint(
-                            sym_transition_key, transition.value,
-                            transition.mask)
+                            sym_transition_key, path_transition.value,
+                            path_transition.mask)
                         constraints.append(constraint)
 
                 logging.debug(sym_transition_key)
@@ -670,9 +663,9 @@ class Translator:
                              is_complete_control_path):
         # XXX: This is very hacky right now
         expected_path = [
-            n[0] if not isinstance(n[1], ParserOpTransition) else
-            self.parser_op_trans_to_str(n[1]) for n in path
-        ] + control_path
+            n.src if not isinstance(n, ParserOpTransition) else
+            self.parser_op_trans_to_str(n) for n in path
+        ] + ['sink'] + [(n.src, n) for n in control_path]
         logging.info("")
         logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
                      "" % (count.counter, len(path), len(control_path),
@@ -687,7 +680,10 @@ class Translator:
         # XXX: very ugly to split parsing/control like that, need better solution
         logging.info('control_path = {}'.format(control_path))
 
-        for table_name, transition in control_path:
+        for transition in control_path:
+            assert isinstance(transition, Edge)
+
+            table_name = transition.src
             if transition.transition_type == TransitionType.BOOL_TRANSITION:
                 t_val = transition.val
                 conditional = self.pipeline.conditionals[table_name]
@@ -751,8 +747,8 @@ class Translator:
             # Determine table configurations
             table_configs = []
             for t in control_path:
-                table_name = t[0]
-                transition = t[1]
+                table_name = t.src
+                transition = t
                 if table_name in self.pipeline.tables and context.has_table_values(
                         table_name):
                     runtime_data_values = []
@@ -773,17 +769,19 @@ class Translator:
                     for table_key, sym_table_value in zip(
                             table.key, sym_table_values):
                         key_field_name = '.'.join(table_key.target)
-                        sym_table_value_long = model_value_to_long(sym_table_value)
+                        sym_table_value_long = model_value_to_long(
+                            sym_table_value)
                         if table_key.match_type == 'lpm':
                             bitwidth = context.get_header_field_size(
                                 table_key.target[0], table_key.target[1])
                             table_values_strs.append(
                                 '{}/{}'.format(sym_table_value, bitwidth))
-                            table_key_data.append(OrderedDict([
-                                ('match_kind', 'lpm'),
-                                ('key_field_name', key_field_name),
-                                ('value', sym_table_value_long),
-                                ('prefix_length', bitwidth),
+                            table_key_data.append(
+                                OrderedDict([
+                                    ('match_kind', 'lpm'),
+                                    ('key_field_name', key_field_name),
+                                    ('value', sym_table_value_long),
+                                    ('prefix_length', bitwidth),
                                 ]))
                         elif table_key.match_type == 'ternary':
                             # Always use exact match mask, which is
@@ -795,12 +793,11 @@ class Translator:
                             table_values_strs.append(
                                 '{}&&&{}'.format(sym_table_value, mask))
                             table_entry_priority = 1
-                            table_key_data.append(OrderedDict([
-                                ('match_kind', 'ternary'),
-                                ('key_field_name', key_field_name),
-                                ('value', sym_table_value_long),
-                                ('mask', mask)
-                                ]))
+                            table_key_data.append(
+                                OrderedDict([('match_kind', 'ternary'), (
+                                    'key_field_name', key_field_name), (
+                                        'value', sym_table_value_long), (
+                                            'mask', mask)]))
                         elif table_key.match_type == 'range':
                             # Always use a range where the min and max
                             # values are exactly the one desired value
@@ -808,19 +805,17 @@ class Translator:
                             table_values_strs.append('{}->{}'.format(
                                 sym_table_value, sym_table_value))
                             table_entry_priority = 1
-                            table_key_data.append(OrderedDict([
-                                ('match_kind', 'range'),
-                                ('key_field_name', key_field_name),
-                                ('min_value', sym_table_value_long),
-                                ('max_value', sym_table_value_long)
-                                ]))
+                            table_key_data.append(
+                                OrderedDict([('match_kind', 'range'), (
+                                    'key_field_name', key_field_name
+                                ), ('min_value', sym_table_value_long), (
+                                    'max_value', sym_table_value_long)]))
                         elif table_key.match_type == 'exact':
                             table_values_strs.append(str(sym_table_value))
-                            table_key_data.append(OrderedDict([
-                                ('match_kind', 'exact'),
-                                ('key_field_name', key_field_name),
-                                ('value', sym_table_value_long)
-                                ]))
+                            table_key_data.append(
+                                OrderedDict([('match_kind', 'exact'), (
+                                    'key_field_name', key_field_name), (
+                                        'value', sym_table_value_long)]))
                         else:
                             raise Exception('Match type {} not supported'.
                                             format(table_key.match_type))
@@ -848,32 +843,24 @@ class Translator:
                 for param_name, param_val in params:
                     param_val = model_value_to_long(param_val)
                     param_vals.append(param_val)
-                    params2.append(OrderedDict([
-                        ('name', param_name),
-                        ('value', param_val)
-                        ]))
+                    params2.append(
+                        OrderedDict([('name', param_name), ('value', param_val)
+                                     ]))
                 if len(values) == 0:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
                                       table, action, param_vals))
-                    table_setup_info = OrderedDict([
-                        ("command", "table_set_default"),
-                        ("table_name", table),
-                        ("action_name", action),
-                        ("action_parameters", params2)
-                        ])
+                    table_setup_info = OrderedDict(
+                        [("command", "table_set_default"),
+                         ("table_name", table), ("action_name", action),
+                         ("action_parameters", params2)])
                 else:
-                    ss_cli_cmd = ('table_add ' +
-                                  self.table_add_cmd_string(
-                                      table, action, values, param_vals,
-                                      priority))
-                    table_setup_info = OrderedDict([
-                        ("command", "table_add"),
-                        ("table_name", table),
-                        ("keys", key_data),
-                        ("action_name", action),
-                        ("action_parameters", params2)
-                        ])
+                    ss_cli_cmd = ('table_add ' + self.table_add_cmd_string(
+                        table, action, values, param_vals, priority))
+                    table_setup_info = OrderedDict(
+                        [("command", "table_add"), ("table_name", table),
+                         ("keys", key_data), ("action_name", action),
+                         ("action_parameters", params2)])
                     if priority is not None:
                         table_setup_info['priority'] = priority
                 logging.info(ss_cli_cmd)
@@ -891,9 +878,9 @@ class Translator:
                     var_name, source_info = uninitialized_read
                     logging.error('Uninitialized read of {} at {}'.format(
                         var_name, source_info))
-                    uninitialized_read_data.append(OrderedDict([
-                        ("variable_name", var_name),
-                        ("source_info", source_info_to_dict(source_info))]))
+                    uninitialized_read_data.append(
+                        OrderedDict([("variable_name", var_name), (
+                            "source_info", source_info_to_dict(source_info))]))
             elif len(context.invalid_header_writes) != 0:
                 result = TestPathResult.INVALID_HEADER_WRITE
                 invalid_header_write_data = []
@@ -901,9 +888,9 @@ class Translator:
                     var_name, source_info = invalid_header_write
                     logging.error('Invalid header write of {} at {}'.format(
                         var_name, source_info))
-                    invalid_header_write_data.append(OrderedDict([
-                        ("variable_name", var_name),
-                        ("source_info", source_info_to_dict(source_info))]))
+                    invalid_header_write_data.append(
+                        OrderedDict([("variable_name", var_name), (
+                            "source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
                 if Config().get_run_simple_switch():
                     extracted_path = self.test_packet(payload, table_configs,
@@ -955,10 +942,11 @@ class Translator:
         else:
             # TBD: Currently we always send packets into port 0.
             # Should generalize that later.
-            input_packets = [OrderedDict([
-                ("port", 0),
-                ("packet_len_bytes", packet_len_bytes),
-                ("packet_hexstr", packet_hexstr)])]
+            input_packets = [
+                OrderedDict([("port", 0), ("packet_len_bytes",
+                                           packet_len_bytes), ("packet_hexstr",
+                                                               packet_hexstr)])
+            ]
 
         # TBD: Would be nice to get rid of u in front of strings on
         # paths, e.g. u'node_2', u'p4_programs/demo1b.p4'.  Maybe it
@@ -982,7 +970,7 @@ class Translator:
             #("expected_output_packets", TBD),
             ("parser_path_len", len(path)),
             ("ingress_path_len", len(control_path)),
-            ])
+        ])
         if uninitialized_read_data:
             test_case["uninitialized_read_data"] = uninitialized_read_data
         if invalid_header_write_data:
