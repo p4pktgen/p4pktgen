@@ -68,15 +68,13 @@ def main():
         dest='allow_invalid_header_writes',
         action='store_true',
         default=False,
-        help='Treat writes to fields in invalid headers as no-op'
-    )
+        help='Treat writes to fields in invalid headers as no-op')
     parser.add_argument(
         '--record-statistics',
         dest='record_statistics',
         action='store_true',
         default=False,
-        help='Record statistics',
-    )
+        help='Record statistics', )
     parser.add_argument(
         '-aup',
         '--allow-unimplemented-primitives',
@@ -119,7 +117,9 @@ def main():
         dest='try_least_used_branches_first',
         action='store_true',
         default=False,
-        help="""This option is only expected to be useful if you specify options that limit the number of paths generated to fewer than all of them, e.g. --max-paths-per-parser-path.  When enabled, then whenever multiple branches are considered for evaluation (e.g. the true/false branch of an if statement, or the multiple actions possible when applying a table), they will be considered in order from least used to most used, where by 'used' we mean how many times that edge of the control path has appeared in previously generated complete paths with result SUCCESS.  This may help in covering more branches in the code.  Without this option, the default behavior is to always consider these possibilities in the same order every time the branch is considered.""")
+        help=
+        """This option is only expected to be useful if you specify options that limit the number of paths generated to fewer than all of them, e.g. --max-paths-per-parser-path.  When enabled, then whenever multiple branches are considered for evaluation (e.g. the true/false branch of an if statement, or the multiple actions possible when applying a table), they will be considered in order from least used to most used, where by 'used' we mean how many times that edge of the control path has appeared in previously generated complete paths with result SUCCESS.  This may help in covering more branches in the code.  Without this option, the default behavior is to always consider these possibilities in the same order every time the branch is considered."""
+    )
     parser.add_argument(
         '-gg',
         '--generate-graphs',
@@ -151,8 +151,10 @@ def main():
     assert args.format in ['json', 'p4']
 
     if args.format == 'json':
-        process_json_file(args.input_file, debug=args.debug,
-                          generate_graphs=args.generate_graphs)
+        process_json_file(
+            args.input_file,
+            debug=args.debug,
+            generate_graphs=args.generate_graphs)
     else:
         # XXX: revisit
         top.build_from_p4(args.input_file, args.flags)
@@ -235,8 +237,8 @@ def generate_graphviz_graph(pipeline, graph):
                 # to setValid() or setInvalid() method calls in P4_16 programs.
                 assert transition.transition_type == TransitionType.ACTION_TRANSITION
                 primitive_ops = [p.op for p in transition.action.primitives]
-                change_hdr_valid = (("add_header" in primitive_ops) or
-                                    ("remove_header" in primitive_ops))
+                change_hdr_valid = (("add_header" in primitive_ops)
+                                    or ("remove_header" in primitive_ops))
                 if change_hdr_valid:
                     edge_color = "green"
                     add_header_count = 0
@@ -257,8 +259,12 @@ def generate_graphviz_graph(pipeline, graph):
                 else:
                     neighbor_str = str(neighbor)
             assert isinstance(neighbor_str, str)
-            dot.edge(node_str, neighbor_str, edge_label_str, color=edge_color,
-                     style=edge_style)
+            dot.edge(
+                node_str,
+                neighbor_str,
+                edge_label_str,
+                color=edge_color,
+                style=edge_style)
     fname = '{}_dot.gv'.format(pipeline.name)
     dot.render(fname, view=False)
     logging.info("Wrote files %s and %s.pdf", fname, fname)
@@ -267,8 +273,7 @@ def generate_graphviz_graph(pipeline, graph):
 def log_control_path_stats(stats_per_control_path_edge,
                            num_control_path_edges):
     logging.info("Number of times each of %d control path edges has occurred"
-                 " in a SUCCESS test case:",
-                 num_control_path_edges)
+                 " in a SUCCESS test case:", num_control_path_edges)
     num_edges_with_count = defaultdict(int)
     num_edges_with_counts = 0
     for e in sorted(stats_per_control_path_edge.keys()):
@@ -350,7 +355,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         parser_path_num += 1
         logging.info("Analyzing parser_path %d of %d: %s"
                      "" % (parser_path_num, len(parser_paths), parser_path))
-        translator.generate_parser_constraints(parser_path + [('sink', None)])
+        translator.generate_parser_constraints(parser_path)
         stats_per_parser_path = defaultdict(int)
 
         def eval_control_path(control_path, is_complete_control_path):
@@ -358,7 +363,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             translator.push()
             expected_path, result, test_case, packet_lst = \
                 translator.generate_constraints(
-                    parser_path + [('sink', None)], control_path,
+                    parser_path, control_path,
                     source_info_to_node_name, count, is_complete_control_path)
             translator.pop()
 
@@ -371,10 +376,16 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             if Config().get_record_statistics():
                 current_time = time.time()
                 if is_complete_control_path:
-                    timing_file.write('{},{}\n'.format(result, current_time - start_time))
+                    timing_file.write(
+                        '{},{}\n'.format(result, current_time - start_time))
                     timing_file.flush()
                 if count.counter % 100 == 0:
-                    breakdown_file.write('{},{},{},{},{},{}\n'.format(current_time - start_time, translator.total_solver_time, translator.total_switch_time, avg_full_path_len.get_avg(), avg_unsat_path_len.get_avg(), count_unsat_paths.counter))
+                    breakdown_file.write('{},{},{},{},{},{}\n'.format(
+                        current_time - start_time, translator.
+                        total_solver_time, translator.total_switch_time,
+                        avg_full_path_len.get_avg(),
+                        avg_unsat_path_len.get_avg(),
+                        count_unsat_paths.counter))
                     breakdown_file.flush()
 
             record_result = (is_complete_control_path
@@ -390,15 +401,16 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                 for p in packet_lst:
                     test_pcapf._write_packet(p)
                 test_pcapf.flush()
-                result_path = [n[0]
-                               for n in parser_path] + ['sink'] + control_path
+                result_path = [n.src for n in parser_path] + ['sink'] + [
+                    (n.src, n) for n in control_path
+                ]
                 result_path_tuple = tuple(result_path)
                 if result_path_tuple in results and results[result_path_tuple] != result:
                     logging.error("result_path %s with result %s"
                                   " is already recorded in results"
                                   " while trying to record different result %s"
-                                  "" % (result_path, results[result_path_tuple],
-                                        result))
+                                  "" % (result_path,
+                                        results[result_path_tuple], result))
                     assert False
                 results[tuple(result_path)] = result
                 if result == TestPathResult.SUCCESS and is_complete_control_path:
@@ -417,7 +429,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
             tmp_num = Config().get_max_paths_per_parser_path()
             if (tmp_num and
-                stats_per_parser_path[TestPathResult.SUCCESS] >= tmp_num):
+                    stats_per_parser_path[TestPathResult.SUCCESS] >= tmp_num):
                 logging.info(
                     "Already found %d packets for parser path %d of %d."
                     "  Backing off so we can get to next parser path ASAP"
@@ -431,7 +443,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
         def order_neighbors_by_least_used(node, neighbors):
             custom_order = sorted(
-                neighbors, key=lambda t: stats_per_control_path_edge[(node, t)])
+                neighbors,
+                key=lambda t: stats_per_control_path_edge[(node, t)])
             if Config().get_debug():
                 logging.debug("Edges out of node %s"
                               " ordered from least used to most:", node)
@@ -448,11 +461,12 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             # Use default order built into generate_all_paths()
             order_cb_fn = None
         graph.generate_all_paths(
-            in_pipeline.init_table_name, None, callback=eval_control_path,
+            in_pipeline.init_table_name,
+            None,
+            callback=eval_control_path,
             neighbor_order_callback=order_cb_fn)
     logging.info("Final statistics on use of control path edges:")
-    log_control_path_stats(stats_per_control_path_edge,
-                           num_control_path_edges)
+    log_control_path_stats(stats_per_control_path_edge, num_control_path_edges)
     test_casesf.write('\n]\n')
     test_casesf.close()
     test_pcapf.close()

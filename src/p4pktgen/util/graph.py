@@ -61,7 +61,7 @@ class Graph:
             for t in neighbors:
                 transition_name = t
                 neighbor = t.dst
-                path_so_far.append((node, transition_name))
+                path_so_far.append(transition_name)
                 go_deeper = True
                 if callback is not None:
                     # The recursive generate_all_paths_() call below
