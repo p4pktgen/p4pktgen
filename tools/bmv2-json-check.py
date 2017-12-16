@@ -318,6 +318,15 @@ def check_expr_op_types(expr):
                      "" % (t))
 
 
+def build_name_to_obj_dict(jsondat, key):
+    assert key in jsondat
+    d = {}
+    for obj in jsondat[key]:
+        assert 'name' in obj
+        d[obj['name']] = obj
+    return d
+
+
 
 num_parser_set_ops = 0
 for p in jsondat['parsers']:
@@ -335,6 +344,14 @@ if verbosity >= 1:
     print("Checked %d 'set' operations in parsers"
           "" % (num_parser_set_ops))
 
+# We already checked for duplicate names and ids in 'register_arrays'
+# 'meter_arrays' 'counter_arrays' above, so no need to repeat that
+# here.
+counter_arrays = build_name_to_obj_dict(jsondat, 'counter_arrays')
+meter_arrays = build_name_to_obj_dict(jsondat, 'meter_arrays')
+register_arrays = build_name_to_obj_dict(jsondat, 'register_arrays')
+
+
 num_actions = 0
 num_assigns_with_expr_rhs = 0
 for action in jsondat['actions']:
@@ -343,18 +360,90 @@ for action in jsondat['actions']:
     assert 'primitives' in action
     for prim in action['primitives']:
         assert 'op' in prim
-        if prim['op'] != 'assign':
+        if prim['op'] == 'assign':
+            params = prim['parameters']
+            assert len(params) == 2
+            rhs = params[1]
+            assert 'type' in rhs
+            if rhs['type'] != 'expression':
+                continue
+            num_assigns_with_expr_rhs += 1
+            assert 'value' in rhs
+            info = check_expr_op_types(rhs)
+            check_one_type(info, 'bitvec', 'expression', rhs)
             continue
-        params = prim['parameters']
-        assert len(params) == 2
-        rhs = params[1]
-        assert 'type' in rhs
-        if rhs['type'] != 'expression':
+        if prim['op'] == 'count':
+            params = prim['parameters']
+            assert len(params) == 2
+            counter_ref = params[0]
+            assert 'type' in counter_ref
+            assert 'value' in counter_ref
+            assert counter_ref['type'] == 'counter_array'
+            reg_name = counter_ref['value']
+            if reg_name in counter_arrays:
+                if verbosity >= 1:
+                    print("Found count operation for counter named '%s'"
+                          "" % (reg_name))
+            else:
+                print("Found count operation for counter named '%s'"
+                      " that is not defined in 'counter_arrays' key."
+                      "" % (reg_name))
+                total_errors += 1
             continue
-        num_assigns_with_expr_rhs += 1
-        assert 'value' in rhs
-        info = check_expr_op_types(rhs)
-        check_one_type(info, 'bitvec', 'expression', rhs)
+        if prim['op'] == 'execute_meter':
+            params = prim['parameters']
+            assert len(params) == 3
+            meter_ref = params[0]
+            assert 'type' in meter_ref
+            assert 'value' in meter_ref
+            assert meter_ref['type'] == 'meter_array'
+            reg_name = meter_ref['value']
+            if reg_name in meter_arrays:
+                if verbosity >= 1:
+                    print("Found execute_meter for meter named '%s'"
+                          "" % (reg_name))
+            else:
+                print("Found execute_meter for meter named '%s'"
+                      " that is not defined in 'meter_arrays' key."
+                      "" % (reg_name))
+                total_errors += 1
+            continue
+        if prim['op'] == 'register_read':
+            params = prim['parameters']
+            assert len(params) == 3
+            reg_ref = params[1]
+            assert 'type' in reg_ref
+            assert 'value' in reg_ref
+            assert reg_ref['type'] == 'register_array'
+            reg_name = reg_ref['value']
+            if reg_name in register_arrays:
+                if verbosity >= 1:
+                    print("Found register_read from register named '%s'"
+                          "" % (reg_name))
+            else:
+                print("Found register_read from register named '%s'"
+                      " that is not defined in 'register_arrays' key."
+                      "" % (reg_name))
+                total_errors += 1
+            continue
+        if prim['op'] == 'register_write':
+            params = prim['parameters']
+            assert len(params) == 3
+            reg_ref = params[0]
+            assert 'type' in reg_ref
+            assert 'value' in reg_ref
+            assert reg_ref['type'] == 'register_array'
+            reg_name = reg_ref['value']
+            if reg_name in register_arrays:
+                if verbosity >= 1:
+                    print("Found register_write to register named '%s'"
+                          "" % (reg_name))
+            else:
+                print("Found register_write to register named '%s'"
+                      " that is not defined in 'register_arrays' key."
+                      "" % (reg_name))
+                total_errors += 1
+            continue
 
 if verbosity >= 1:
     print("Found %d actions" % (num_actions))

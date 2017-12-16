@@ -2,7 +2,7 @@ from __future__ import print_function
 import argparse
 import json
 import logging
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import time
 
 import matplotlib.pyplot as plt
@@ -60,7 +60,7 @@ def main():
         dest='allow_uninitialized_reads',
         action='store_true',
         default=False,
-        help='Allow uninitialized reads (reads of unintialized fields retrun 0)'
+        help='Allow uninitialized reads (reads of uninitialized fields return 0)'
     )
     parser.add_argument(
         '-ai',
@@ -335,7 +335,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
     start_time = time.time()
     count = Counter('path_count')
-    results = {}
+    results = OrderedDict()
     stats = defaultdict(int)
     last_time_printed_stats_per_control_path_edge = [time.time()]
     stats_per_control_path_edge = defaultdict(int)

@@ -3,7 +3,7 @@ import copy
 import json
 import logging
 from pprint import pprint
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 
 from p4_utils import p4_parser_ops_enum
 from p4pktgen.hlir.type_value import *
@@ -628,7 +628,7 @@ class Pipeline:
     def generate_CFG(self):
         graph = Graph()
         queue = [self.init_table_name]
-        source_info_to_node_name = {}
+        source_info_to_node_name = defaultdict(list)
         # Handle special case of empty pipeline, e.g. an ingress or
         # egress control block with no statements at all.
         if self.init_table_name is None:
@@ -650,22 +650,7 @@ class Pipeline:
                 assert table_name in self.conditionals
                 conditional = self.conditionals[table_name]
                 source_info = conditional.source_info
-                if source_info in source_info_to_node_name:
-                    logging.error(
-                        "JSON file contains multiple different conditions"
-                        " with same expression '%s' in the same file '%s'"
-                        " on the same line %d."
-                        "  It will not be possible to convert simple_switch"
-                        " log output lines back to unique node names."
-                        "  Consider changing your P4 source code"
-                        " to avoid this situation."
-                        "" % (source_info.source_fragment,
-                              source_info.filename, source_info.line))
-                    logging.error("One has node name %s, the other %s"
-                                  "" % (source_info_to_node_name[source_info],
-                                        table_name))
-                    assert False
-                source_info_to_node_name[source_info] = table_name
+                source_info_to_node_name[source_info].append(table_name)
                 for branch, next_name in [(True, conditional.true_next_name),
                                           (False,
                                            conditional.false_next_name)]:
