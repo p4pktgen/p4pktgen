@@ -7,14 +7,31 @@ from z3 import *
 from p4pktgen.config import Config
 
 
+class ContextVar(object):
+    def __init__(self):
+        pass
+
+class Field(ContextVar):
+    def __init__(self, header, field):
+        super(ContextVar, self).__init__()
+        self.header = header
+        self.field = field
+
+    def __eq__(self, other):
+        return self.header == other.header and self.header == other.header
+
 # XXX: This class needs some heavy refactoring.
 class Context:
-    """The context that is used to generate the symbolic
-    representation of a P4 program."""
+    """The context that is used to generate the symbolic representation of a P4
+    program."""
 
     def __init__(self):
+        # Maps variables to a list of versions
+        self.var_to_smt_var = {}
+        # List of constraints that associates variables with SMT expressions
+        self.var_constraints = []
+
         self.sym_vars = {}
-        self.sym_vars_stack = []
         self.fields = {}
         self.id = 0
         # XXX: unify errors
@@ -23,6 +40,12 @@ class Context:
         self.runtime_data = []
         self.table_values = {}
         self.source_info = None
+
+    def __copy__(self):
+        context_copy = Context()
+        context_copy.__dict__.update(self.__dict__)
+        context_copy.var_to_smt_var = dict.copy(self.var_to_smt_var)
+        return context_copy
 
     def set_source_info(self, source_info):
         self.source_info = source_info
@@ -39,26 +62,29 @@ class Context:
 
     def field_to_var(self, field):
         assert field.header is not None
-        return '{}.{}'.format(field.header.name, field.name)
+        return (field.header.name, field.name)
 
     def insert(self, field, sym_val):
-        self.sym_vars[self.field_to_var(field)] = sym_val
+        self.set_field_value(field.header.name, field.name, sym_val)
 
     def set_field_value(self, header_name, header_field, sym_val):
-        var_name = '{}.{}'.format(header_name, header_field)
+        var_name = (header_name, header_field)
         do_write = True
         # XXX: clean up
-        if header_field != '$valid$' and ('{}.{}'.format(
-                header_name, '$valid$') in self.sym_vars) and simplify(
+        if header_field != '$valid$' and (
+                header_name, '$valid$') in self.var_to_smt_var and simplify(
                     self.get_header_field(header_name,
                                           '$valid$')) == BitVecVal(0, 1):
             if Config().get_allow_invalid_header_writes():
                 do_write = False
             else:
-                self.invalid_header_writes.append((var_name, self.source_info))
+               self.invalid_header_writes.append((var_name, self.source_info))
 
         if do_write:
-            self.sym_vars[var_name] = sym_val
+            self.id += 1
+            new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1], self.id), sym_val.size())
+            self.var_to_smt_var[var_name] = new_smt_var
+            self.var_constraints.append(new_smt_var == sym_val)
 
     def register_runtime_data(self, table_name, action_name, param_name,
                               bitwidth):
@@ -79,7 +105,7 @@ class Context:
     def remove_header_fields(self, header_name):
         # XXX: hacky
         for k in list(self.sym_vars.keys()):
-            if k.startswith(header_name + '.') and not (k.endswith('$valid$')):
+            if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
                 del self.sym_vars[k]
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
@@ -102,13 +128,13 @@ class Context:
         return self.get_var(self.field_to_var(field))
 
     def get_header_field(self, header_name, header_field):
-        return self.get_var('{}.{}'.format(header_name, header_field))
+        return self.get_var((header_name, header_field))
 
     def get_header_field_size(self, header_name, header_field):
         return self.get_header_field(header_name, header_field).size()
 
     def get_var(self, var_name):
-        if var_name not in self.sym_vars:
+        if var_name not in self.var_to_smt_var:
             if Config().get_allow_uninitialized_reads():
                 return BitVecVal(0, self.fields[var_name].size)
             else:
@@ -118,33 +144,41 @@ class Context:
                 return BitVec(
                     self.fresh_var(var_name), self.fields[var_name].size)
         else:
-            return self.sym_vars[var_name]
+            return self.var_to_smt_var[var_name]
+            #return self.sym_vars[var_name]
 
     def has_header_field(self, header_name, header_field):
         # XXX: this method should not be necessary
-        return '{}.{}'.format(header_name, header_field) in self.sym_vars
+        return (header_name, header_field) in self.sym_vars
 
     def print_values(self, model):
         for k, v in self.sym_vars.items():
             print('{}: {}'.format(k, model[v]))
 
     def get_name_constraints(self):
+        """
         constraints = []
         for var_name, sym_val in self.sym_vars.items():
             if is_bv(sym_val):
-                sym_var = BitVec(var_name, sym_val.size())
+                sym_var = BitVec('.'.join(var_name), sym_val.size())
                 constraints.append(sym_var == sym_val)
-        return constraints
+        """
 
-    def print_model(self, model):
-        for var_name, sym_val in self.sym_vars.items():
-            if is_bv(sym_val):
-                sym_var = BitVec(var_name, sym_val.size())
-                print('{}: {}'.format(var_name, model[sym_var]))
+        return self.var_constraints
+
+    def log_constraints(self):
+        logging.info('Variable constraints')
+        for constraint in self.var_constraints:
+            logging.info('\t{}'.format(constraint))
 
     def log_model(self, model):
-        for var_name in sorted(self.sym_vars):
-            sym_val = self.sym_vars[var_name]
-            if is_bv(sym_val):
-                sym_var = BitVec(var_name, sym_val.size())
-                logging.info('{}: {}'.format(var_name, model[sym_var]))
+        logging.info("Model")
+        for var, smt_var in sorted(self.var_to_smt_var.items()):
+            logging.info('\t{}: {}'.format('.'.join(var), model.eval(smt_var)))
+            """
+                    log += ' ' + model.get_value(version)
+                sym_val = self.sym_vars[var_name]
+                if is_bv(sym_val):
+                    sym_var = BitVec('.'.join(var_name), sym_val.size())
+                    logging.info('{}: {}'.format(var_name, model[sym_var]))
+                """
