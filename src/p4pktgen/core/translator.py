@@ -21,6 +21,7 @@ from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *
 from p4pktgen.switch.simple_switch import SimpleSwitch
 from p4pktgen.util.statistics import Timer
+from p4pktgen.util.table import Table
 
 TestPathResult = Enum(
     'TestPathResult',
@@ -658,6 +659,20 @@ class Translator:
         # assert isinstance(op_trans.op.value[1], TypeValueHexstr)
         return op_trans.error_str
 
+    def log_model(self, model, context_history):
+        var_vals = defaultdict(lambda: [])
+        for i, context in enumerate(context_history):
+            for var, smt_var in context.var_to_smt_var.items():
+                if len(var_vals[var]) < i:
+                    # Add empty entries for the contexts where the variable
+                    # didn't exist
+                    var_vals[var] += [''] * (i - len(var_vals[var]))
+                var_vals[var].append(str(model.eval(smt_var)))
+
+        table = Table()
+        table.add_rows([['.'.join(var)] + vals for var, vals in sorted(var_vals.items())])
+        logging.info('Model\n' + str(table))
+
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
@@ -673,6 +688,7 @@ class Translator:
                            is_complete_control_path, expected_path))
 
         context = self.context
+        context_history = [copy.copy(context)]
         constraints = []
 
         time2 = time.time()
@@ -717,6 +733,7 @@ class Translator:
                     transition.transition_type))
 
             context.unset_source_info()
+            context_history.append(copy.copy(context))
 
         constraints += context.get_name_constraints()
 
@@ -741,7 +758,7 @@ class Translator:
         if smt_result != unsat:
             model = self.solver.model()
             if not Config().get_silent():
-                context.log_model(model)
+                self.log_model(model, context_history)
             payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations
