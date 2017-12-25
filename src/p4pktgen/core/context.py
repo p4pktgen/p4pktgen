@@ -71,6 +71,43 @@ class Context:
         var_name = (header_name, header_field)
         do_write = True
         # XXX: clean up
+        tmp_bool = (header_name, '$valid$') in self.var_to_smt_var
+        logging.debug("invalid-header-write-dbg 1 set_field_value header_name %s"
+                      " header_field %s tmp_bool %s sym_val %s"
+                      "" % (header_name, header_field, tmp_bool, sym_val))
+        if tmp_bool:
+            logging.debug("invalid-header-write-dbg 2 simplify result %s is_0? %s"
+                          "" % (simplify(self.get_header_field(header_name,
+                                                               '$valid$')),
+                                simplify(self.get_header_field(header_name,
+                                                               '$valid$')) == BitVecVal(0, 1)))
+            if simplify(self.get_header_field(header_name, '$valid$')) == BitVecVal(0, 1):
+
+                # This never happens, not even for
+                # examples/demo1_rm_header.json where it should, at
+                # least once, detect a write to ipv4.ttl as an
+                # invalid_header_write.
+
+                # I believe it never happens because simplify is given
+                # an equation like ipv4.$valid$.7 == BitVecVal(0, 1),
+                # instead of BitVecVal(0, 1) == BitVecVal(0, 1).  For
+                # the latter, it still returns an SMT formula, but
+                # when you do an 'if' with such an SMT formula as the
+                # if condition, it returns True.  For the former, it
+                # returns False.
+
+                # For single-path analysis, it should be good enough
+                # to look up the current constant value of
+                # ipv4.$valid$.7.  In the general case of all-paths
+                # analysis, it seems like we would want to create a
+                # solver, add the name constraints and probably all
+                # other constraints created, and see if we could find
+                # a model that solves for ipv4.$valid$.7 ==
+                # BitVecVal(0, 1).
+
+                logging.debug("invalid-header-write-dbg 3 simplify considered truthy")
+            else:
+                logging.debug("invalid-header-write-dbg 4 simplify considered falsey")
         if header_field != '$valid$' and (
                 header_name, '$valid$') in self.var_to_smt_var and simplify(
                     self.get_header_field(header_name,
@@ -83,6 +120,8 @@ class Context:
         if do_write:
             self.id += 1
             new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1], self.id), sym_val.size())
+            logging.debug("invalid-header-write-dbg 5 new_smt_var %s sym_val %s",
+                          new_smt_var, sym_val)
             self.var_to_smt_var[var_name] = new_smt_var
             self.var_constraints.append(new_smt_var == sym_val)
 
@@ -104,9 +143,9 @@ class Context:
 
     def remove_header_fields(self, header_name):
         # XXX: hacky
-        for k in list(self.sym_vars.keys()):
+        for k in list(self.var_to_smt_var.keys()):
             if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
-                del self.sym_vars[k]
+                del self.var_to_smt_var[k]
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
                                           param_name, idx):
@@ -145,7 +184,6 @@ class Context:
                     self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.var_to_smt_var[var_name]
-            #return self.sym_vars[var_name]
 
     def has_header_field(self, header_name, header_field):
         # XXX: this method should not be necessary
