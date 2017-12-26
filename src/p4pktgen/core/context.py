@@ -2,6 +2,7 @@
 # - Print out which values were used for constraints.
 
 import logging
+import time
 from z3 import *
 
 from p4pktgen.config import Config
@@ -71,47 +72,25 @@ class Context:
         var_name = (header_name, header_field)
         do_write = True
         # XXX: clean up
-        tmp_bool = (header_name, '$valid$') in self.var_to_smt_var
-        logging.debug("invalid-header-write-dbg 1 set_field_value header_name %s"
-                      " header_field %s tmp_bool %s sym_val %s"
-                      "" % (header_name, header_field, tmp_bool, sym_val))
-        if tmp_bool:
-            logging.debug("invalid-header-write-dbg 2 simplify result %s is_0? %s"
-                          "" % (simplify(self.get_header_field(header_name,
-                                                               '$valid$')),
-                                simplify(self.get_header_field(header_name,
-                                                               '$valid$')) == BitVecVal(0, 1)))
-            if simplify(self.get_header_field(header_name, '$valid$')) == BitVecVal(0, 1):
-
-                # This never happens, not even for
-                # examples/demo1_rm_header.json where it should, at
-                # least once, detect a write to ipv4.ttl as an
-                # invalid_header_write.
-
-                # I believe it never happens because simplify is given
-                # an equation like ipv4.$valid$.7 == BitVecVal(0, 1),
-                # instead of BitVecVal(0, 1) == BitVecVal(0, 1).  For
-                # the latter, it still returns an SMT formula, but
-                # when you do an 'if' with such an SMT formula as the
-                # if condition, it returns True.  For the former, it
-                # returns False.
-
-                # For single-path analysis, it should be good enough
-                # to look up the current constant value of
-                # ipv4.$valid$.7.  In the general case of all-paths
-                # analysis, it seems like we would want to create a
-                # solver, add the name constraints and probably all
-                # other constraints created, and see if we could find
-                # a model that solves for ipv4.$valid$.7 ==
-                # BitVecVal(0, 1).
-
-                logging.debug("invalid-header-write-dbg 3 simplify considered truthy")
-            else:
-                logging.debug("invalid-header-write-dbg 4 simplify considered falsey")
-        if header_field != '$valid$' and (
-                header_name, '$valid$') in self.var_to_smt_var and simplify(
-                    self.get_header_field(header_name,
-                                          '$valid$')) == BitVecVal(0, 1):
+        invalid_header_write = False
+        do_invalid_header_write_check = False
+        if ((header_field != '$valid$') and
+            ((header_name, '$valid$') in self.var_to_smt_var)):
+            do_invalid_header_write_check = True
+        if do_invalid_header_write_check:
+            tmp_time = time.time()
+            tmp_solver = Solver()
+            tmp_solver.add(And(self.var_constraints +
+                               [self.get_header_field(header_name, '$valid$') ==
+                                BitVecVal(0, 1)]))
+            tmp_result = tmp_solver.check()
+            invalid_header_write = (tmp_result != unsat)
+            solve_time = time.time() - tmp_time
+            logging.debug("Took %.3f sec to solve invalid_header_write %s "
+                          " for %s %s"
+                          "" % (solve_time, invalid_header_write,
+                                header_name, header_field))
+        if invalid_header_write:
             if Config().get_allow_invalid_header_writes():
                 do_write = False
             else:
@@ -120,8 +99,6 @@ class Context:
         if do_write:
             self.id += 1
             new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1], self.id), sym_val.size())
-            logging.debug("invalid-header-write-dbg 5 new_smt_var %s sym_val %s",
-                          new_smt_var, sym_val)
             self.var_to_smt_var[var_name] = new_smt_var
             self.var_constraints.append(new_smt_var == sym_val)
 
