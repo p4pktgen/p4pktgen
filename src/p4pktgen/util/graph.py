@@ -1,4 +1,5 @@
 import logging
+import collections
 import copy
 
 class Edge(object):
@@ -10,19 +11,281 @@ class Edge(object):
         return '{} -> {}'.format(self.src, self.dst)
 
 class Graph:
+    """A Graph is a graph of nodes and directed edges.  The nodes can be
+    any immutable hashable Python data type, e.g. numbers, strings,
+    tuples, frozenset, etc.  The edges can be any data type, mutable
+    or immutable.
+
+    Call method add_node to add a node to the graph, or add_edge to
+    add an edge.  add_edge also adds the source and destination nodes,
+    if they have not been added before.
+    """
+
     def __init__(self):
         self.graph = {}
+        self.in_edges = {}
+
+    # XXX: This might not be the correct way to override __deepcopy__
+    # in Python. I am coding up something that works for this class
+    # Graph's use case, and not worrying about the finer details.
+    def __deepcopy__(self, memo_dict):
+        ret = Graph()
+        ret.graph = copy.deepcopy(self.graph)
+        ret.in_edges = copy.deepcopy(self.in_edges)
+        return ret
+
+    def add_node(self, v):
+        if v not in self.graph:
+            self.graph[v] = []
+        if v not in self.in_edges:
+            self.in_edges[v] = []
 
     def add_edge(self, src, dst, edge):
-        if src not in self.graph:
-            self.graph[src] = []
+        assert isinstance(edge, Edge)
+        assert edge.src == src
+        assert edge.dst == dst
+        self.add_node(src)
+        self.add_node(dst)
         self.graph[src].append(edge)
+        self.in_edges[dst].append(edge)
+
+    def get_nodes(self):
+        """Return a list of nodes in the graph."""
+        return list(self.graph.keys())
 
     def get_neighbors(self, v):
+        """Given a node v, return a list of edges directed out of v."""
         return self.graph[v]
+
+    def get_in_edges(self, v):
+        """Given a node v, return a list of edges directed into v."""
+        return self.in_edges[v]
 
     def __repr__(self):
         return self.graph.__repr__()
+
+    def get_sources_and_sinks(self):
+        """Return a list of all 'source' nodes, which are those that have
+        no edges directed into them, and a list of all 'sink' nodes,
+        which are those that have no edges directed out of them."""
+        sources = []
+        sinks = []
+        for v in self.get_nodes():
+            if len(self.get_neighbors(v)) == 0:
+                sinks.append(v)
+            if len(self.get_in_edges(v)) == 0:
+                sources.append(v)
+        return sources, sinks
+
+    def depth_first_search(self, v, backwards=False):
+        """Perform a depth-first search in the graph starting at node v.  By
+        default, only traverse edges in the 'forward' direction, from
+        e.src to e.dst.  If the optional keyword arg backwards is
+        True, only traverse edges in the 'backward' direction, from
+        e.dst to e.src.
+
+        Return a dict that contains a key for every node visited, with
+        a corresponding value equal to the parent of that node in the
+        depth-first search tree.  This dict's keys will be fewer than
+        all nodes in the graph, if not all are reachable from v along
+        the specified direction of edges.
+
+        Also return a list of nodes that are sinks if backwards is
+        False, where a sink node has out-degree 0.  If backwards is
+        True, this list of nodes are sources, where a source node has
+        in-degree 0.  Again, these nodes are a subset of those
+        reachable from v along edges in the specified direction.
+        """
+
+        sources_or_sinks = []
+        visited = set()
+        dfs_tree_parent = {}
+        def do_dfs(u, parent):
+            if u in dfs_tree_parent:
+                return
+            dfs_tree_parent[u] = parent
+            if backwards:
+                edges = self.get_in_edges(u)
+            else:
+                edges = self.get_neighbors(u)
+            if len(edges) == 0:
+                sources_or_sinks.append(u)
+            for e in edges:
+                if backwards:
+                    do_dfs(e.src, u)
+                else:
+                    do_dfs(e.dst, u)
+        do_dfs(v, v)
+        return dfs_tree_parent, sources_or_sinks
+
+    def reverse_one_edge(self, src_node, dst_node):
+        # Find one edge from src_node to dst_node, if there is one.
+        fwd_e = None
+        fwd_idx = 0
+        for e in self.get_neighbors(src_node):
+            if e.dst == dst_node:
+                fwd_e = e
+                break
+            fwd_idx += 1
+        bkwd_e = None
+        bkwd_idx = 0
+        for e in self.get_in_edges(dst_node):
+            if e.src == src_node:
+                bkwd_e = e
+                break
+            bkwd_idx += 1
+        assert fwd_e is not None
+        assert bkwd_e is not None
+        del self.graph[src_node][fwd_idx]
+        del self.in_edges[dst_node][bkwd_idx]
+        # Add an edge in the opposite direction
+        new_e = Edge(dst_node, src_node)
+        self.add_edge(new_e.src, new_e.dst, new_e)
+
+    def lowest_common_ancestor(self, v):
+        """In a DAG with a single source node, return the 'lowest common
+        ancestor' node for all edges into node v.
+
+        If all edges into v are from the same node u (whether there is
+        one such edge, or multiple parallel edges), then u is the
+        lowest common ancestor.  If there are multiple nodes with
+        edges from them to v, then the lowest common ancestor node is
+        the one that is on all paths from the source to v, closest to
+        v.
+        """
+
+        # First check for some easy special cases, since they will be
+        # reasonably common in typical control flow graphs, and they
+        # are very quick to check for and return the correct answer.
+        from_node_set = set()
+        for e in self.get_in_edges(v):
+            from_node_set.add(e.src)
+        if len(from_node_set) == 0:
+            return v
+        if len(from_node_set) == 1:
+            return from_node_set.pop()
+
+        # Now do the general case.  Start by doing a depth-first
+        # search along edges in the backwards direction from v to the
+        # source(s).
+        dfs_tree, sources = self.depth_first_search(v, backwards=True)
+        # This method is only intended to work for graphs with a
+        # unique source node, i.e. a node with in-degree 0, reachable
+        # along the reverse of edges from v.
+        assert len(sources) == 1
+        source = sources[0]
+
+        # Create a graph that is like the subgraph of nodes in the
+        # collection 'dfs_tree.keys()', except with edges the opposite
+        # direction from 'self', and with every node x except v and
+        # the source node replaced with a pair of nodes x1 and x2,
+        # with an edge from x1 to x2, and all edges into x go into x1,
+        # and all edges out of x go out of x2.
+
+        flow_graph_1 = Graph()
+        new_node_1 = {}
+        new_node_2 = {}
+        for u in dfs_tree.keys():
+            if u == v or u == source:
+                new_node_1[u] = u
+                new_node_2[u] = u
+            else:
+                new_node_1[u] = (u, 1)
+                new_node_2[u] = (u, 2)
+                e = Edge(new_node_1[u], new_node_2[u])
+                e.orig_node = u
+                flow_graph_1.add_edge(e.src, e.dst, e)
+        for u in dfs_tree.keys():
+            edges = self.get_in_edges(u)
+            for orig_e in edges:
+                orig_src = orig_e.src
+                if orig_src not in dfs_tree:
+                    continue
+                new_e = Edge(new_node_2[u], new_node_1[orig_src])
+                flow_graph_1.add_edge(new_e.src, new_e.dst, new_e)
+
+        # Consider all edges in flow_graph_1 to have capacity 1.
+
+        # If the maximum flow from v to source has capacity more than
+        # 1, then there are at least 2 node-disjoint paths from v to
+        # source, so the least common ancestor is source.
+
+        # If the maximum flow from v to source has capacity exactly 1,
+        # then because we have already handled the cases of v having
+        # no in-edges, or all in-edges from the same node, earlier
+        # above, we know that source and v are different nodes, and
+        # there must be another node other than those 2 in the graph
+        # that is an 'articulation point', i.e. removing it would
+        # result in no remaining paths from v to source in
+        # flow_graph_1.
+
+        aug_path_tree_1, _ = flow_graph_1.depth_first_search(v)
+        # We should always have found an augmenting path from v to
+        # source, given how flow_graph_1 was constructed.
+#        logging.debug("aug_path_tree_1 contents:")
+#        for tmp in aug_path_tree_1:
+#            logging.debug("    %s -> %s", tmp, aug_path_tree_1[tmp])
+        assert source in aug_path_tree_1
+        # Copy flow_graph_1 to flow_graph_2, then modify flow_graph_2
+        # to make it the 'residual flow graph' of flow_graph_1, after
+        # sending flow 1 along the augmenting path found from v to
+        # source.  This requires reversing the direction of one edge
+        # between each pair of vertices on the augmenting path found
+        # from v to source.
+        flow_graph_2 = copy.deepcopy(flow_graph_1)
+        aug_path_lst = [source]
+        cur_node = source
+        parent_node = aug_path_tree_1[cur_node]
+        while True:
+            aug_path_lst.append(cur_node)
+            # Find any edge from parent_node to cur_node and reverse
+            # its direction, by removing the original and adding a new
+            # one in the opposite direction.  If there is more than
+            # one such edge, only reverse one of them, since each has
+            # capacity 1, and the augmenting path only had flow 1.
+            flow_graph_2.reverse_one_edge(parent_node, cur_node)
+            if parent_node == v:
+                break
+            cur_node = parent_node
+            parent_node = aug_path_tree_1[cur_node]
+
+        # Make the augmenting path list of nodes be in the direction
+        # from v to source.
+        aug_path_lst.reverse()
+
+        # See if we can find a second augmenting path from v to source
+        # in flow_graph_2.
+        aug_path_tree_2, _ = flow_graph_2.depth_first_search(v)
+        if source in aug_path_tree_2:
+            # If so, then source is the lowest common ancestor for v.
+            return source
+
+        # If not, find a min cut for the max flow represented by the
+        # magnitude 1 flow found as aug_path_tree_1, by seeing which
+        # edges cross from the set of nodes reachable from v in
+        # aug_path_tree_2, to the set of nodes _not_ reachable from v
+        # in aug_path_tree_2.
+        min_cut_edges = []
+        for reachable_node in aug_path_tree_2:
+            for e in flow_graph_1.get_neighbors(reachable_node):
+                if e.dst not in aug_path_tree_2:
+                    min_cut_edges.append(e)
+#        logging.debug("Min cut edges")
+#        for e in min_cut_edges:
+#            logging.debug("    %s -> %s", e.src, e.dst)
+
+        # There should be only one edge in the min cut, and it should
+        # be from a node of the form (x, 1) to (x, 2), for some node x
+        # in the original graph.  That x is the lowest common ancestor
+        # for v.
+        assert len(min_cut_edges) == 1
+        e = min_cut_edges[0]
+        assert isinstance(e.src, tuple)
+        assert e.src[1] == 1
+        assert isinstance(e.dst, tuple)
+        assert e.dst[1] == 2
+        assert e.src[0] == e.dst[0]
+        return e.src[0]
 
     def generate_all_paths(self, v_start, v_end, callback=None,
                            neighbor_order_callback=None):

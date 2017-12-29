@@ -183,9 +183,26 @@ def break_into_lines(s, max_len=40):
     return '\n'.join(out_lines)
 
 
-def generate_graphviz_graph(pipeline, graph):
+def generate_graphviz_graph(pipeline, graph, lcas={}):
     dot = Digraph(comment=pipeline.name)
     for node in graph.graph:
+        if node in lcas:
+            lca_str = str(lcas[node])
+            if node is None:
+                node_str = "null"
+            else:
+                node_str = str(node)
+            # By creating these edges with constraint "false",
+            # GraphViz will lay out the graph the same as if these
+            # edges did not exist, and then add these edges.  Without
+            # doing this, the node placement with these extra edges
+            # can be significantly different than without these edges,
+            # and make the control flow more difficult to see, as it
+            # isn't always top-to-bottom any longer.
+            dot.edge(node_str, lca_str, color="orange", style="dashed",
+                     constraint="false")
+        if node is None:
+            continue
         assert node in pipeline.conditionals or node in pipeline.tables
         neighbors = graph.get_neighbors(node)
         node_label_str = None
@@ -296,15 +313,30 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     # Get the parser graph
     hlir = P4_HLIR(debug, top.json_obj)
     parser_graph = hlir.get_parser_graph()
+    parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
+    logging.debug("parser_graph has %d sources %s, %d sinks %s"
+                  "" % (len(parser_sources), parser_sources,
+                        len(parser_sinks), parser_sinks))
 
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
     graph, source_info_to_node_name = in_pipeline.generate_CFG()
     logging.debug(graph)
+    graph_sources, graph_sinks = graph.get_sources_and_sinks()
+    logging.debug("graph has %d sources %s, %d sinks %s"
+                  "" % (len(graph_sources), graph_sources,
+                        len(graph_sinks), graph_sinks))
+    tmp_time = time.time()
+    graph_lcas = {}
+    for v in graph.get_nodes():
+        graph_lcas[v] = graph.lowest_common_ancestor(v)
+    lca_comp_time = time.time() - tmp_time
+    logging.info("%.3f sec to compute lowest common ancestors for ingress",
+                 lca_comp_time)
 
     # Graphviz visualization
     if generate_graphs:
-        generate_graphviz_graph(in_pipeline, graph)
+        generate_graphviz_graph(in_pipeline, graph, lcas=graph_lcas)
         eg_pipeline = hlir.pipelines['egress']
         eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
         generate_graphviz_graph(eg_pipeline, eg_graph)
