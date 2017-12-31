@@ -77,6 +77,84 @@ class Graph:
                 sources.append(v)
         return sources, sinks
 
+    def topological_sort(self):
+        """Return a tuple of 2 elements.  The first element is a Boolean
+        value, True if the graph contains at least one cycle, False if
+        it is acyclic.
+
+        If the graph is acyclic, the second element of the tuple is a
+        list of all nodes in the graph sorted in a topological order.
+        A sequence of nodes is in a topological order for a directed
+        acyclic graph if for every directed edge (v, w) (from v to w)
+        in the graph, v appears earlier than w in the sequence.
+
+        If the graph contains a cycle, then the second element of the
+        returned tuple is a list of nodes in one cycle of the graph.
+        """
+
+        in_degree = {}
+        in_degree_0_nodes = []
+        num_nodes = 0
+        for u in self.get_nodes():
+            num_nodes += 1
+            in_degree[u] = len(self.get_in_edges(u))
+            if in_degree[u] == 0:
+                in_degree_0_nodes.append(u)
+
+        # Start with any node that in-degree 0 in the original graph.
+        # Every time a node u is added to the current topological
+        # order, pretend like we are deleting each edge out of u by
+        # decrementing the in-degree of v for every edge (u, v) out of
+        # u.
+
+        # If we ever come to a time when there are remaining nodes,
+        # but none of them have in-degree 0, then there must be a
+        # cycle among some subset of those nodes (perhaps all of them,
+        # perhaps a proper subset of them).  Note: Some of those
+        # remaining nodes might not be on _any_ cycle.  For example,
+        # in the graph below, all have in-degree >= 1, but only c1,
+        # c2, and c3 are in a cycle.  c4 and c5 are in no cycles.
+        #
+        #    c5 <--- c1 ---> c2 ----> c4
+        #            ^       |
+        #            |       |
+        #            |       |
+        #            c3 <----+
+
+        topo_order = []
+        cycle_exists = False
+        while len(topo_order) < num_nodes:
+            if len(in_degree_0_nodes) == 0:
+                cycle_exists = True
+                break
+            u = in_degree_0_nodes.pop()
+            topo_order.append(u)
+            for e in self.get_neighbors(u):
+                v = e.dst
+                in_degree[v] -= 1
+                assert in_degree[v] >= 0
+                if in_degree[v] == 0:
+                    in_degree_0_nodes.append(v)
+        assert(cycle_exists or len(in_degree_0_nodes) == 0)
+
+        if not cycle_exists:
+            # Double-check that topo_order is consistent with all
+            # edges of the graph.
+            topo_order_idx = {}
+            for idx in range(len(topo_order)):
+                topo_order_idx[topo_order[idx]] = idx
+            for u in self.get_nodes():
+                u_idx = topo_order_idx[u]
+                for e in self.get_neighbors(u):
+                    v = e.dst
+                    assert u_idx < topo_order_idx[v]
+
+            return (cycle_exists, topo_order)
+
+        # TBD: Implement the cycle-finding part of this method.
+        assert False
+
+
     def depth_first_search(self, v, backwards=False):
         """Perform a depth-first search in the graph starting at node v.  By
         default, only traverse edges in the 'forward' direction, from
