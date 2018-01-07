@@ -738,10 +738,12 @@ class Translator:
         invalid_header_write_data = None
         actual_path_data = None
         result = None
+        hdr_fields = None
         if smt_result != unsat:
             model = self.solver.model()
             if not Config().get_silent():
                 context.log_model(model)
+                hdr_fields = context.model_fields(model)
             payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations
@@ -960,6 +962,8 @@ class Translator:
         # be nicer to convert them to a type that can be more easily
         # represented as separate parts in JSON, e.g. nested lists or
         # dicts of strings, numbers, booleans.
+        if hdr_fields is None:
+            hdr_fields = {}
         test_case = OrderedDict([
             ("log_file_id", count.counter),
             ("result", result.name),
@@ -967,6 +971,7 @@ class Translator:
             ("complete_path", is_complete_control_path),
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
+            ("hdr_fields", hdr_fields),
             #("expected_output_packets", TBD),
             ("parser_path_len", len(path)),
             ("ingress_path_len", len(control_path)),

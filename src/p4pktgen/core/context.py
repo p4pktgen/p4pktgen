@@ -148,3 +148,17 @@ class Context:
             if is_bv(sym_val):
                 sym_var = BitVec(var_name, sym_val.size())
                 logging.info('{}: {}'.format(var_name, model[sym_var]))
+
+    def model_fields(self, model):
+        """
+
+        :param model:
+        :return:
+        """
+        dd = {}
+        for var_name in sorted(self.sym_vars):
+            sym_val = self.sym_vars[var_name]
+            if is_bv(sym_val):
+                sym_var = BitVec(var_name, sym_val.size())
+                dd[str(var_name)] = str(model[sym_var])
+        return dd
