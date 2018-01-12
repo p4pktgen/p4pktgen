@@ -2,6 +2,7 @@
 # - Print out which values were used for constraints.
 
 import logging
+import time
 from z3 import *
 
 from p4pktgen.config import Config
@@ -71,10 +72,25 @@ class Context:
         var_name = (header_name, header_field)
         do_write = True
         # XXX: clean up
-        if header_field != '$valid$' and (
-                header_name, '$valid$') in self.var_to_smt_var and simplify(
-                    self.get_header_field(header_name,
-                                          '$valid$')) == BitVecVal(0, 1):
+        invalid_header_write = False
+        do_invalid_header_write_check = False
+        if ((header_field != '$valid$') and
+            ((header_name, '$valid$') in self.var_to_smt_var)):
+            do_invalid_header_write_check = True
+        if do_invalid_header_write_check:
+            tmp_time = time.time()
+            tmp_solver = Solver()
+            tmp_solver.add(And(self.var_constraints +
+                               [self.get_header_field(header_name, '$valid$') ==
+                                BitVecVal(0, 1)]))
+            tmp_result = tmp_solver.check()
+            invalid_header_write = (tmp_result != unsat)
+            solve_time = time.time() - tmp_time
+            logging.debug("Took %.3f sec to solve invalid_header_write %s "
+                          " for %s %s"
+                          "" % (solve_time, invalid_header_write,
+                                header_name, header_field))
+        if invalid_header_write:
             if Config().get_allow_invalid_header_writes():
                 do_write = False
             else:
@@ -104,9 +120,9 @@ class Context:
 
     def remove_header_fields(self, header_name):
         # XXX: hacky
-        for k in list(self.sym_vars.keys()):
+        for k in list(self.var_to_smt_var.keys()):
             if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
-                del self.sym_vars[k]
+                del self.var_to_smt_var[k]
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
                                           param_name, idx):
@@ -145,7 +161,6 @@ class Context:
                     self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.var_to_smt_var[var_name]
-            #return self.sym_vars[var_name]
 
     def has_header_field(self, header_name, header_field):
         # XXX: this method should not be necessary
