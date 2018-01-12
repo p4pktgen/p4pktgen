@@ -12,6 +12,7 @@ class ContextVar(object):
     def __init__(self):
         pass
 
+
 class Field(ContextVar):
     def __init__(self, header, field):
         super(ContextVar, self).__init__()
@@ -21,6 +22,7 @@ class Field(ContextVar):
     def __eq__(self, other):
         return self.header == other.header and self.header == other.header
 
+
 # XXX: This class needs some heavy refactoring.
 class Context:
     """The context that is used to generate the symbolic representation of a P4
@@ -29,8 +31,7 @@ class Context:
     def __init__(self):
         # Maps variables to a list of versions
         self.var_to_smt_var = {}
-        # List of constraints that associates variables with SMT expressions
-        self.var_constraints = []
+        self.var_to_smt_val = {}
 
         self.sym_vars = {}
         self.fields = {}
@@ -71,36 +72,24 @@ class Context:
     def set_field_value(self, header_name, header_field, sym_val):
         var_name = (header_name, header_field)
         do_write = True
+
         # XXX: clean up
-        invalid_header_write = False
-        do_invalid_header_write_check = False
-        if ((header_field != '$valid$') and
-            ((header_name, '$valid$') in self.var_to_smt_var)):
-            do_invalid_header_write_check = True
-        if do_invalid_header_write_check:
-            tmp_time = time.time()
-            tmp_solver = Solver()
-            tmp_solver.add(And(self.var_constraints +
-                               [self.get_header_field(header_name, '$valid$') ==
-                                BitVecVal(0, 1)]))
-            tmp_result = tmp_solver.check()
-            invalid_header_write = (tmp_result != unsat)
-            solve_time = time.time() - tmp_time
-            logging.debug("Took %.3f sec to solve invalid_header_write %s "
-                          " for %s %s"
-                          "" % (solve_time, invalid_header_write,
-                                header_name, header_field))
-        if invalid_header_write:
-            if Config().get_allow_invalid_header_writes():
-                do_write = False
-            else:
-               self.invalid_header_writes.append((var_name, self.source_info))
+        if header_field != '$valid$' and (header_name,
+                                          '$valid$') in self.var_to_smt_var:
+            smt_var_valid = self.var_to_smt_var[(header_name, '$valid$')]
+            if simplify(self.var_to_smt_val[smt_var_valid]) == BitVecVal(0, 1):
+                if Config().get_allow_invalid_header_writes():
+                    do_write = False
+                else:
+                    self.invalid_header_writes.append((var_name,
+                                                       self.source_info))
 
         if do_write:
             self.id += 1
-            new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1], self.id), sym_val.size())
+            new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1],
+                                                   self.id), sym_val.size())
             self.var_to_smt_var[var_name] = new_smt_var
-            self.var_constraints.append(new_smt_var == sym_val)
+            self.var_to_smt_val[new_smt_var] = sym_val
 
     def register_runtime_data(self, table_name, action_name, param_name,
                               bitwidth):
@@ -122,7 +111,8 @@ class Context:
         # XXX: hacky
         for k in list(self.var_to_smt_var.keys()):
             if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
-                del self.var_to_smt_var[k]
+                self.id += 1
+                self.var_to_smt_var[k] = None
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
                                           param_name, idx):
@@ -171,29 +161,13 @@ class Context:
             print('{}: {}'.format(k, model[v]))
 
     def get_name_constraints(self):
-        """
-        constraints = []
-        for var_name, sym_val in self.sym_vars.items():
-            if is_bv(sym_val):
-                sym_var = BitVec('.'.join(var_name), sym_val.size())
-                constraints.append(sym_var == sym_val)
-        """
-
-        return self.var_constraints
+        var_constraints = []
+        for var, val in self.var_to_smt_val.items():
+            var_constraints.append(var == val)
+        return var_constraints
 
     def log_constraints(self):
+        var_constraints = self.get_name_constraints()
         logging.info('Variable constraints')
-        for constraint in self.var_constraints:
+        for constraint in var_constraints:
             logging.info('\t{}'.format(constraint))
-
-    def log_model(self, model):
-        logging.info("Model")
-        for var, smt_var in sorted(self.var_to_smt_var.items()):
-            logging.info('\t{}: {}'.format('.'.join(var), model.eval(smt_var)))
-            """
-                    log += ' ' + model.get_value(version)
-                sym_val = self.sym_vars[var_name]
-                if is_bv(sym_val):
-                    sym_var = BitVec('.'.join(var_name), sym_val.size())
-                    logging.info('{}: {}'.format(var_name, model[sym_var]))
-                """

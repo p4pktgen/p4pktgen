@@ -114,8 +114,9 @@ class Translator:
         self.context = self.context_history.pop()
 
     def cleanup(self):
-        if Config().get_run_simple_switch():
-            self.switch.shutdown()
+        #if Config().get_run_simple_switch():
+        #    self.switch.shutdown()
+        pass
 
     def equalize_bv_size(self, bvs):
         target_size = max([bv.size() for bv in bvs])
@@ -667,10 +668,15 @@ class Translator:
                     # Add empty entries for the contexts where the variable
                     # didn't exist
                     var_vals[var] += [''] * (i - len(var_vals[var]))
-                var_vals[var].append(str(model.eval(smt_var)))
+
+                if smt_var is None:
+                    var_vals[var].append('')
+                else:
+                    var_vals[var].append(str(model.eval(smt_var)))
 
         table = Table()
-        table.add_rows([['.'.join(var)] + vals for var, vals in sorted(var_vals.items())])
+        table.add_rows([['.'.join(var)] + vals
+                        for var, vals in sorted(var_vals.items())])
         logging.info('Model\n' + str(table))
 
     def generate_constraints(self, path, control_path,
