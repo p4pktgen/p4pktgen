@@ -114,8 +114,9 @@ class Translator:
         self.context = self.context_history.pop()
 
     def cleanup(self):
-        if Config().get_run_simple_switch():
-            self.switch.shutdown()
+        #if Config().get_run_simple_switch():
+        #    self.switch.shutdown()
+        pass
 
     def equalize_bv_size(self, bvs):
         target_size = max([bv.size() for bv in bvs])
@@ -549,6 +550,8 @@ class Translator:
                 if field_name == '$valid$':
                     # All valid bits in headers are 0 in the beginning
                     context.insert(field, BitVecVal(0, 1))
+                    # XXX: hacky
+                    context.var_to_smt_val[(field.header.name, field.name)] = BitVecVal(0, 1)
                 else:
                     context.register_field(field)
 

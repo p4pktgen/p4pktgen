@@ -28,6 +28,7 @@ class Context:
     def __init__(self):
         # Maps variables to a list of versions
         self.var_to_smt_var = {}
+        self.var_to_smt_val = {}
         # List of constraints that associates variables with SMT expressions
         self.var_constraints = []
 
@@ -73,8 +74,8 @@ class Context:
         # XXX: clean up
         if header_field != '$valid$' and (
                 header_name, '$valid$') in self.var_to_smt_var and simplify(
-                    self.get_header_field(header_name,
-                                          '$valid$')) == BitVecVal(0, 1):
+                    self.var_to_smt_val[(header_name,
+                                          '$valid$')]) == BitVecVal(0, 1):
             if Config().get_allow_invalid_header_writes():
                 do_write = False
             else:
@@ -84,6 +85,8 @@ class Context:
             self.id += 1
             new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1], self.id), sym_val.size())
             self.var_to_smt_var[var_name] = new_smt_var
+            self.var_to_smt_val[new_smt_var] = sym_val
+            # XXX: Make obsolete
             self.var_constraints.append(new_smt_var == sym_val)
 
     def register_runtime_data(self, table_name, action_name, param_name,
@@ -104,9 +107,10 @@ class Context:
 
     def remove_header_fields(self, header_name):
         # XXX: hacky
-        for k in list(self.sym_vars.keys()):
+        for k in list(self.var_to_smt_var.keys()):
             if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
-                del self.sym_vars[k]
+                self.id += 1
+                self.var_to_smt_var[k] = None
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
                                           param_name, idx):
