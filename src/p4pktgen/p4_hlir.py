@@ -198,7 +198,8 @@ class P4_HLIR(object):
                     elif json_op['op'] == 'primitive':
                         self.op = p4_parser_ops_enum.primitive
                     else:
-                        raise Exception('Unexpected op: {}'.format(json_op['op']))
+                        raise Exception(
+                            'Unexpected op: {}'.format(json_op['op']))
 
             class HLIR_Parser_Transition(Edge):
                 """
@@ -213,9 +214,12 @@ class P4_HLIR(object):
                              mask=None,
                              value=None):
                     # XXX: remove 'sink' hack
-                    super(P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition, self).__init__(state_name, next_state_name if next_state_name is not None else 'sink')
+                    super(P4_HLIR.HLIR_Parser.HLIR_Parse_States.
+                          HLIR_Parser_Transition, self).__init__(
+                              state_name, next_state_name
+                              if next_state_name is not None else 'sink')
 
-                    assert(state_name is not None)
+                    assert (state_name is not None)
                     self.type_ = type_
                     self.next_state_name = next_state_name
                     self.next_state = next_state
@@ -243,7 +247,8 @@ class P4_HLIR(object):
                         mask = None
                     else:
                         mask = int(json_obj['mask'], 16)
-                    return cls(state_name,
+                    return cls(
+                        state_name,
                         type_=type_,
                         next_state_name=json_obj['next_state'],
                         mask=mask,
@@ -333,7 +338,8 @@ class P4_HLIR(object):
             for k, fd in self.header_types[
                     curr_hdr.header_type_name].fields.items():
                 # make a copy for this header instance
-                new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed, fd.var_length)
+                new_field = P4_HLIR.HLIR_Field(fd.name, fd.size, fd.signed,
+                                               fd.var_length)
                 new_field.header = curr_hdr
                 new_field.header_type = fd.header_type
                 new_field.hdr = curr_hdr
@@ -364,16 +370,26 @@ class P4_HLIR(object):
 
                     if parser_op.op == p4_parser_ops_enum.verify:
                         error_str = self.id_to_errors[parser_op.value[1].value]
-                        p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', error_str)])
-                    elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract:
-                        p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', 'PacketTooShort')])
-                    elif not(Config().get_no_packet_length_errs()) and parser_op.op == p4_parser_ops_enum.extract_VL:
-                        p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', 'PacketTooShort')])
-                        p4ps.parser_ops_transitions.append(
-                            [ParserOpTransition(p4ps.name, parser_op, i, 'sink', 'HeaderTooShort')])
+                        p4ps.parser_ops_transitions.append([
+                            ParserOpTransition(p4ps.name, parser_op, i, 'sink',
+                                               error_str)
+                        ])
+                    elif not (Config().get_no_packet_length_errs()
+                              ) and parser_op.op == p4_parser_ops_enum.extract:
+                        p4ps.parser_ops_transitions.append([
+                            ParserOpTransition(p4ps.name, parser_op, i, 'sink',
+                                               'PacketTooShort')
+                        ])
+                    elif not (Config().get_no_packet_length_errs(
+                    )) and parser_op.op == p4_parser_ops_enum.extract_VL:
+                        p4ps.parser_ops_transitions.append([
+                            ParserOpTransition(p4ps.name, parser_op, i, 'sink',
+                                               'PacketTooShort')
+                        ])
+                        p4ps.parser_ops_transitions.append([
+                            ParserOpTransition(p4ps.name, parser_op, i, 'sink',
+                                               'HeaderTooShort')
+                        ])
                     else:
                         p4ps.parser_ops_transitions.append([])
 
@@ -394,8 +410,8 @@ class P4_HLIR(object):
                 # constraint generation code.
                 set_of_value_mask_tuples = set()
                 for k in parse_state['transitions']:
-                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(p4ps.name,
-                        k)
+                    transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition.from_json(
+                        p4ps.name, k)
                     value_mask_tuple = (transition.value, transition.mask)
                     if value_mask_tuple in set_of_value_mask_tuples:
                         if isinstance(transition.value, int) or isinstance(
@@ -431,10 +447,12 @@ class P4_HLIR(object):
 
         # Get the actions
         self.actions = {}
+        self.id_to_action = {}
         for action_json in json_obj['actions']:
             action = Action(action_json)
             assert (action.name, action.id) not in self.actions
             self.actions[(action.name, action.id)] = action
+            self.id_to_action[action.id] = action
 
         # Get the pipelines
         self.pipelines = {}
@@ -450,6 +468,9 @@ class P4_HLIR(object):
         self.enums = None
 
         self.parse_vsets = None
+
+    def get_action_by_id(self, i):
+        return self.id_to_action[i]
 
     # Creates a graph that represents the parser
     def get_parser_graph(self):
@@ -511,7 +532,7 @@ class TableKey:
         self.mask = json_obj['mask']
 
 
-class TableEntry:
+class DefaultEntry:
     def __init__(self, json_obj):
         self.action_id = json_obj['action_id']
         self.action_const = json_obj['action_const']
@@ -520,6 +541,40 @@ class TableEntry:
         # XXX: implement
 
         self.action_entry_const = json_obj['action_entry_const']
+
+
+class MatchKey:
+    def __init__(self, json_obj):
+        self.match_type = json_obj['match_type']
+        # XXX: parse key
+        self.key = json_obj['key']
+
+
+class ActionEntry:
+    def __init__(self, json_obj):
+        self.action_id = json_obj['action_id']
+        assert isinstance(self.action_id, int)
+
+        # XXX: parse data
+        self.action_data = json_obj['action_data']
+
+
+class TableEntry:
+    def __init__(self, json_obj):
+        self.match_keys = []
+        for match_key in json_obj['match_key']:
+            self.match_keys.append(MatchKey(match_key))
+
+        self.action_entry = ActionEntry(json_obj['action_entry'])
+
+        self.priority = json_obj['priority']
+        assert isinstance(self.priority, int)
+
+    def get_action_id(self):
+        return self.action_entry.action_id
+
+    def get_action_data(self):
+        return self.action_entry.action_data
 
 
 class Table:
@@ -531,7 +586,6 @@ class Table:
         self.key = []
         for json_key in json_obj['key']:
             self.key.append(TableKey(json_key))
-        # XXX: implement
 
         # XXX: Make enum?
         self.match_type = json_obj['match_type']
@@ -579,14 +633,25 @@ class Table:
 
         self.default_entry = None
         if 'default_entry' in json_obj:
-            self.default_entry = TableEntry(json_obj['default_entry'])
+            self.default_entry = DefaultEntry(json_obj['default_entry'])
+
+        self.entries = []
+        if 'entries' in json_obj:
+            for entry in json_obj['entries']:
+                self.entries.append(TableEntry(entry))
 
         self.source_info = None
         if 'source_info' in json_obj:
             self.source_info = SourceInfo.from_json(json_obj['source_info'])
 
+    def is_const(self):
+        return len(self.entries) != 0
+
     def __repr__(self):
         return 'Table {}'.format(self.name)
+
+    def next_table_for_action(self, action):
+        return self.next_tables[(action.name, action.id)]
 
 
 class Conditional:
@@ -641,6 +706,14 @@ class Pipeline:
             next_tables = []
             if table_name in self.tables:
                 table = self.tables[table_name]
+                for entry in table.entries:
+                    action = self.hlir.get_action_by_id(entry.get_action_id())
+                    next_table = table.next_table_for_action(action)
+                    transition = ConstActionTransition(table_name, next_table,
+                                                       action,
+                                                       entry.get_action_data())
+                    graph.add_edge(table_name, next_table, transition)
+
                 for action_name, next_table in table.next_tables.items():
                     transition = ActionTransition(
                         table_name, next_table, self.hlir.actions[action_name])
