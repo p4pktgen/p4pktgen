@@ -2,6 +2,7 @@ import logging
 import collections
 import copy
 
+
 class Edge(object):
     def __init__(self, src, dst):
         self.src = src
@@ -9,6 +10,7 @@ class Edge(object):
 
     def __repr__(self):
         return '{} -> {}'.format(self.src, self.dst)
+
 
 class Graph:
     """A Graph is a graph of nodes and directed edges.  The nodes can be
@@ -135,7 +137,7 @@ class Graph:
                 assert in_degree[v] >= 0
                 if in_degree[v] == 0:
                     in_degree_0_nodes.append(v)
-        assert(cycle_exists or len(in_degree_0_nodes) == 0)
+        assert (cycle_exists or len(in_degree_0_nodes) == 0)
 
         if not cycle_exists:
             # Double-check that topo_order is consistent with all
@@ -153,7 +155,6 @@ class Graph:
 
         # TBD: Implement the cycle-finding part of this method.
         assert False
-
 
     def depth_first_search(self, v, backwards=False):
         """Perform a depth-first search in the graph starting at node v.  By
@@ -178,6 +179,7 @@ class Graph:
         sources_or_sinks = []
         visited = set()
         dfs_tree_parent = {}
+
         def do_dfs(u, parent):
             if u in dfs_tree_parent:
                 return
@@ -193,6 +195,7 @@ class Graph:
                     do_dfs(e.src, u)
                 else:
                     do_dfs(e.dst, u)
+
         do_dfs(v, v)
         return dfs_tree_parent, sources_or_sinks
 
@@ -300,9 +303,9 @@ class Graph:
         aug_path_tree_1, _ = flow_graph_1.depth_first_search(v)
         # We should always have found an augmenting path from v to
         # source, given how flow_graph_1 was constructed.
-#        logging.debug("aug_path_tree_1 contents:")
-#        for tmp in aug_path_tree_1:
-#            logging.debug("    %s -> %s", tmp, aug_path_tree_1[tmp])
+        #        logging.debug("aug_path_tree_1 contents:")
+        #        for tmp in aug_path_tree_1:
+        #            logging.debug("    %s -> %s", tmp, aug_path_tree_1[tmp])
         assert source in aug_path_tree_1
         # Copy flow_graph_1 to flow_graph_2, then modify flow_graph_2
         # to make it the 'residual flow graph' of flow_graph_1, after
@@ -348,6 +351,7 @@ class Graph:
             for e in flow_graph_1.get_neighbors(reachable_node):
                 if e.dst not in aug_path_tree_2:
                     min_cut_edges.append(e)
+
 #        logging.debug("Min cut edges")
 #        for e in min_cut_edges:
 #            logging.debug("    %s -> %s", e.src, e.dst)
@@ -365,7 +369,11 @@ class Graph:
         assert e.src[0] == e.dst[0]
         return e.src[0]
 
-    def generate_all_paths(self, v_start, v_end, callback=None,
+    def generate_all_paths(self,
+                           v_start,
+                           v_end,
+                           callback=None,
+                           backtrack_callback=None,
                            neighbor_order_callback=None):
         path_so_far = []
         all_paths = []
@@ -419,6 +427,8 @@ class Graph:
                                     neighbor, go_deeper))
                 if go_deeper:
                     generate_all_paths_(neighbor)
+                if backtrack_callback is not None:
+                    backtrack_callback()
                 path_so_far.pop()
 
         go_deeper = True

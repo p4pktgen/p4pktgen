@@ -60,8 +60,8 @@ def main():
         dest='allow_uninitialized_reads',
         action='store_true',
         default=False,
-        help='Allow uninitialized reads (reads of uninitialized fields return 0)'
-    )
+        help=
+        'Allow uninitialized reads (reads of uninitialized fields return 0)')
     parser.add_argument(
         '-ai',
         '--allow-invalid-header-writes',
@@ -199,8 +199,12 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
             # can be significantly different than without these edges,
             # and make the control flow more difficult to see, as it
             # isn't always top-to-bottom any longer.
-            dot.edge(node_str, lca_str, color="orange", style="dashed",
-                     constraint="false")
+            dot.edge(
+                node_str,
+                lca_str,
+                color="orange",
+                style="dashed",
+                constraint="false")
         if node is None:
             continue
         assert node in pipeline.conditionals or node in pipeline.tables
@@ -315,8 +319,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     parser_graph = hlir.get_parser_graph()
     parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
     logging.debug("parser_graph has %d sources %s, %d sinks %s"
-                  "" % (len(parser_sources), parser_sources,
-                        len(parser_sinks), parser_sinks))
+                  "" % (len(parser_sources), parser_sources, len(parser_sinks),
+                        parser_sinks))
 
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
@@ -324,8 +328,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     logging.debug(graph)
     graph_sources, graph_sinks = graph.get_sources_and_sinks()
     logging.debug("graph has %d sources %s, %d sinks %s"
-                  "" % (len(graph_sources), graph_sources,
-                        len(graph_sinks), graph_sinks))
+                  "" % (len(graph_sources), graph_sources, len(graph_sinks),
+                        graph_sinks))
     tmp_time = time.time()
     graph_lcas = {}
     for v in graph.get_nodes():
@@ -397,7 +401,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                 translator.generate_constraints(
                     parser_path, control_path,
                     source_info_to_node_name, count, is_complete_control_path)
-            translator.pop()
 
             if result == TestPathResult.SUCCESS and is_complete_control_path:
                 avg_full_path_len.record(len(parser_path + control_path))
@@ -436,7 +439,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                 result_path = [n.src for n in parser_path] + ['sink'] + [
                     (n.src, n) for n in control_path
                 ]
-                result_path_tuple = tuple(result_path)
+                result_path_tuple = tuple(expected_path)
                 if result_path_tuple in results and results[result_path_tuple] != result:
                     logging.error("result_path %s with result %s"
                                   " is already recorded in results"
@@ -496,7 +499,9 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             in_pipeline.init_table_name,
             None,
             callback=eval_control_path,
+            backtrack_callback=lambda: translator.pop(),
             neighbor_order_callback=order_cb_fn)
+        translator.pop()
     logging.info("Final statistics on use of control path edges:")
     log_control_path_stats(stats_per_control_path_edge, num_control_path_edges)
     test_casesf.write('\n]\n')

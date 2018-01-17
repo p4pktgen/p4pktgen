@@ -33,7 +33,6 @@ class Context:
         self.var_to_smt_var = {}
         self.var_to_smt_val = {}
 
-        self.sym_vars = {}
         self.fields = {}
         self.id = 0
         # XXX: unify errors
@@ -46,7 +45,13 @@ class Context:
     def __copy__(self):
         context_copy = Context()
         context_copy.__dict__.update(self.__dict__)
+        self.fields = dict.copy(self.fields)
+        self.uninitialized_reads = list(self.uninitialized_reads)
+        self.invalid_header_writes = list(self.invalid_header_writes)
         context_copy.var_to_smt_var = dict.copy(self.var_to_smt_var)
+        context_copy.var_to_smt_val = dict.copy(self.var_to_smt_val)
+        context_copy.runtime_data = list(self.runtime_data)
+        context_copy.table_values = dict.copy(self.table_values)
         return context_copy
 
     def set_source_info(self, source_info):
@@ -151,14 +156,6 @@ class Context:
                     self.fresh_var(var_name), self.fields[var_name].size)
         else:
             return self.var_to_smt_var[var_name]
-
-    def has_header_field(self, header_name, header_field):
-        # XXX: this method should not be necessary
-        return (header_name, header_field) in self.sym_vars
-
-    def print_values(self, model):
-        for k, v in self.sym_vars.items():
-            print('{}: {}'.format(k, model[v]))
 
     def get_name_constraints(self):
         var_constraints = []
