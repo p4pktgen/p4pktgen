@@ -397,7 +397,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                 translator.generate_constraints(
                     parser_path, control_path,
                     source_info_to_node_name, count, is_complete_control_path)
-            translator.pop()
 
             if result == TestPathResult.SUCCESS and is_complete_control_path:
                 avg_full_path_len.record(len(parser_path + control_path))
@@ -436,7 +435,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                 result_path = [n.src for n in parser_path] + ['sink'] + [
                     (n.src, n) for n in control_path
                 ]
-                result_path_tuple = tuple(result_path)
+                result_path_tuple = tuple(expected_path)
                 if result_path_tuple in results and results[result_path_tuple] != result:
                     logging.error("result_path %s with result %s"
                                   " is already recorded in results"
@@ -496,7 +495,9 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             in_pipeline.init_table_name,
             None,
             callback=eval_control_path,
+            backtrack_callback=lambda: translator.pop(),
             neighbor_order_callback=order_cb_fn)
+        translator.pop()
     logging.info("Final statistics on use of control path edges:")
     log_control_path_stats(stats_per_control_path_edge, num_control_path_edges)
     test_casesf.write('\n]\n')

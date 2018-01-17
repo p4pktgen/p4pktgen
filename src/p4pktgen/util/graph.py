@@ -419,6 +419,8 @@ class Graph:
                                     neighbor, go_deeper))
                 if go_deeper:
                     generate_all_paths_(neighbor)
+                if backtrack_callback is not None:
+                    backtrack_callback()
                 path_so_far.pop()
 
         go_deeper = True

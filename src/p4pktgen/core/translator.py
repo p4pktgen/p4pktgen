@@ -102,8 +102,12 @@ class Translator:
         self.pipeline = pipeline
         self.context_history = [Context()]  # XXX: implement better mechanism
         self.context_history_lens = []
+        self.constraint_history = [[]]
         self.total_solver_time = 0.0
         self.total_switch_time = 0.0
+
+    def current_constraints(self):
+        return self.constraint_history[-1]
 
     def current_context(self):
         return self.context_history[-1]
@@ -111,11 +115,14 @@ class Translator:
     def push(self):
         self.solver.push()
         self.context_history_lens.append(len(self.context_history))
+        self.constraint_history.append(list(self.current_constraints()))
 
     def pop(self):
+        print('POP!!!!')
         self.solver.pop()
         old_len = self.context_history_lens.pop()
         self.context_history = self.context_history[:old_len]
+        self.constraint_history.pop()
 
     def cleanup(self):
         #if Config().get_run_simple_switch():
@@ -725,6 +732,7 @@ class Translator:
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
+
         # XXX: This is very hacky right now
         expected_path = [
             n.src if not isinstance(n, ParserOpTransition) else
@@ -736,22 +744,25 @@ class Translator:
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
+        assert len(control_path) + 1 == len(self.context_history_lens)
+
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
-        constraints = []
+        constraints = self.current_constraints()
 
         time2 = time.time()
 
         # XXX: very ugly to split parsing/control like that, need better solution
         logging.info('control_path = {}'.format(control_path))
 
-        for transition in control_path:
-            constraints += self.control_transition_constraints(
-                context, transition)
+        if len(control_path) > 0:
+            transition = control_path[-1]
+            constraints.extend(self.control_transition_constraints(
+                context, transition))
             self.context_history.append(copy.copy(self.current_context()))
             context = self.current_context()
 
-        constraints += context.get_name_constraints()
+        constraints.extend(context.get_name_constraints())
 
         time3 = time.time()
 
