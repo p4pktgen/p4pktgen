@@ -365,7 +365,7 @@ class Graph:
         assert e.src[0] == e.dst[0]
         return e.src[0]
 
-    def generate_all_paths(self, v_start, v_end, callback=None,
+    def generate_all_paths(self, v_start, v_end, callback=None, backtrack_callback=None,
                            neighbor_order_callback=None):
         path_so_far = []
         all_paths = []

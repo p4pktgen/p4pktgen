@@ -98,20 +98,24 @@ class Translator:
 
         self.solver = Solver()
         self.solver.push()
-        self.context = None
         self.hlir = hlir
         self.pipeline = pipeline
-        self.context_history = []  # XXX: implement better mechanism
+        self.context_history = [Context()]  # XXX: implement better mechanism
+        self.context_history_lens = []
         self.total_solver_time = 0.0
         self.total_switch_time = 0.0
 
+    def current_context(self):
+        return self.context_history[-1]
+
     def push(self):
         self.solver.push()
-        self.context_history.append(copy.deepcopy(self.context))
+        self.context_history_lens.append(len(self.context_history))
 
     def pop(self):
         self.solver.pop()
-        self.context = self.context_history.pop()
+        old_len = self.context_history_lens.pop()
+        self.context_history = self.context_history[:old_len]
 
     def cleanup(self):
         #if Config().get_run_simple_switch():
@@ -542,6 +546,8 @@ class Translator:
         return constraint
 
     def init_context(self):
+        assert len(self.context_history) == 1
+
         context = Context()
 
         # Register the fields of all headers in the context
@@ -553,7 +559,7 @@ class Translator:
                 else:
                     context.register_field(field)
 
-        return context
+        self.context_history[0] = context
 
     def generate_parser_constraints(self, parser_path):
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
@@ -561,7 +567,7 @@ class Translator:
         self.solver.pop()
         self.solver.push()
 
-        self.context = self.init_context()
+        self.init_context()
         self.sym_packet = Packet()
         constraints = []
 
@@ -591,9 +597,9 @@ class Translator:
                     fail = path_transition.error_str
                     skip_select = True
 
-                new_pos = self.parser_op_to_smt(self.context, self.sym_packet,
-                                                parser_op, fail, pos, new_pos,
-                                                constraints)
+                new_pos = self.parser_op_to_smt(
+                    self.current_context(), self.sym_packet, parser_op, fail,
+                    pos, new_pos, constraints)
 
                 if skip_select:
                     break
@@ -607,10 +613,9 @@ class Translator:
                 sym_transition_key = []
                 for transition_key_elem in parse_state.transition_key:
                     if isinstance(transition_key_elem, TypeValueField):
-                        sym_transition_key.append(
-                            self.context.get_header_field(
-                                transition_key_elem.header_name,
-                                transition_key_elem.header_field))
+                        sym_transition_key.append(self.current_context(
+                        ).get_header_field(transition_key_elem.header_name,
+                                           transition_key_elem.header_field))
                     else:
                         raise Exception(
                             'Transition key type not supported: {}'.format(
@@ -645,8 +650,8 @@ class Translator:
                 pos = simplify(new_pos)
 
         # XXX: workaround
-        self.context.set_field_value('meta_meta', 'packet_len',
-                                     self.sym_packet.packet_size_var)
+        self.current_context().set_field_value('meta_meta', 'packet_len',
+                                               self.sym_packet.packet_size_var)
         constraints.append(self.sym_packet.get_length_constraint())
 
         self.solver.add(And(constraints))
@@ -679,6 +684,44 @@ class Translator:
                         for var, vals in sorted(var_vals.items())])
         logging.info('Model\n' + str(table))
 
+    def control_transition_constraints(self, context, transition):
+        assert isinstance(transition, Edge)
+
+        constraints = []
+        table_name = transition.src
+        if transition.transition_type == TransitionType.BOOL_TRANSITION:
+            t_val = transition.val
+            conditional = self.pipeline.conditionals[table_name]
+            context.set_source_info(conditional.source_info)
+            expected_result = BoolVal(t_val)
+            sym_expr = self.type_value_to_smt(context, conditional.expression)
+            constraints.append(sym_expr == expected_result)
+        elif transition.transition_type == TransitionType.ACTION_TRANSITION:
+            assert table_name in self.pipeline.tables
+
+            table = self.pipeline.tables[table_name]
+            context.set_source_info(table.source_info)
+
+            if table.match_type not in ['exact', 'lpm', 'ternary', 'range']:
+                raise Exception(
+                    'Match type {} not supported!'.format(table.match_type))
+
+            sym_key_elems = []
+            for key_elem in table.key:
+                header_name, header_field = key_elem.target
+                sym_key_elems.append(
+                    context.get_header_field(key_elem.target[0],
+                                             key_elem.target[1]))
+
+            context.set_table_values(table_name, sym_key_elems)
+            self.action_to_smt(context, table_name, transition.action)
+        else:
+            raise Exception('Transition type {} not supported!'.format(
+                transition.transition_type))
+
+        context.unset_source_info()
+        return constraints
+
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
@@ -693,8 +736,8 @@ class Translator:
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
-        context = self.context
-        context_history = [copy.copy(context)]
+        self.context_history.append(copy.copy(self.current_context()))
+        context = self.current_context()
         constraints = []
 
         time2 = time.time()
@@ -703,43 +746,10 @@ class Translator:
         logging.info('control_path = {}'.format(control_path))
 
         for transition in control_path:
-            assert isinstance(transition, Edge)
-
-            table_name = transition.src
-            if transition.transition_type == TransitionType.BOOL_TRANSITION:
-                t_val = transition.val
-                conditional = self.pipeline.conditionals[table_name]
-                context.set_source_info(conditional.source_info)
-                expected_result = BoolVal(t_val)
-                sym_expr = self.type_value_to_smt(context,
-                                                  conditional.expression)
-                constraints.append(sym_expr == expected_result)
-            elif transition.transition_type == TransitionType.ACTION_TRANSITION:
-                assert table_name in self.pipeline.tables
-
-                table = self.pipeline.tables[table_name]
-                context.set_source_info(table.source_info)
-
-                if table.match_type in ['exact', 'lpm', 'ternary', 'range']:
-                    sym_key_elems = []
-                    for key_elem in table.key:
-                        header_name, header_field = key_elem.target
-                        sym_key_elems.append(
-                            context.get_header_field(key_elem.target[0],
-                                                     key_elem.target[1]))
-
-                    context.set_table_values(table_name, sym_key_elems)
-
-                    self.action_to_smt(context, table_name, transition.action)
-                else:
-                    raise Exception('Match type {} not supported!'.format(
-                        table.match_type))
-            else:
-                raise Exception('Transition type {} not supported!'.format(
-                    transition.transition_type))
-
-            context.unset_source_info()
-            context_history.append(copy.copy(context))
+            constraints += self.control_transition_constraints(
+                context, transition)
+            self.context_history.append(copy.copy(self.current_context()))
+            context = self.current_context()
 
         constraints += context.get_name_constraints()
 
@@ -764,7 +774,7 @@ class Translator:
         if smt_result != unsat:
             model = self.solver.model()
             if not Config().get_silent():
-                self.log_model(model, context_history)
+                self.log_model(model, self.context_history)
             payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations
@@ -861,6 +871,9 @@ class Translator:
 
             # Print table configuration
             for table, action, values, key_data, params, priority in table_configs:
+                # XXX: inelegant
+                const_table = self.pipeline.tables[table].is_const()
+
                 params2 = []
                 param_vals = []
                 for param_name, param_val in params:
@@ -869,10 +882,11 @@ class Translator:
                     params2.append(
                         OrderedDict([('name', param_name), ('value', param_val)
                                      ]))
-                if len(values) == 0:
+                if len(values) == 0 or const_table:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
                                       table, action, param_vals))
+                    logging.info(ss_cli_cmd)
                     table_setup_info = OrderedDict(
                         [("command", "table_set_default"),
                          ("table_name", table), ("action_name", action),
@@ -1026,9 +1040,12 @@ class Translator:
         self.switch = SimpleSwitch(self.json_file, tmpdir)
 
         for table, action, values, key_data, params, priority in table_configs:
+            # XXX: inelegant
+            const_table = self.pipeline.tables[table].is_const()
+
             # Extract values of parameters, without the names
             param_vals = map(lambda x: x[1], params)
-            if len(values) == 0:
+            if len(values) == 0 or const_table:
                 self.switch.table_set_default(table, action, param_vals)
             else:
                 self.switch.table_add(table, action, values, param_vals,
