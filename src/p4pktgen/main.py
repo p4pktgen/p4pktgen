@@ -60,8 +60,8 @@ def main():
         dest='allow_uninitialized_reads',
         action='store_true',
         default=False,
-        help='Allow uninitialized reads (reads of uninitialized fields return 0)'
-    )
+        help=
+        'Allow uninitialized reads (reads of uninitialized fields return 0)')
     parser.add_argument(
         '-ai',
         '--allow-invalid-header-writes',
@@ -199,8 +199,12 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
             # can be significantly different than without these edges,
             # and make the control flow more difficult to see, as it
             # isn't always top-to-bottom any longer.
-            dot.edge(node_str, lca_str, color="orange", style="dashed",
-                     constraint="false")
+            dot.edge(
+                node_str,
+                lca_str,
+                color="orange",
+                style="dashed",
+                constraint="false")
         if node is None:
             continue
         assert node in pipeline.conditionals or node in pipeline.tables
@@ -315,8 +319,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     parser_graph = hlir.get_parser_graph()
     parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
     logging.debug("parser_graph has %d sources %s, %d sinks %s"
-                  "" % (len(parser_sources), parser_sources,
-                        len(parser_sinks), parser_sinks))
+                  "" % (len(parser_sources), parser_sources, len(parser_sinks),
+                        parser_sinks))
 
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
@@ -324,8 +328,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     logging.debug(graph)
     graph_sources, graph_sinks = graph.get_sources_and_sinks()
     logging.debug("graph has %d sources %s, %d sinks %s"
-                  "" % (len(graph_sources), graph_sources,
-                        len(graph_sinks), graph_sinks))
+                  "" % (len(graph_sources), graph_sources, len(graph_sinks),
+                        graph_sinks))
     tmp_time = time.time()
     graph_lcas = {}
     for v in graph.get_nodes():

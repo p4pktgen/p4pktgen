@@ -757,8 +757,8 @@ class Translator:
 
         if len(control_path) > 0:
             transition = control_path[-1]
-            constraints.extend(self.control_transition_constraints(
-                context, transition))
+            constraints.extend(
+                self.control_transition_constraints(context, transition))
             self.context_history.append(copy.copy(self.current_context()))
             context = self.current_context()
 
