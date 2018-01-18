@@ -65,6 +65,7 @@ class Config:
         self.max_packet_len_generated = 1536
         self.max_paths_per_parser_path = args.max_paths_per_parser_path
         self.try_least_used_branches_first = args.try_least_used_branches_first
+        self.test_case_filename = args.test_case_file
 
     def get_debug(self):
         return self.debug

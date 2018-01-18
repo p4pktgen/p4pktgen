@@ -743,7 +743,7 @@ class Translator:
             model = self.solver.model()
             if not Config().get_silent():
                 context.log_model(model)
-                hdr_fields = context.model_fields(model)
+            hdr_fields = context.model_fields(model)
             payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations

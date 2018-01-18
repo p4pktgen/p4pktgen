@@ -130,6 +130,15 @@ def main():
         """With this option given, generate ingress and egress control flow graphs using the Graphviz library, and do not generate test cases.  Without this option given (the default), do not generate graphs."""
     )
     parser.add_argument(
+        '-tcf',
+        '--test-case-file',
+        dest='test_case_file',
+        type=str,
+        default='test-cases.json',
+        help=
+        """Name of the json file which stores the test results in a macine readable format"""
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
@@ -341,8 +350,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     stats_per_control_path_edge = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
     old_control_path = [[]]
-    # TBD: Make this filename specifiable via command line option
-    test_cases_json_fname = 'test-cases.json'
+    test_cases_json_fname = Config().test_case_filename
     test_casesf = open(test_cases_json_fname, 'w')
     test_casesf.write('[\n')
     test_pcapf = RawPcapWriter('test.pcap', linktype=0)
