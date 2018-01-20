@@ -33,6 +33,8 @@ class Context:
         self.var_to_smt_var = {}
         self.var_to_smt_val = {}
 
+        self.new_vars = set()
+
         self.fields = {}
         self.id = 0
         # XXX: unify errors
@@ -45,9 +47,10 @@ class Context:
     def __copy__(self):
         context_copy = Context()
         context_copy.__dict__.update(self.__dict__)
-        self.fields = dict.copy(self.fields)
-        self.uninitialized_reads = list(self.uninitialized_reads)
-        self.invalid_header_writes = list(self.invalid_header_writes)
+        context_copy.fields = dict.copy(self.fields)
+        context_copy.uninitialized_reads = list(self.uninitialized_reads)
+        context_copy.invalid_header_writes = list(self.invalid_header_writes)
+        context_copy.new_vars = set(self.new_vars)
         context_copy.var_to_smt_var = dict.copy(self.var_to_smt_var)
         context_copy.var_to_smt_val = dict.copy(self.var_to_smt_val)
         context_copy.runtime_data = list(self.runtime_data)
@@ -93,6 +96,7 @@ class Context:
             self.id += 1
             new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1],
                                                    self.id), sym_val.size())
+            self.new_vars.add(new_smt_var)
             self.var_to_smt_var[var_name] = new_smt_var
             self.var_to_smt_val[new_smt_var] = sym_val
 
@@ -159,8 +163,9 @@ class Context:
 
     def get_name_constraints(self):
         var_constraints = []
-        for var, val in self.var_to_smt_val.items():
-            var_constraints.append(var == val)
+        for var in self.new_vars:
+            var_constraints.append(var == self.var_to_smt_val[var])
+        self.new_vars = set()
         return var_constraints
 
     def log_constraints(self):
