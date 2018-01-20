@@ -505,7 +505,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             callback=eval_control_path,
             backtrack_callback=lambda: translator.pop(),
             neighbor_order_callback=order_cb_fn)
-        translator.pop()
     logging.info("Final statistics on use of control path edges:")
     log_control_path_stats(stats_per_control_path_edge, num_control_path_edges)
     test_casesf.write('\n]\n')

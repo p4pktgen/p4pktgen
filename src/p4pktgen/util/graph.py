@@ -355,7 +355,6 @@ class Graph:
 #        logging.debug("Min cut edges")
 #        for e in min_cut_edges:
 #            logging.debug("    %s -> %s", e.src, e.dst)
-
         # There should be only one edge in the min cut, and it should
         # be from a node of the form (x, 1) to (x, 2), for some node x
         # in the original graph.  That x is the lowest common ancestor
@@ -375,67 +374,32 @@ class Graph:
                            callback=None,
                            backtrack_callback=None,
                            neighbor_order_callback=None):
-        path_so_far = []
         all_paths = []
-        # num_paths is a 1-element list just to make it
-        # straightforward in Python 2 to modify it in a sub-def.
-        num_paths = [0]
+        queue = [[n] for n in self.get_neighbors(v_start)]
+        last_len = 0
+        while len(queue) > 0:
+            current_path = queue.pop()
+            last_node = current_path[-1].dst
+            is_full_path = (last_node == v_end)
 
-        # XXX: does not work with cycles, inefficient in general
-        def generate_all_paths_(node):
-            if node == v_end:
-                logging.debug("generate_all_paths: PATH len %2d %s"
-                              "" % (len(path_so_far), path_so_far))
-                if callback is None:
-                    all_paths.append(copy.copy(path_so_far))
-                else:
-                    # Ignore return value in this case -- we will
-                    # never go deeper in this case no matter what the
-                    # return value might be.
-                    callback(copy.copy(path_so_far), True)
-                num_paths[0] += 1
-                if num_paths[0] % 1000 == 0:
-                    logging.info("generated %d complete paths so far..." %
-                                 (num_paths[0]))
-                return
-
-            neighbors = self.get_neighbors(node)
-            if neighbor_order_callback is not None:
-                custom_order = neighbor_order_callback(node, neighbors)
-                # TBD: Consider checking that the two sets of
-                # neighbors are identical, rather than this less
-                # sophisticated check.
-                assert len(custom_order) == len(neighbors)
-                neighbors = custom_order
-            for t in neighbors:
-                transition_name = t
-                neighbor = t.dst
-                path_so_far.append(transition_name)
-                go_deeper = True
-                if callback is not None:
-                    # The recursive generate_all_paths_() call below
-                    # will call the callback() method with second
-                    # argument True, if neighbor == v_end.  In this
-                    # special case, it is redundant to call callback()
-                    # with the same path_so_far and second argument
-                    # False here.  Avoid doing that.
-                    if neighbor != v_end:
-                        go_deeper = callback(copy.copy(path_so_far), False)
-                logging.debug("generate_all_paths: %2d %s node %s to %s"
-                              " go_deeper %s"
-                              "" % (len(path_so_far), path_so_far, node,
-                                    neighbor, go_deeper))
-                if go_deeper:
-                    generate_all_paths_(neighbor)
-                if backtrack_callback is not None:
+            if backtrack_callback is not None:
+                for i in range(last_len - len(current_path) + 1):
                     backtrack_callback()
-                path_so_far.pop()
+            last_len = len(current_path)
 
-        go_deeper = True
-        if callback is not None:
-            go_deeper = callback([], False)
-        if go_deeper:
-            generate_all_paths_(v_start)
+            go_deeper = True
+            if callback is not None:
+                go_deeper = callback(current_path, is_full_path)
+            elif is_full_path:
+                all_paths.append(current_path)
+
+            if go_deeper and not is_full_path:
+                for n in self.get_neighbors(last_node):
+                    queue.append(current_path + [n])
+
+        if backtrack_callback is not None:
+            for i in range(last_len):
+                backtrack_callback()
         return all_paths
 
     def count_all_paths(self, v_start):
