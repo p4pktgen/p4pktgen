@@ -737,8 +737,7 @@ class Translator:
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
-        assert len(control_path) + 1 == len(self.context_history_lens)
-
+        assert len(control_path) == len(self.context_history_lens)
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
         constraints = []

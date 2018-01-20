@@ -201,12 +201,6 @@ class CheckSystem:
             TestPathResult.NO_PACKET_FOUND,
             ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.SUCCESS,
-
-            # TBD Andy: What is this path doing in here?  It doesn't
-            # look like a complete path to me for this program.
-            ('start', u'parse_ipv4', 'sink'):
-            TestPathResult.NO_PACKET_FOUND,
-
             ('start', 'sink', (u'node_2', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
             ('start', 'sink', (u'node_2', (False, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
