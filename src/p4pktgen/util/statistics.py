@@ -1,8 +1,14 @@
+import logging
 import time
+from collections import defaultdict
+
+from p4pktgen.config import Config
+
 
 class Statistic(object):
     def __init__(self, name):
         self.name = name
+
 
 class Counter(Statistic):
     def __init__(self, name):
@@ -11,6 +17,7 @@ class Counter(Statistic):
 
     def inc(self):
         self.counter += 1
+
 
 class Timer(Statistic):
     def __init__(self, name):
@@ -25,9 +32,11 @@ class Timer(Statistic):
         assert self.time is not None
         return self.time
 
+
 class StatisticsRegistry:
     def __init__(self):
         pass
+
 
 class Average(Statistic):
     def __init__(self, name):
@@ -44,3 +53,70 @@ class Average(Statistic):
             return None
         else:
             return self.sum / self.counter
+
+
+class Statistics:
+    __shared_state = {}
+
+    def __init__(self):
+        self.__dict__ = self.__shared_state
+
+    def init(self):
+        self.num_control_path_edges = 0
+        self.avg_full_path_len = Average('full_path_len')
+        self.avg_unsat_path_len = Average('unsat_path_len')
+        self.count_unsat_paths = Counter('unsat_paths')
+
+        self.timing_file = None
+        self.breakdown_file = None
+        if Config().get_record_statistics():
+            self.timing_file = open('timing.log', 'w')
+            self.breakdown_file = open('breakdown.log', 'w')
+
+        self.start_time = time.time()
+        self.stats = defaultdict(int)
+        self.stats_per_control_path_edge = defaultdict(int)
+        self.last_time_printed_stats_per_control_path_edge = self.start_time
+        self.record_count = 0
+
+    def record(self, result, record_path, translator):
+        self.record_count += 1
+
+        current_time = time.time()
+        if record_path:
+            self.timing_file.write(
+                '{},{}\n'.format(result, current_time - self.start_time))
+            self.timing_file.flush()
+        if self.record_count % 100 == 0:
+            self.breakdown_file.write('{},{},{},{},{},{}\n'.format(
+                current_time - self.start_time, translator.
+                total_solver_time, translator.total_switch_time,
+                self.avg_full_path_len.get_avg(),
+                self.avg_unsat_path_len.get_avg(), self.count_unsat_paths.counter))
+            self.breakdown_file.flush()
+
+    def log_control_path_stats(self, stats_per_control_path_edge,
+                               num_control_path_edges):
+        logging.info(
+            "Number of times each of %d control path edges has occurred"
+            " in a SUCCESS test case:", num_control_path_edges)
+        num_edges_with_count = defaultdict(int)
+        num_edges_with_counts = 0
+        for e in sorted(stats_per_control_path_edge.keys()):
+            num_edges_with_counts += 1
+            cnt = stats_per_control_path_edge[e]
+            num_edges_with_count[cnt] += 1
+            logging.info("    %d %s" % (cnt, e))
+        num_edges_without_counts = num_control_path_edges - num_edges_with_counts
+        num_edges_with_count[0] += num_edges_without_counts
+        logging.info("Number of control path edges covered N times:")
+        for c in sorted(num_edges_with_count.keys()):
+            logging.info("    %d edges occurred in %d SUCCESS test cases"
+                         "" % (num_edges_with_count[c], c))
+
+    def cleanup(self):
+        if self.timing_file is not None:
+            self.timing_file.close()
+
+        if self.breakdown_file is not None:
+            self.breakdown_file.close()

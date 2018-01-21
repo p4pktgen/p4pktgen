@@ -2,6 +2,7 @@ from z3 import *
 
 import logging
 
+
 class Packet:
     """The symbolic representation of a packet."""
 
@@ -29,7 +30,8 @@ class Packet:
         if self.max_length is None:
             return self.packet_size_var == self.packet_size
         else:
-            return And(self.packet_size_var > self.packet_size, self.packet_size_var < self.max_length)
+            return And(self.packet_size_var > self.packet_size,
+                       self.packet_size_var < self.max_length)
 
     def set_max_length(self, max_length):
         self.max_length = max_length

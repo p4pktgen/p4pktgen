@@ -25,6 +25,7 @@ class GraphVisitor(object):
     def backtrack(self):
         pass
 
+
 class AllPathsGraphVisitor(GraphVisitor):
     def __init__(self):
         super(AllPathsGraphVisitor, self).__init__()
@@ -385,10 +386,10 @@ class Graph:
 #        logging.debug("Min cut edges")
 #        for e in min_cut_edges:
 #            logging.debug("    %s -> %s", e.src, e.dst)
-        # There should be only one edge in the min cut, and it should
-        # be from a node of the form (x, 1) to (x, 2), for some node x
-        # in the original graph.  That x is the lowest common ancestor
-        # for v.
+# There should be only one edge in the min cut, and it should
+# be from a node of the form (x, 1) to (x, 2), for some node x
+# in the original graph.  That x is the lowest common ancestor
+# for v.
         assert len(min_cut_edges) == 1
         e = min_cut_edges[0]
         assert isinstance(e.src, tuple)
@@ -432,10 +433,10 @@ class Graph:
                 backtrack_callback()
         return all_paths
 
-    def visit_all_paths(self,
-                       v_start,
-                       v_end, graph_visitor):
-        queue = [[n] for n in graph_visitor.preprocess_edges(self.get_neighbors(v_start))]
+    def visit_all_paths(self, v_start, v_end, graph_visitor):
+        queue = [[
+            n
+        ] for n in graph_visitor.preprocess_edges(self.get_neighbors(v_start))]
         last_len = 0
         while len(queue) > 0:
             current_path = queue.pop()
@@ -448,7 +449,8 @@ class Graph:
 
             go_deeper = graph_visitor.visit(current_path, is_full_path)
             if go_deeper and not is_full_path:
-                for n in graph_visitor.preprocess_edges(self.get_neighbors(last_node)):
+                for n in graph_visitor.preprocess_edges(
+                        self.get_neighbors(last_node)):
                     queue.append(current_path + [n])
 
         for i in range(last_len):

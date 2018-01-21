@@ -4,7 +4,8 @@ class Config:
     def __init__(self):
         self.__dict__ = self.__shared_state
 
-    def load_test_defaults(self, no_packet_length_errs=True,
+    def load_test_defaults(self,
+                           no_packet_length_errs=True,
                            run_simple_switch=True):
         self.debug = False
         self.silent = False
