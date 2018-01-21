@@ -12,6 +12,36 @@ class Edge(object):
         return '{} -> {}'.format(self.src, self.dst)
 
 
+class GraphVisitor(object):
+    def __init__(self):
+        self.all_paths = []
+
+    def preprocess_edges(self, neighbors):
+        return neighbors
+
+    def visit(self, path, is_complete_path):
+        return True
+
+    def backtrack(self):
+        pass
+
+class AllPathsGraphVisitor(GraphVisitor):
+    def __init__(self):
+        super(AllPathsGraphVisitor, self).__init__()
+        self.all_paths = []
+
+    def preprocess_edges(self, neighbors):
+        return neighbors
+
+    def visit(self, path, is_complete_path):
+        if is_complete_path:
+            self.all_paths.append(path)
+        return True
+
+    def backtrack(self):
+        pass
+
+
 class Graph:
     """A Graph is a graph of nodes and directed edges.  The nodes can be
     any immutable hashable Python data type, e.g. numbers, strings,
@@ -401,6 +431,28 @@ class Graph:
             for i in range(last_len):
                 backtrack_callback()
         return all_paths
+
+    def visit_all_paths(self,
+                       v_start,
+                       v_end, graph_visitor):
+        queue = [[n] for n in graph_visitor.preprocess_edges(self.get_neighbors(v_start))]
+        last_len = 0
+        while len(queue) > 0:
+            current_path = queue.pop()
+            last_node = current_path[-1].dst
+            is_full_path = (last_node == v_end)
+
+            for i in range(last_len - len(current_path) + 1):
+                graph_visitor.backtrack()
+            last_len = len(current_path)
+
+            go_deeper = graph_visitor.visit(current_path, is_full_path)
+            if go_deeper and not is_full_path:
+                for n in graph_visitor.preprocess_edges(self.get_neighbors(last_node)):
+                    queue.append(current_path + [n])
+
+        for i in range(last_len):
+            graph_visitor.backtrack()
 
     def count_all_paths(self, v_start):
         """Quickly count the number of paths in a directed acyclic graph (DAG)

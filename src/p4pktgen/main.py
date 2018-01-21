@@ -1,22 +1,22 @@
 from __future__ import print_function
 import argparse
-import json
 import logging
 from collections import defaultdict, OrderedDict
 import time
 
 import matplotlib.pyplot as plt
-from scapy.all import *
 from graphviz import Digraph
 
 from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
+from p4pktgen.core.strategy import PathCoverageGraphVisitor
 from p4pktgen.core.translator import TestPathResult
+from p4pktgen.util.graph import AllPathsGraphVisitor
 from p4pktgen.util.statistics import Counter, Average
+from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.hlir.transition import TransitionType, BoolTransition
-
 
 def main():
     #Parse the command line arguments provided at run time.
@@ -350,8 +350,10 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         generate_graphviz_graph(eg_pipeline, eg_graph)
         return
 
-    parser_paths = parser_graph.generate_all_paths(
-        hlir.parsers['parser'].init_state, 'sink')
+    graph_visitor = AllPathsGraphVisitor()
+    parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink', graph_visitor)
+    parser_paths = graph_visitor.all_paths
+
     # paths = [[n[0] for n in path] + ['sink'] for path in paths]
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
@@ -374,19 +376,13 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     count_unsat_paths = Counter('unsat_paths')
 
     start_time = time.time()
-    count = Counter('path_count')
     results = OrderedDict()
     stats = defaultdict(int)
     last_time_printed_stats_per_control_path_edge = [time.time()]
     stats_per_control_path_edge = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
-    old_control_path = [[]]
     # TBD: Make this filename specifiable via command line option
-    test_cases_json_fname = 'test-cases.json'
-    test_casesf = open(test_cases_json_fname, 'w')
-    test_casesf.write('[\n')
-    test_pcapf = RawPcapWriter('test.pcap', linktype=0)
-    test_pcapf._write_header(None)
+    test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
     # The only reason first_time is a list is so we can mutate the
     # global value inside of a sub-method.
     first_time = [True]
@@ -397,88 +393,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                      "" % (parser_path_num, len(parser_paths), parser_path))
         translator.generate_parser_constraints(parser_path)
         stats_per_parser_path = defaultdict(int)
-
-        def eval_control_path(control_path, is_complete_control_path):
-            count.inc()
-            translator.push()
-            expected_path, result, test_case, packet_lst = \
-                translator.generate_constraints(
-                    parser_path, control_path,
-                    source_info_to_node_name, count, is_complete_control_path)
-
-            if result == TestPathResult.SUCCESS and is_complete_control_path:
-                avg_full_path_len.record(len(parser_path + control_path))
-            if result == TestPathResult.NO_PACKET_FOUND:
-                avg_unsat_path_len.record(len(parser_path + control_path))
-                count_unsat_paths.inc()
-
-            if Config().get_record_statistics():
-                current_time = time.time()
-                if is_complete_control_path:
-                    timing_file.write(
-                        '{},{}\n'.format(result, current_time - start_time))
-                    timing_file.flush()
-                if count.counter % 100 == 0:
-                    breakdown_file.write('{},{},{},{},{},{}\n'.format(
-                        current_time - start_time, translator.
-                        total_solver_time, translator.total_switch_time,
-                        avg_full_path_len.get_avg(),
-                        avg_unsat_path_len.get_avg(),
-                        count_unsat_paths.counter))
-                    breakdown_file.flush()
-
-            record_result = (is_complete_control_path
-                             or (result != TestPathResult.SUCCESS))
-            if record_result:
-                # Doing file writing here enables getting at least
-                # some test case output data for p4pktgen runs that
-                # the user kills before it completes, e.g. because it
-                # takes too long to complete.
-                if not first_time[0]:
-                    test_casesf.write(',\n')
-                json.dump(test_case, test_casesf, indent=2)
-                for p in packet_lst:
-                    test_pcapf._write_packet(p)
-                test_pcapf.flush()
-                result_path = [n.src for n in parser_path] + ['sink'] + [
-                    (n.src, n) for n in control_path
-                ]
-                result_path_tuple = tuple(expected_path)
-                if result_path_tuple in results and results[result_path_tuple] != result:
-                    logging.error("result_path %s with result %s"
-                                  " is already recorded in results"
-                                  " while trying to record different result %s"
-                                  "" % (result_path,
-                                        results[result_path_tuple], result))
-                    assert False
-                results[tuple(result_path)] = result
-                if result == TestPathResult.SUCCESS and is_complete_control_path:
-                    for x in control_path:
-                        stats_per_control_path_edge[x] += 1
-                    now = time.time()
-                    # Use real time to avoid printing these details
-                    # too often in the output log.
-                    if now - last_time_printed_stats_per_control_path_edge[0] >= 30:
-                        log_control_path_stats(stats_per_control_path_edge,
-                                               num_control_path_edges)
-                        last_time_printed_stats_per_control_path_edge[0] = now
-                stats[result] += 1
-                stats_per_parser_path[result] += 1
-                first_time[0] = False
-
-            tmp_num = Config().get_max_paths_per_parser_path()
-            if (tmp_num and
-                    stats_per_parser_path[TestPathResult.SUCCESS] >= tmp_num):
-                logging.info(
-                    "Already found %d packets for parser path %d of %d."
-                    "  Backing off so we can get to next parser path ASAP"
-                    "" % (stats_per_parser_path[TestPathResult.SUCCESS],
-                          parser_path_num, len(parser_paths)))
-                go_deeper = False
-            else:
-                go_deeper = (result == TestPathResult.SUCCESS)
-            old_control_path[0] = control_path
-            return go_deeper
 
         def order_neighbors_by_least_used(node, neighbors):
             custom_order = sorted(
@@ -499,17 +413,13 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         else:
             # Use default order built into generate_all_paths()
             order_cb_fn = None
-        graph.generate_all_paths(
-            in_pipeline.init_table_name,
-            None,
-            callback=eval_control_path,
-            backtrack_callback=lambda: translator.pop(),
-            neighbor_order_callback=order_cb_fn)
+
+        graph_visitor = PathCoverageGraphVisitor(translator, parser_path, source_info_to_node_name, results, test_case_writer)
+        graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
+
     logging.info("Final statistics on use of control path edges:")
     log_control_path_stats(stats_per_control_path_edge, num_control_path_edges)
-    test_casesf.write('\n]\n')
-    test_casesf.close()
-    test_pcapf.close()
+    test_case_writer.cleanup()
     translator.cleanup()
 
     if timing_file is not None:

@@ -733,7 +733,7 @@ class Translator:
         ] + ['sink'] + [(n.src, n) for n in control_path]
         logging.info("")
         logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
-                     "" % (count.counter, len(path), len(control_path),
+                     "" % (count, len(path), len(control_path),
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
@@ -969,7 +969,7 @@ class Translator:
 
         logging.info("END   %d Exp path (len %d+%d=%d)"
                      " complete_path %s %s: %s"
-                     "" % (count.counter, len(path), len(control_path),
+                     "" % (count, len(path), len(control_path),
                            len(path) + len(control_path),
                            is_complete_control_path, result, expected_path))
         logging.info("%.3f sec = %.3f gen ingress constraints"
@@ -1001,7 +1001,7 @@ class Translator:
         # represented as separate parts in JSON, e.g. nested lists or
         # dicts of strings, numbers, booleans.
         test_case = OrderedDict([
-            ("log_file_id", count.counter),
+            ("log_file_id", count),
             ("result", result.name),
             ("expected_path", map(str, expected_path)),
             ("complete_path", is_complete_control_path),
