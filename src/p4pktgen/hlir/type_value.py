@@ -18,7 +18,8 @@ class TypeValueExpression(TypeValue):
 
     def __repr__(self):
         if hasattr(self, 'cond'):
-            return '({} {} : {})'.format(self.cond, self.op, self.left, self.right)
+            return '({} {} : {})'.format(self.cond, self.op, self.left,
+                                         self.right)
         else:
             if self.left is None:
                 return '{}({})'.format(self.op, self.right)

@@ -2,6 +2,7 @@ import json
 
 from scapy.all import *
 
+
 class TestCaseWriter:
     def __init__(self, json_fn, pcap_fn):
         self.test_casesf = open(json_fn, 'w')

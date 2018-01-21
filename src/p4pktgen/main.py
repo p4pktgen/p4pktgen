@@ -14,9 +14,10 @@ from core.translator import Translator
 from p4pktgen.core.strategy import PathCoverageGraphVisitor
 from p4pktgen.core.translator import TestPathResult
 from p4pktgen.util.graph import AllPathsGraphVisitor
-from p4pktgen.util.statistics import Counter, Average
+from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.hlir.transition import TransitionType, BoolTransition
+
 
 def main():
     #Parse the command line arguments provided at run time.
@@ -295,25 +296,6 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
     logging.info("Wrote files %s and %s.pdf", fname, fname)
 
 
-def log_control_path_stats(stats_per_control_path_edge,
-                           num_control_path_edges):
-    logging.info("Number of times each of %d control path edges has occurred"
-                 " in a SUCCESS test case:", num_control_path_edges)
-    num_edges_with_count = defaultdict(int)
-    num_edges_with_counts = 0
-    for e in sorted(stats_per_control_path_edge.keys()):
-        num_edges_with_counts += 1
-        cnt = stats_per_control_path_edge[e]
-        num_edges_with_count[cnt] += 1
-        logging.info("    %d %s" % (cnt, e))
-    num_edges_without_counts = num_control_path_edges - num_edges_with_counts
-    num_edges_with_count[0] += num_edges_without_counts
-    logging.info("Number of control path edges covered N times:")
-    for c in sorted(num_edges_with_count.keys()):
-        logging.info("    %d edges occurred in %d SUCCESS test cases"
-                     "" % (num_edges_with_count[c], c))
-
-
 def process_json_file(input_file, debug=False, generate_graphs=False):
     top = P4_Top(debug)
     top.build_from_json(input_file)
@@ -351,7 +333,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         return
 
     graph_visitor = AllPathsGraphVisitor()
-    parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink', graph_visitor)
+    parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink',
+                                 graph_visitor)
     parser_paths = graph_visitor.all_paths
 
     # paths = [[n[0] for n in path] + ['sink'] for path in paths]
@@ -366,20 +349,10 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                  "" % (num_control_paths, num_control_path_nodes,
                        num_control_path_edges))
 
-    timing_file = None
-    if Config().get_record_statistics():
-        timing_file = open('timing.log', 'w')
-        breakdown_file = open('breakdown.log', 'w')
+    Statistics().init()
+    Statistics().num_control_path_edges = num_control_path_edges
 
-    avg_full_path_len = Average('full_path_len')
-    avg_unsat_path_len = Average('unsat_path_len')
-    count_unsat_paths = Counter('unsat_paths')
-
-    start_time = time.time()
     results = OrderedDict()
-    stats = defaultdict(int)
-    last_time_printed_stats_per_control_path_edge = [time.time()]
-    stats_per_control_path_edge = defaultdict(int)
     translator = Translator(input_file, hlir, in_pipeline)
     # TBD: Make this filename specifiable via command line option
     test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
@@ -392,7 +365,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         logging.info("Analyzing parser_path %d of %d: %s"
                      "" % (parser_path_num, len(parser_paths), parser_path))
         translator.generate_parser_constraints(parser_path)
-        stats_per_parser_path = defaultdict(int)
 
         def order_neighbors_by_least_used(node, neighbors):
             custom_order = sorted(
@@ -414,18 +386,19 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             # Use default order built into generate_all_paths()
             order_cb_fn = None
 
-        graph_visitor = PathCoverageGraphVisitor(translator, parser_path, source_info_to_node_name, results, test_case_writer)
+        graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
+                                                 source_info_to_node_name,
+                                                 results, test_case_writer)
         graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
 
     logging.info("Final statistics on use of control path edges:")
-    log_control_path_stats(stats_per_control_path_edge, num_control_path_edges)
+    Statistics().log_control_path_stats(
+        Statistics().stats_per_control_path_edge, num_control_path_edges)
     test_case_writer.cleanup()
     translator.cleanup()
+    Statistics().cleanup()
 
-    if timing_file is not None:
-        timing_file.close()
-
-    for result, count in stats.items():
+    for result, count in Statistics().stats.items():
         print('{}: {}'.format(result, count))
 
     if Config().get_dump_test_case():

@@ -13,7 +13,7 @@ from p4pktgen.p4_hlir import SourceInfo
 
 
 def logf_append(s):
-    return    # Comment out this line to debug things with logf_append
+    return  # Comment out this line to debug things with logf_append
     with open('/tmp/simple_switch-err-log.txt', 'a') as f:
         tmp = str('pid %d time %s ' % (os.getpid(), time.time()))
         f.write(tmp + s + '\n')
@@ -129,8 +129,8 @@ def logf_append(s):
 # is a common issue with black box testing of computer systems, so
 # nothing unique to simple_switch here.
 
-class SimpleSwitch:
 
+class SimpleSwitch:
     def __init__(self, json_file, folder, num_ports=8):
         self.modified_tables = []
 
@@ -153,7 +153,8 @@ class SimpleSwitch:
             intf_args.append(self.intf_num_to_simple_switch_arg(i))
             self.intf_info[i] = {
                 'pcap_in_fname': self.intf_num_to_filename(i, 'in'),
-                'pcap_out_fname': self.intf_num_to_filename(i, 'out')}
+                'pcap_out_fname': self.intf_num_to_filename(i, 'out')
+            }
             logging.debug("Creating named pipe '%s'"
                           "" % (self.intf_info[i]['pcap_in_fname']))
             os.mkfifo(self.intf_info[i]['pcap_in_fname'])
@@ -189,15 +190,14 @@ class SimpleSwitch:
             logf_append('No file found: %s -- good' % (ipc_fname))
 
         # Start simple_switch.   See step (2) above.
-        ss_cmd_args = (['simple_switch',
-                        '--log-console',
-                        '--thrift-port', str(self.thrift_port_num),
-                        '--use-files', '0' ] +
-                       intf_args + [self.json_file_abspath])
+        ss_cmd_args = ([
+            'simple_switch', '--log-console', '--thrift-port',
+            str(self.thrift_port_num), '--use-files', '0'
+        ] + intf_args + [self.json_file_abspath])
         logging.debug("Starting simple_switch in directory %s with args: %s"
                       "" % (self.folder, ss_cmd_args))
-        self.proc = subprocess.Popen(ss_cmd_args, stdout=subprocess.PIPE,
-                                     cwd=self.folder)
+        self.proc = subprocess.Popen(
+            ss_cmd_args, stdout=subprocess.PIPE, cwd=self.folder)
 
         # See step (3) above.
         # p4c/backends/bmv2/bmv2stf.py has scary-looking "DANGER"
@@ -232,7 +232,8 @@ class SimpleSwitch:
         while True:
             try:
                 standard_client, mc_client = thrift_connect(
-                    'localhost', str(self.thrift_port_num),
+                    'localhost',
+                    str(self.thrift_port_num),
                     RuntimeAPI.get_thrift_services(pre))
             except:
                 num_tries += 1
@@ -259,9 +260,9 @@ class SimpleSwitch:
         (for 'in') or writes (for 'out').  Except for the prefix, this
         file name is determined by code inside of simple_switch."""
 
-        return "%s/%s_%s.pcap" % (self.folder,
-                                  self.intf_num_to_simple_switch_name(intf_num),
-                                  direction)
+        return "%s/%s_%s.pcap" % (
+            self.folder, self.intf_num_to_simple_switch_name(intf_num),
+            direction)
 
     def intf_num_to_simple_switch_arg(self, intf_num):
         """This is the command line option to give to simple_switch, after a
@@ -365,7 +366,8 @@ class SimpleSwitch:
                 prev_match = 'parse_exception'
                 continue
             m = re.search(
-                r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" (?:\((.*)\) )?is (.*)', line)
+                r'\[cxt \d+\] (.*?)\((\d+)\) Condition "(.*)" (?:\((.*)\) )?is (.*)',
+                line)
             if m is not None:
                 filename = m.group(1)
                 lineno = int(m.group(2))

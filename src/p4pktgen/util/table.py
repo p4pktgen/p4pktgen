@@ -15,7 +15,8 @@ class Table:
                     max_lens.append(0)
                 max_lens[i] = max(len(cell), max_lens[i])
 
-        row_format = '\t' + ''.join(['{:>' + str(max_len + 1) + '}' for max_len in max_lens]) + '\n'
+        row_format = '\t' + ''.join(
+            ['{:>' + str(max_len + 1) + '}' for max_len in max_lens]) + '\n'
         result = ''
         for row in self.data:
             if len(row) < len(max_lens):
