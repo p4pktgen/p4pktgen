@@ -155,7 +155,8 @@ class Translator:
         if isinstance(type_value, TypeValueLookahead):
             assert sym_packet is not None and pos is not None
             offset = BitVecVal(type_value.offset, pos.size())
-            return sym_packet.extract(pos + offset, type_value.size)
+            return sym_packet.extract(
+                pos + offset, type_value.size, lookahead=True)
         if isinstance(type_value, TypeValueField):
             return context.get_header_field(type_value.header_name,
                                             type_value.header_field)
