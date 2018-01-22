@@ -101,6 +101,7 @@ class Translator:
         self.hlir = hlir
         self.pipeline = pipeline
         self.context_history = [Context()]  # XXX: implement better mechanism
+        self.result_history = [[]]
         self.context_history_lens = []
         self.total_solver_time = 0.0
         self.total_switch_time = 0.0
@@ -111,11 +112,13 @@ class Translator:
     def push(self):
         self.solver.push()
         self.context_history_lens.append(len(self.context_history))
+        self.result_history.append([])
 
     def pop(self):
         self.solver.pop()
         old_len = self.context_history_lens.pop()
         self.context_history = self.context_history[:old_len]
+        self.result_history.pop()
 
     def cleanup(self):
         #if Config().get_run_simple_switch():
@@ -548,6 +551,7 @@ class Translator:
 
     def init_context(self):
         assert len(self.context_history) == 1
+        assert len(self.result_history) == 1
 
         context = Context()
 
@@ -561,6 +565,7 @@ class Translator:
                     context.register_field(field)
 
         self.context_history[0] = context
+        self.result_history[0] = []
 
     def generate_parser_constraints(self, parser_path):
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
@@ -765,11 +770,21 @@ class Translator:
         # If the last part of the path is a table with no const entries
         # and the prefix of the current path is satisfiable, so is the new
         # path
-        if transition is not None and not is_complete_control_path and transition == transition.transition_type == TransitionType.ACTION_TRANSITION:
-            assert table_name in self.pipeline.tables
-            table = self.pipeline.tables[table_name]
-            assert not table.is_const
-            return True
+        if transition is not None and not is_complete_control_path:
+            if transition == transition.transition_type == TransitionType.ACTION_TRANSITION:
+                assert table_name in self.pipeline.tables
+                table = self.pipeline.tables[table_name]
+                assert not table.is_const
+                result = TestPathResult.SUCCESS
+                self.result_history[-1].append(result)
+                return (expected_path, result, None, None)
+            elif transition.transition_type == TransitionType.BOOL_TRANSITION:
+                cond_history = self.result_history[-1]
+                if len(cond_history) > 0:
+                    assert len(cond_history) == 1
+                    if self.cond_history[0] == TestPathResult.NO_PACKET_FOUND:
+                        return (expected_path, TestPathResult.SUCCESS, None,
+                                None)
 
         time3 = time.time()
         smt_result = self.solver.check()
@@ -942,7 +957,8 @@ class Translator:
                         OrderedDict([("variable_name", var_name), (
                             "source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
-                if Config().get_run_simple_switch():
+                if Config().get_run_simple_switch(
+                ) and is_complete_control_path:
                     extracted_path = self.test_packet(payload, table_configs,
                                                       source_info_to_node_name)
 
@@ -1042,6 +1058,8 @@ class Translator:
         payloads = []
         if payload:
             payloads.append(payload)
+
+        self.result_history[-1].append(result)
         return (expected_path, result, test_case, payloads)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):
