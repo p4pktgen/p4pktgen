@@ -748,6 +748,7 @@ class Translator:
         # XXX: very ugly to split parsing/control like that, need better solution
         logging.info('control_path = {}'.format(control_path))
 
+        transition = None
         if len(control_path) > 0:
             transition = control_path[-1]
             constraints.extend(
@@ -757,13 +758,21 @@ class Translator:
 
         constraints.extend(context.get_name_constraints())
 
-        time3 = time.time()
-
         # Construct and test the packet
         # logging.debug(And(constraints))
         self.solver.add(And(constraints))
-        smt_result = self.solver.check()
 
+        # If the last part of the path is a table with no const entries
+        # and the prefix of the current path is satisfiable, so is the new
+        # path
+        if transition is not None and not is_complete_control_path and transition == transition.transition_type == TransitionType.ACTION_TRANSITION:
+            assert table_name in self.pipeline.tables
+            table = self.pipeline.tables[table_name]
+            assert not table.is_const
+            return True
+
+        time3 = time.time()
+        smt_result = self.solver.check()
         time4 = time.time()
         self.total_solver_time += time4 - time3
 
