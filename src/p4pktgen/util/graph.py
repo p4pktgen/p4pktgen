@@ -403,40 +403,6 @@ class Graph:
         assert e.src[0] == e.dst[0]
         return e.src[0]
 
-    def generate_all_paths(self,
-                           v_start,
-                           v_end,
-                           callback=None,
-                           backtrack_callback=None,
-                           neighbor_order_callback=None):
-        all_paths = []
-        queue = [[n] for n in self.get_neighbors(v_start)]
-        last_len = 0
-        while len(queue) > 0:
-            current_path = queue.pop()
-            last_node = current_path[-1].dst
-            is_full_path = (last_node == v_end)
-
-            if backtrack_callback is not None:
-                for i in range(last_len - len(current_path) + 1):
-                    backtrack_callback()
-            last_len = len(current_path)
-
-            go_deeper = True
-            if callback is not None:
-                go_deeper = callback(current_path, is_full_path)
-            elif is_full_path:
-                all_paths.append(current_path)
-
-            if go_deeper and not is_full_path:
-                for n in self.get_neighbors(last_node):
-                    queue.append(current_path + [n])
-
-        if backtrack_callback is not None:
-            for i in range(last_len):
-                backtrack_callback()
-        return all_paths
-
     def visit_all_paths(self, v_start, v_end, graph_visitor):
         queue = [[
             n
