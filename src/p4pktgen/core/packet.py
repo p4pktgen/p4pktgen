@@ -2,6 +2,7 @@ from z3 import *
 
 import logging
 
+from p4pktgen.config import Config
 
 class Packet:
     """The symbolic representation of a packet."""
@@ -23,7 +24,7 @@ class Packet:
         end = simplify(start + BitVecVal(size, 32))
         self.update_packet_size(end)
 
-        if not (lookahead) and self.all_const_size and is_const(
+        if Config().get_hybrid_input() and not lookahead and self.all_const_size and is_const(
                 start) and is_const(end):
             assert start == self.total_const_size
             var = BitVec('packet{}'.format(len(self.const_size_vars)), size)

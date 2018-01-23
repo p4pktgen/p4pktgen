@@ -48,7 +48,11 @@ class Config:
         # parser path, other than the number of paths in the ingress
         # control block.
         self.max_paths_per_parser_path = None
+        self.num_test_cases = None
         self.try_least_used_branches_first = False
+        self.hybrid_input = True
+        self.conditional_opt = True
+        self.table_opt = True
 
     def load_args(self, args):
         self.debug = args.debug
@@ -65,7 +69,11 @@ class Config:
         self.min_packet_len_generated = 1
         self.max_packet_len_generated = 1536
         self.max_paths_per_parser_path = args.max_paths_per_parser_path
+        self.num_test_cases = args.num_test_cases
         self.try_least_used_branches_first = args.try_least_used_branches_first
+        self.hybrid_input = args.hybrid_input
+        self.conditional_opt = args.conditional_opt
+        self.table_opt = args.table_opt
 
     def get_debug(self):
         return self.debug
@@ -103,5 +111,17 @@ class Config:
     def get_max_paths_per_parser_path(self):
         return self.max_paths_per_parser_path
 
+    def get_num_test_cases(self):
+        return self.num_test_cases
+
     def get_try_least_used_branches_first(self):
         return self.try_least_used_branches_first
+
+    def get_hybrid_input(self):
+        return self.hybrid_input
+
+    def get_conditional_opt(self):
+        return self.conditional_opt
+
+    def get_table_opt(self):
+        return self.table_opt

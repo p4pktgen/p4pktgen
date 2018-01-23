@@ -20,7 +20,7 @@ from p4pktgen.hlir.transition import *
 from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *
 from p4pktgen.switch.simple_switch import SimpleSwitch
-from p4pktgen.util.statistics import Timer
+from p4pktgen.util.statistics import Statistics, Timer
 from p4pktgen.util.table import Table
 
 TestPathResult = Enum(
@@ -103,7 +103,6 @@ class Translator:
         self.context_history = [Context()]  # XXX: implement better mechanism
         self.result_history = [[]]
         self.context_history_lens = []
-        self.total_solver_time = 0.0
         self.total_switch_time = 0.0
 
     def current_context(self):
@@ -569,6 +568,7 @@ class Translator:
 
     def generate_parser_constraints(self, parser_path):
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
+        parser_constraints_gen_timer.start()
 
         self.solver.pop()
         self.solver.push()
@@ -660,11 +660,19 @@ class Translator:
                                                self.sym_packet.packet_size_var)
         constraints.append(self.sym_packet.get_length_constraint())
 
+        constraints.extend(self.current_context().get_name_constraints())
         self.solver.add(And(constraints))
 
         parser_constraints_gen_timer.stop()
         logging.info('Generate parser constraints: %.3f sec' %
                      (parser_constraints_gen_timer.get_time()))
+
+        Statistics().solver_time.start()
+        result = self.solver.check()
+        Statistics().num_solver_calls += 1
+        Statistics().solver_time.stop()
+
+        return result == sat
 
     def parser_op_trans_to_str(self, op_trans):
         # XXX: after unifying type value representations
@@ -731,7 +739,6 @@ class Translator:
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
-
         # XXX: This is very hacky right now
         expected_path = [
             n.src if not isinstance(n, ParserOpTransition) else
@@ -770,26 +777,34 @@ class Translator:
         # If the last part of the path is a table with no const entries
         # and the prefix of the current path is satisfiable, so is the new
         # path
-        if transition is not None and not is_complete_control_path:
-            if transition == transition.transition_type == TransitionType.ACTION_TRANSITION:
-                assert table_name in self.pipeline.tables
-                table = self.pipeline.tables[table_name]
-                assert not table.is_const
+        if transition is not None and not is_complete_control_path and len(
+                context.uninitialized_reads) == 0 and len(
+                    context.invalid_header_writes) == 0:
+            if Config().get_table_opt(
+            ) and transition.transition_type == TransitionType.ACTION_TRANSITION:
+                assert transition.src in self.pipeline.tables
+                table = self.pipeline.tables[transition.src]
+                assert not table.is_const()
                 result = TestPathResult.SUCCESS
-                self.result_history[-1].append(result)
+                self.result_history[-2].append(result)
                 return (expected_path, result, None, None)
-            elif transition.transition_type == TransitionType.BOOL_TRANSITION:
-                cond_history = self.result_history[-1]
-                if len(cond_history) > 0:
+            elif Config().get_conditional_opt(
+            ) and transition.transition_type == TransitionType.BOOL_TRANSITION:
+                cond_history = self.result_history[-2]
+                if len(
+                        cond_history
+                ) > 0 and cond_history[0] == TestPathResult.NO_PACKET_FOUND:
                     assert len(cond_history) == 1
-                    if self.cond_history[0] == TestPathResult.NO_PACKET_FOUND:
-                        return (expected_path, TestPathResult.SUCCESS, None,
-                                None)
+                    result = TestPathResult.SUCCESS
+                    self.result_history[-2].append(result)
+                    return (expected_path, result, None, None)
 
         time3 = time.time()
+        Statistics().solver_time.start()
         smt_result = self.solver.check()
+        Statistics().num_solver_calls += 1
+        Statistics().solver_time.stop()
         time4 = time.time()
-        self.total_solver_time += time4 - time3
 
         packet_hexstr = None
         payload = None
@@ -1059,7 +1074,7 @@ class Translator:
         if payload:
             payloads.append(payload)
 
-        self.result_history[-1].append(result)
+        self.result_history[-2].append(result)
         return (expected_path, result, test_case, payloads)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):

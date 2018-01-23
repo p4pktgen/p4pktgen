@@ -77,6 +77,24 @@ def main():
         default=False,
         help='Record statistics', )
     parser.add_argument(
+        '--no-hybrid-input',
+        dest='hybrid_input',
+        action='store_false',
+        default=True,
+        help='Do not use the hybrid input representation')
+    parser.add_argument(
+        '--no-conditional-opt',
+        dest='conditional_opt',
+        action='store_false',
+        default=True,
+        help='Do not omit solver calls for conditionals')
+    parser.add_argument(
+        '--no-table-opt',
+        dest='table_opt',
+        action='store_false',
+        default=True,
+        help='Do not omit solver calls for tables')
+    parser.add_argument(
         '-aup',
         '--allow-unimplemented-primitives',
         dest='allow_unimplemented_primitives',
@@ -112,6 +130,13 @@ def main():
         help=
         """With this option specified, generate at most the specified number of control paths for each parser path.  This can be useful for programs with more control paths than you wish to enumerate, or simply for reducing the number of test cases generated.  Without this option specified, the default behavior is to generate test cases for all control paths."""
     )
+    parser.add_argument(
+        '-c',
+        '--num-test-cases',
+        dest='num_test_cases',
+        type=int,
+        default=None,
+        help="""Number of test cases to generate""")
     parser.add_argument(
         '-tlubf',
         '--try-least-used-branches-first',
@@ -364,7 +389,9 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         parser_path_num += 1
         logging.info("Analyzing parser_path %d of %d: %s"
                      "" % (parser_path_num, len(parser_paths), parser_path))
-        translator.generate_parser_constraints(parser_path)
+        if not translator.generate_parser_constraints(parser_path):
+            # Skip unsatisfiable parser paths
+            continue
 
         def order_neighbors_by_least_used(node, neighbors):
             custom_order = sorted(
@@ -391,11 +418,17 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                                                  results, test_case_writer)
         graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
 
+        # Check if we generated enough test cases
+        if Statistics().num_test_cases == Config().get_num_test_cases():
+            break
+
     logging.info("Final statistics on use of control path edges:")
     Statistics().log_control_path_stats(
         Statistics().stats_per_control_path_edge, num_control_path_edges)
     test_case_writer.cleanup()
     translator.cleanup()
+
+    Statistics().dump()
     Statistics().cleanup()
 
     for result, count in Statistics().stats.items():

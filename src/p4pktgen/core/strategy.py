@@ -4,7 +4,7 @@ import time
 
 from p4pktgen.config import Config
 from p4pktgen.core.translator import TestPathResult
-from p4pktgen.util.graph import GraphVisitor
+from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
 
 
@@ -77,6 +77,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
             Statistics().stats[result] += 1
             self.stats_per_traversal[result] += 1
 
+        visit_result = None
         tmp_num = Config().get_max_paths_per_parser_path()
         if (tmp_num
                 and stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num):
@@ -84,10 +85,16 @@ class PathCoverageGraphVisitor(GraphVisitor):
                          "  Backing off so we can get to next parser path ASAP"
                          "" % (stats_per_traversal[TestPathResult.SUCCESS],
                                parser_path_num, len(parser_paths)))
-            go_deeper = False
+            visit_result = VisitResult.BACKTRACK
         else:
-            go_deeper = (result == TestPathResult.SUCCESS)
-        return go_deeper
+            visit_result = VisitResult.CONTINUE if result == TestPathResult.SUCCESS else VisitResult.BACKTRACK
+
+        if is_complete_control_path and result == TestPathResult.SUCCESS:
+            Statistics().num_test_cases += 1
+            if Statistics().num_test_cases == Config().get_num_test_cases():
+                visit_result = VisitResult.ABORT
+
+        return visit_result
 
     def backtrack(self):
         self.translator.pop()

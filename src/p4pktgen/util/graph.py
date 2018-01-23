@@ -2,6 +2,10 @@ import logging
 import collections
 import copy
 
+from enum import Enum
+
+VisitResult = Enum('VisitResult', 'CONTINUE BACKTRACK ABORT')
+
 
 class Edge(object):
     def __init__(self, src, dst):
@@ -20,7 +24,7 @@ class GraphVisitor(object):
         return neighbors
 
     def visit(self, path, is_complete_path):
-        return True
+        return VisitResult.CONTINUE
 
     def backtrack(self):
         pass
@@ -37,7 +41,7 @@ class AllPathsGraphVisitor(GraphVisitor):
     def visit(self, path, is_complete_path):
         if is_complete_path:
             self.all_paths.append(path)
-        return True
+        return VisitResult.CONTINUE
 
     def backtrack(self):
         pass
@@ -447,11 +451,13 @@ class Graph:
                 graph_visitor.backtrack()
             last_len = len(current_path)
 
-            go_deeper = graph_visitor.visit(current_path, is_full_path)
-            if go_deeper and not is_full_path:
+            visit_result = graph_visitor.visit(current_path, is_full_path)
+            if visit_result == VisitResult.CONTINUE and not is_full_path:
                 for n in graph_visitor.preprocess_edges(
                         self.get_neighbors(last_node)):
                     queue.append(current_path + [n])
+            elif visit_result == VisitResult.ABORT:
+                break
 
         for i in range(last_len):
             graph_visitor.backtrack()

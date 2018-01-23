@@ -22,20 +22,22 @@ class Counter(Statistic):
 class Timer(Statistic):
     def __init__(self, name):
         super(Timer, self).__init__(name)
+        self.start_time = None
+        self.time = 0
+
+    def start(self):
+        assert self.start_time == None
         self.start_time = time.time()
-        self.time = None
 
     def stop(self):
-        self.time = time.time() - self.start_time
+        self.time += time.time() - self.start_time
+        self.start_time = None
 
     def get_time(self):
-        assert self.time is not None
         return self.time
 
-
-class StatisticsRegistry:
-    def __init__(self):
-        pass
+    def __repr__(self):
+        return '{}: {}s'.format(self.name, self.get_time())
 
 
 class Average(Statistic):
@@ -79,6 +81,10 @@ class Statistics:
         self.last_time_printed_stats_per_control_path_edge = self.start_time
         self.record_count = 0
 
+        self.num_test_cases = 0
+        self.num_solver_calls = 0
+        self.solver_time = Timer('solver_time')
+
     def record(self, result, record_path, translator):
         self.record_count += 1
 
@@ -89,10 +95,11 @@ class Statistics:
             self.timing_file.flush()
         if self.record_count % 100 == 0:
             self.breakdown_file.write('{},{},{},{},{},{}\n'.format(
-                current_time - self.start_time, translator.
-                total_solver_time, translator.total_switch_time,
+                current_time - self.start_time,
+                self.solver_time.get_time(), translator.total_switch_time,
                 self.avg_full_path_len.get_avg(),
-                self.avg_unsat_path_len.get_avg(), self.count_unsat_paths.counter))
+                self.avg_unsat_path_len.get_avg(),
+                self.count_unsat_paths.counter))
             self.breakdown_file.flush()
 
     def log_control_path_stats(self, stats_per_control_path_edge,
@@ -113,6 +120,11 @@ class Statistics:
         for c in sorted(num_edges_with_count.keys()):
             logging.info("    %d edges occurred in %d SUCCESS test cases"
                          "" % (num_edges_with_count[c], c))
+
+    def dump(self):
+        print('num_test_cases', self.num_test_cases)
+        print('num_solver_calls', self.num_solver_calls)
+        print(self.solver_time)
 
     def cleanup(self):
         if self.timing_file is not None:
