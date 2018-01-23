@@ -95,6 +95,12 @@ def main():
         default=True,
         help='Do not omit solver calls for tables')
     parser.add_argument(
+        '--no-incremental',
+        dest='incremental',
+        action='store_false',
+        default=True,
+        help='Do not use incremental solving')
+    parser.add_argument(
         '-aup',
         '--allow-unimplemented-primitives',
         dest='allow_unimplemented_primitives',

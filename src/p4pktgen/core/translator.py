@@ -105,6 +105,8 @@ class Translator:
         self.context_history_lens = []
         self.total_switch_time = 0.0
 
+        self.constraints = None if Config().get_incremental() else [[]]
+
     def current_context(self):
         return self.context_history[-1]
 
@@ -113,11 +115,19 @@ class Translator:
         self.context_history_lens.append(len(self.context_history))
         self.result_history.append([])
 
+        if self.constraints is not None:
+            self.constraints.append([])
+
     def pop(self):
-        self.solver.pop()
+        if Config().get_incremental():
+            self.solver.pop()
+
         old_len = self.context_history_lens.pop()
         self.context_history = self.context_history[:old_len]
         self.result_history.pop()
+
+        if self.constraints is not None:
+            self.constraints.pop()
 
     def cleanup(self):
         #if Config().get_run_simple_switch():
@@ -570,8 +580,9 @@ class Translator:
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
         parser_constraints_gen_timer.start()
 
-        self.solver.pop()
-        self.solver.push()
+        if Config().get_incremental():
+            self.solver.pop()
+            self.solver.push()
 
         self.init_context()
         self.sym_packet = Packet()
@@ -659,7 +670,6 @@ class Translator:
         self.current_context().set_field_value('meta_meta', 'packet_len',
                                                self.sym_packet.packet_size_var)
         constraints.append(self.sym_packet.get_length_constraint())
-
         constraints.extend(self.current_context().get_name_constraints())
         self.solver.add(And(constraints))
 
@@ -671,6 +681,10 @@ class Translator:
         result = self.solver.check()
         Statistics().num_solver_calls += 1
         Statistics().solver_time.stop()
+
+        if not Config().get_incremental():
+            self.constraints[0] = constraints
+            self.solver.reset()
 
         return result == sat
 
@@ -750,7 +764,7 @@ class Translator:
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
-        assert len(control_path) == len(self.context_history_lens)
+        assert len(control_path) == len(self.context_history_lens) or not Config().get_incremental()
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
         constraints = []
@@ -769,6 +783,11 @@ class Translator:
             context = self.current_context()
 
         constraints.extend(context.get_name_constraints())
+
+        if not Config().get_incremental():
+            for cs in self.constraints:
+                self.solver.add(And(cs))
+            self.constraints[-1].extend(constraints)
 
         # Construct and test the packet
         # logging.debug(And(constraints))
@@ -1073,6 +1092,9 @@ class Translator:
         payloads = []
         if payload:
             payloads.append(payload)
+
+        if not Config().get_incremental():
+            self.solver.reset()
 
         self.result_history[-2].append(result)
         return (expected_path, result, test_case, payloads)

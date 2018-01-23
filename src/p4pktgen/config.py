@@ -53,6 +53,7 @@ class Config:
         self.hybrid_input = True
         self.conditional_opt = True
         self.table_opt = True
+        self.incremental = True
 
     def load_args(self, args):
         self.debug = args.debug
@@ -74,6 +75,7 @@ class Config:
         self.hybrid_input = args.hybrid_input
         self.conditional_opt = args.conditional_opt
         self.table_opt = args.table_opt
+        self.incremental = args.incremental
 
     def get_debug(self):
         return self.debug
@@ -125,3 +127,6 @@ class Config:
 
     def get_table_opt(self):
         return self.table_opt
+
+    def get_incremental(self):
+        return self.incremental
