@@ -3,6 +3,7 @@ import argparse
 import logging
 from collections import defaultdict, OrderedDict
 import time
+from random import shuffle
 
 import matplotlib.pyplot as plt
 from graphviz import Digraph
@@ -11,7 +12,7 @@ from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
-from p4pktgen.core.strategy import PathCoverageGraphVisitor
+from p4pktgen.core.strategy import PathCoverageGraphVisitor, EdgeCoverageGraphVisitor, EdgeLabels
 from p4pktgen.core.translator import TestPathResult
 from p4pktgen.util.graph import AllPathsGraphVisitor
 from p4pktgen.util.statistics import Statistics
@@ -391,6 +392,10 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     # global value inside of a sub-method.
     first_time = [True]
     parser_path_num = 0
+
+    # XXX: move
+    labels = defaultdict(lambda: EdgeLabels.UNVISITED)
+
     for parser_path in parser_paths:
         parser_path_num += 1
         logging.info("Analyzing parser_path %d of %d: %s"
@@ -399,29 +404,16 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
             # Skip unsatisfiable parser paths
             continue
 
-        def order_neighbors_by_least_used(node, neighbors):
-            custom_order = sorted(
-                neighbors,
-                key=lambda t: stats_per_control_path_edge[(node, t)])
-            if Config().get_debug():
-                logging.debug("Edges out of node %s"
-                              " ordered from least used to most:", node)
-                for n in custom_order:
-                    edge = (node, n)
-                    logging.debug("    %d %s"
-                                  "" % (stats_per_control_path_edge[edge],
-                                        edge))
-            return custom_order
-
+        graph_visitor = None
         if Config().get_try_least_used_branches_first():
-            order_cb_fn = order_neighbors_by_least_used
+            graph_visitor = EdgeCoverageGraphVisitor(graph, labels, translator, parser_path,
+                                                     source_info_to_node_name,
+                                                     results, test_case_writer)
         else:
-            # Use default order built into generate_all_paths()
-            order_cb_fn = None
+            graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
+                                                     source_info_to_node_name,
+                                                     results, test_case_writer)
 
-        graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
-                                                 source_info_to_node_name,
-                                                 results, test_case_writer)
         graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
 
         # Check if we generated enough test cases

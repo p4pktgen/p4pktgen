@@ -37,7 +37,10 @@ class ActionTransition(Transition):
         return 'u\'{}\''.format(self.action.name)
 
     def __eq__(self, other):
-        return self.action.name == str(other)
+        if isinstance(other, ActionTransition):
+            return self.action == other.action
+        else:
+            return self.action.name == str(other)
 
     def __hash__(self):
         return hash(self.action.name)
@@ -64,8 +67,11 @@ class BoolTransition(Transition):
         return '({}, {})'.format(self.val, self.source_info)
 
     def __eq__(self, other):
-        return (self.val, (self.source_info.filename, self.source_info.line,
-                           self.source_info.source_fragment)) == other
+        if isinstance(other, BoolTransition):
+            return self.val == other.val and self.source_info == other.source_info
+        else:
+            return (self.val, (self.source_info.filename, self.source_info.line,
+                               self.source_info.source_fragment)) == other
 
     def __hash__(self):
         # XXX: hack for test cases

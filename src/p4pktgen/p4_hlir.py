@@ -524,6 +524,10 @@ class Action:
         for primitive in json_obj['primitives']:
             self.primitives.append(PrimitiveCall(primitive))
 
+    def __eq__(self, other):
+        assert isinstance(other, Action)
+        return self.id == other.id
+
 
 class TableKey:
     def __init__(self, json_obj):

@@ -573,6 +573,11 @@ class Translator:
                 else:
                     context.register_field(field)
 
+        #context.set_field_value('standard_metadata', 'ingress_port', BitVec('$$$$x', 9))
+        # XXX: FIX FIX FIX
+        #context.set_field_value('standard_metadata', 'packet_length', BitVec('$$$$l', 32))
+        #context.set_field_value('standard_metadata', 'instance_type', BitVec('$$$$i', 32))
+
         self.context_history[0] = context
         self.result_history[0] = []
 

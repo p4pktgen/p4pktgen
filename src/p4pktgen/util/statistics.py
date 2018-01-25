@@ -84,6 +84,8 @@ class Statistics:
         self.num_test_cases = 0
         self.num_solver_calls = 0
         self.solver_time = Timer('solver_time')
+        self.num_covered_edges = 0
+        self.num_done = 0
 
     def record(self, result, record_path, translator):
         self.record_count += 1
@@ -122,8 +124,11 @@ class Statistics:
                          "" % (num_edges_with_count[c], c))
 
     def dump(self):
+        print('num_control_path_edges', self.num_control_path_edges)
         print('num_test_cases', self.num_test_cases)
         print('num_solver_calls', self.num_solver_calls)
+        print('num_covered_edges', self.num_covered_edges)
+        print('num_done', self.num_done)
         print(self.solver_time)
 
     def cleanup(self):

@@ -20,8 +20,8 @@ class GraphVisitor(object):
     def __init__(self):
         self.all_paths = []
 
-    def preprocess_edges(self, neighbors):
-        return neighbors
+    def preprocess_edges(self, path, edges):
+        return edges
 
     def visit(self, path, is_complete_path):
         return VisitResult.CONTINUE
@@ -35,8 +35,8 @@ class AllPathsGraphVisitor(GraphVisitor):
         super(AllPathsGraphVisitor, self).__init__()
         self.all_paths = []
 
-    def preprocess_edges(self, neighbors):
-        return neighbors
+    def preprocess_edges(self, path, edges):
+        return edges
 
     def visit(self, path, is_complete_path):
         if is_complete_path:
@@ -406,7 +406,7 @@ class Graph:
     def visit_all_paths(self, v_start, v_end, graph_visitor):
         queue = [[
             n
-        ] for n in graph_visitor.preprocess_edges(self.get_neighbors(v_start))]
+        ] for n in graph_visitor.preprocess_edges([], self.get_neighbors(v_start))]
         last_len = 0
         while len(queue) > 0:
             current_path = queue.pop()
@@ -419,9 +419,9 @@ class Graph:
 
             visit_result = graph_visitor.visit(current_path, is_full_path)
             if visit_result == VisitResult.CONTINUE and not is_full_path:
-                for n in graph_visitor.preprocess_edges(
+                for e in graph_visitor.preprocess_edges(current_path,
                         self.get_neighbors(last_node)):
-                    queue.append(current_path + [n])
+                    queue.append(current_path + [e])
             elif visit_result == VisitResult.ABORT:
                 break
 
