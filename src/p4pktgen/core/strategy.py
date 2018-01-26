@@ -119,11 +119,11 @@ class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
         """
         shuffle(edges)
         return edges
+        """
 
         custom_order = sorted(
                 edges, key=lambda t: Statistics().stats_per_control_path_edge[t])
         return reversed(custom_order)
-        """
 
         visited_es = []
         unvisited_es = []

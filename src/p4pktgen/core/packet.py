@@ -19,6 +19,10 @@ class Packet:
         self.all_const_size = True
         self.total_const_size = 0
 
+    def get_sym_packet_size(self):
+        """Return the symbolic packet size."""
+        return self.packet_size_var
+
     def extract(self, start, size, lookahead=False):
         start = simplify(start)
         end = simplify(start + BitVecVal(size, 32))

@@ -575,7 +575,7 @@ class Translator:
 
         #context.set_field_value('standard_metadata', 'ingress_port', BitVec('$$$$x', 9))
         # XXX: FIX FIX FIX
-        #context.set_field_value('standard_metadata', 'packet_length', BitVec('$$$$l', 32))
+        context.set_field_value('standard_metadata', 'packet_length', self.sym_packet.get_sym_packet_size())
         #context.set_field_value('standard_metadata', 'instance_type', BitVec('$$$$i', 32))
 
         self.context_history[0] = context
@@ -589,8 +589,8 @@ class Translator:
             self.solver.pop()
             self.solver.push()
 
-        self.init_context()
         self.sym_packet = Packet()
+        self.init_context()
         constraints = []
 
         # XXX: make this work for multiple parsers
