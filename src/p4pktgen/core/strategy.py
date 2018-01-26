@@ -2,6 +2,7 @@ from collections import OrderedDict, defaultdict
 import json
 import time
 import logging
+from random import shuffle
 
 from enum import Enum
 
@@ -63,7 +64,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
                               " while trying to record different result %s"
                               "" % (result_path,
                                     self.results[result_path_tuple], result))
-                assert False
+                #assert False
             self.results[tuple(result_path)] = result
             if result == TestPathResult.SUCCESS and is_complete_control_path:
                 for x in control_path:
@@ -115,22 +116,23 @@ class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
         self.ccc = 0
 
     def preprocess_edges(self, path, edges):
+        """
+        shuffle(edges)
+        return edges
+
         custom_order = sorted(
                 edges, key=lambda t: Statistics().stats_per_control_path_edge[t])
         return reversed(custom_order)
+        """
 
         visited_es = []
         unvisited_es = []
-        return edges
 
         path_has_new_edges = False
         for e in path:
             if self.labels[e] == EdgeLabels.UNVISITED:
                 path_has_new_edges = True
                 break
-
-        #if path_has_new_edges:
-        #    return edges
 
         for e in edges:
             label = self.labels[e] 
@@ -143,7 +145,9 @@ class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
                 if path_has_new_edges:
                     visited_es.append(e)
 
-        return visited_es + unvisited_es
+        # shuffle(visited_es)
+        #shuffle(unvisited_es)
+        return list(reversed(visited_es)) + list(reversed(unvisited_es))
 
     def visit(self, control_path, is_complete_control_path):
         visit_result = super(EdgeCoverageGraphVisitor, self).visit(control_path, is_complete_control_path)

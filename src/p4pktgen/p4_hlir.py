@@ -11,6 +11,8 @@ from p4pktgen.hlir.transition import *
 from p4pktgen.util.graph import Graph, Edge
 from p4pktgen.config import Config
 
+HIT_ID = -1
+MISS_ID = -2
 
 class P4_HLIR(object):
     PACKET_TOO_SHORT = 'PacketTooShort'
@@ -632,8 +634,14 @@ class Table:
 
         self.next_tables = {}
         for action_name, next_table_name in json_obj['next_tables'].items():
-            action_id = self.action_name_to_id[action_name]
-            self.next_tables[(action_name, action_id)] = next_table_name
+            if action_name == '__HIT__':
+                self.next_tables[(action_name, HIT_ID)] = next_table_name
+            elif action_name == '__MISS__':
+                self.next_tables[(action_name, MISS_ID)] = next_table_name
+            else:
+                action_id = self.action_name_to_id[action_name]
+                assert action_id != HIT_ID and action_id != MISS_ID
+                self.next_tables[(action_name, action_id)] = next_table_name
 
         self.default_entry = None
         if 'default_entry' in json_obj:
