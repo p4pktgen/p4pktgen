@@ -348,12 +348,12 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                   "" % (len(graph_sources), graph_sources, len(graph_sinks),
                         graph_sinks))
     tmp_time = time.time()
-    #graph_lcas = {}
-    #for v in graph.get_nodes():
-    #    graph_lcas[v] = graph.lowest_common_ancestor(v)
-    #lca_comp_time = time.time() - tmp_time
-    #logging.info("%.3f sec to compute lowest common ancestors for ingress",
-    #             lca_comp_time)
+    graph_lcas = {}
+    for v in graph.get_nodes():
+        graph_lcas[v] = graph.lowest_common_ancestor(v)
+    lca_comp_time = time.time() - tmp_time
+    logging.info("%.3f sec to compute lowest common ancestors for ingress",
+                 lca_comp_time)
 
     # Graphviz visualization
     if generate_graphs:
@@ -368,7 +368,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                                  graph_visitor)
     parser_paths = graph_visitor.all_paths
 
-    # paths = [[n[0] for n in path] + ['sink'] for path in paths]
+    # print('\n'.join([str(p) for p in parser_paths]))
+
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))

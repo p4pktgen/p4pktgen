@@ -172,6 +172,10 @@ class Translator:
         if isinstance(type_value, TypeValueField):
             return context.get_header_field(type_value.header_name,
                                             type_value.header_field)
+        if isinstance(type_value, TypeValueStackField):
+            return context.get_last_header_field(
+                type_value.header_name, type_value.header_field,
+                self.hlir.get_header_stack(type_value.header_name).size)
         if isinstance(type_value, TypeValueRuntimeData):
             return context.get_runtime_data(type_value.index)
         if isinstance(type_value, TypeValueExpression):
@@ -269,7 +273,8 @@ class Translator:
                                 format(type_value.op))
         else:
             # XXX: implement other operators
-            raise Exception('Type value {} not supported'.format(type_value))
+            raise Exception('Type value {} not supported (type: {})'.format(
+                type_value, type_value.__class__))
 
     # XXX: "fail" should not be a string
     # XXX: pos/new_pos should be part of the context
@@ -279,39 +284,56 @@ class Translator:
         if op == p4_parser_ops_enum.extract:
             # Extract expects one parameter
             assert len(parser_op.value) == 1
-            assert isinstance(parser_op.value[0], TypeValueRegular)
-            extract_header = self.hlir.headers[parser_op.value[0].header_name]
+            assert isinstance(parser_op.value[0],
+                              TypeValueRegular) or isinstance(
+                                  parser_op.value[0], TypeValueStack)
+
+            header_name = parser_op.value[0].header_name
+            header_type = None
+            if isinstance(parser_op.value[0], TypeValueRegular):
+                header_type = self.hlir.headers[header_name].header_type
+            else:
+                type_name = self.hlir.header_stacks[
+                    header_name].header_type_name
+                header_type = self.hlir.get_header_type(type_name)
 
             if fail == 'PacketTooShort':
                 # XXX: precalculate extract_offset in HLIR
                 extract_offset = sum([
                     BitVecVal(field.size, 32)
-                    for _, field in extract_header.fields.items()
-                    if field.name != '$valid$'
+                    for _, field in header_type.fields.items()
                 ])
                 self.sym_packet.set_max_length(
                     simplify(new_pos + extract_offset - 8))
                 return new_pos
 
+            if isinstance(parser_op.value[0], TypeValueStack):
+                header_name = '{}[{}]'.format(
+                    header_name, context.parsed_stacks[header_name])
+                context.parsed_stacks[header_name] += 1
+
+            if isinstance(parser_op.value[0], TypeValueStack) or (
+                    isinstance(parser_op.value[0], TypeValueRegular)
+                    and not self.hlir.headers[header_name].metadata):
+                # Even though the P4_16 isValid() method
+                # returns a boolean value, it appears that
+                # when p4c-bm2-ss compiles expressions like
+                # "if (ipv4.isValid())" into a JSON file, it
+                # compares the "ipv4.$valid$" field to a bit
+                # vector value of 1 with the == operator, thus
+                # effectively treating the "ipv4.$valid$" as
+                # if it is a bit<1> type.
+                context.set_field_value(header_name, '$valid$', BitVecVal(
+                    1, 1))
+
             # Map bits from packet to context
             extract_offset = BitVecVal(0, 32)
-            for name, field in extract_header.fields.items():
-                # XXX: deal with valid flags
-                if field.name != '$valid$':
-                    context.insert(field,
-                                   sym_packet.extract(new_pos + extract_offset,
-                                                      field.size))
-                    extract_offset += BitVecVal(field.size, 32)
-                else:
-                    # Even though the P4_16 isValid() method
-                    # returns a boolean value, it appears that
-                    # when p4c-bm2-ss compiles expressions like
-                    # "if (ipv4.isValid())" into a JSON file, it
-                    # compares the "ipv4.$valid$" field to a bit
-                    # vector value of 1 with the == operator, thus
-                    # effectively treating the "ipv4.$valid$" as
-                    # if it is a bit<1> type.
-                    context.insert(field, BitVecVal(1, 1))
+            for field_name, field in header_type.fields.items():
+                context.set_field_value(header_name, field_name,
+                                        sym_packet.extract(
+                                            new_pos + extract_offset,
+                                            field.size))
+                extract_offset += BitVecVal(field.size, 32)
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.set:
@@ -493,6 +515,28 @@ class Translator:
                 context.set_field_value(header_name, '$valid$', BitVecVal(
                     0, 1))
                 context.remove_header_fields(header_name)
+            elif primitive.op == 'assign_header_stack':
+                header_stack_src = self.hlir.get_header_stack(
+                    primitive.parameters[1].header_stack_name)
+                header_stack_dst = self.hlir.get_header_stack(
+                    primitive.parameters[0].header_stack_name)
+                header_stack_t = self.hlir.get_header_type(
+                    header_stack_src.header_type_name)
+
+                for i in range(header_stack_src.size):
+                    src_valid = simplify(
+                        context.get_header_field('{}[{}]'.format(
+                            header_stack_src.name, i), '$valid$'))
+                    context.set_field_value('{}[{}]'.format(
+                        header_stack_dst.name, i), '$valid$', src_valid)
+
+                    if src_valid == BitVecVal(1, 1):
+                        for field_name, field in header_stack_t.fields.items():
+                            val = context.get_header_field(
+                                '{}[{}]'.format(header_stack_src.name, i),
+                                field.name)
+                            context.set_field_value('{}[{}]'.format(
+                                header_stack_dst.name, i), field.name, val)
             elif (primitive.op in [
                     'modify_field_rng_uniform',
                     'modify_field_with_hash_based_offset',
@@ -573,6 +617,11 @@ class Translator:
                 else:
                     context.register_field(field)
 
+        for stack_name, stack in self.hlir.header_stacks.items():
+            for i in range(stack.size):
+                context.set_field_value('{}[{}]'.format(stack_name, i),
+                                        '$valid$', BitVecVal(0, 1))
+
         # XXX: refactor
         context.set_field_value('standard_metadata', 'ingress_port',
                                 BitVec('$ingress_port$', 9))
@@ -639,6 +688,13 @@ class Translator:
                         sym_transition_key.append(self.current_context(
                         ).get_header_field(transition_key_elem.header_name,
                                            transition_key_elem.header_field))
+                    elif isinstance(transition_key_elem, TypeValueStackField):
+                        sym_transition_key.append(
+                            self.current_context().get_last_header_field(
+                                transition_key_elem.header_name,
+                                transition_key_elem.header_field,
+                                self.hlir.get_header_stack(
+                                    transition_key_elem.header_name).size))
                     else:
                         raise Exception(
                             'Transition key type not supported: {}'.format(

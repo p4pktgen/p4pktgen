@@ -99,7 +99,7 @@ class P4_HLIR(object):
                     fd.header_type = self
                     self.fields[fd.name] = fd
             else:
-                raise ValueError('Missing Header_Type fields value')
+                raise ValueError('Missing fields value in header type')
 
             # Set length_exp, it is optional
             if json_obj.has_key(
@@ -479,6 +479,9 @@ class P4_HLIR(object):
     def get_header_stack(self, stack_name):
         return self.header_stacks[stack_name]
 
+    def get_header_type(self, type_name):
+        return self.header_types[type_name]
+
 class PrimitiveCall:
     def __init__(self, json_obj):
         # XXX: Make enum instead of string
@@ -735,11 +738,12 @@ class Pipeline:
                             graph.add_edge(table_name, next_table, transition)
                     elif action_name == '__MISS__':
                         if table.has_const_default_entry():
-                            transisition = ActionTransition(
+                            transition = ActionTransition(
                                     table_name, next_table,
                                     self.hlir.actions[table.get_default_action_name_id()],
                                     True,
                                     table.default_entry.action_data)
+                            graph.add_edge(table_name, next_table, transition)
                         else:
                             for miss_action_name_id in zip(
                                     table.action_names, table.action_ids):

@@ -1,8 +1,10 @@
 # TODO:
 # - Print out which values were used for constraints.
 
+from collections import defaultdict
 import logging
 import time
+
 from z3 import *
 
 from p4pktgen.config import Config
@@ -44,6 +46,8 @@ class Context:
         self.runtime_data = []
         self.table_values = {}
         self.source_info = None
+
+        self.parsed_stacks = defaultdict(int)
 
     def __copy__(self):
         context_copy = Context()
@@ -96,7 +100,8 @@ class Context:
         if do_write:
             Context.next_id += 1
             new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1],
-                                                   Context.next_id), sym_val.size())
+                                                   Context.next_id),
+                                 sym_val.size())
             self.new_vars.add(new_smt_var)
             self.var_to_smt_var[var_name] = new_smt_var
             self.var_to_smt_val[new_smt_var] = sym_val
@@ -148,6 +153,21 @@ class Context:
 
     def get_header_field_size(self, header_name, header_field):
         return self.get_header_field(header_name, header_field).size()
+
+    def get_last_header_field(self, header_name, header_field, size):
+        # XXX: size should not be a param
+
+        last_valid = None
+        for i in range(size):
+            smt_var_valid = self.var_to_smt_var[('{}[{}]'.format(
+                header_name, i), '$valid$')]
+            if simplify(self.var_to_smt_val[smt_var_valid]) == BitVecVal(1, 1):
+                last_valid = i
+
+        # XXX: check for all invalid
+
+        return self.get_header_field('{}[{}]'.format(header_name, last_valid),
+                                     header_field)
 
     def get_var(self, var_name):
         if var_name not in self.var_to_smt_var:
