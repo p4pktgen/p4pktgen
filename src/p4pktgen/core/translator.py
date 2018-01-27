@@ -573,10 +573,13 @@ class Translator:
                 else:
                     context.register_field(field)
 
-        #context.set_field_value('standard_metadata', 'ingress_port', BitVec('$$$$x', 9))
-        # XXX: FIX FIX FIX
-        context.set_field_value('standard_metadata', 'packet_length', self.sym_packet.get_sym_packet_size())
-        #context.set_field_value('standard_metadata', 'instance_type', BitVec('$$$$i', 32))
+        # XXX: refactor
+        context.set_field_value('standard_metadata', 'ingress_port',
+                                BitVec('$ingress_port$', 9))
+        context.set_field_value('standard_metadata', 'packet_length',
+                                self.sym_packet.get_sym_packet_size())
+        context.set_field_value('standard_metadata', 'instance_type',
+                                BitVec('$instance_type$', 32))
 
         self.context_history[0] = context
         self.result_history[0] = []
@@ -599,10 +602,8 @@ class Translator:
         logging.info('path = {}'.format(' -> '.join(
             [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
-            assert isinstance(
-                path_transition,
-                P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
-            ) or isinstance(path_transition, ParserOpTransition)
+            assert isinstance(path_transition, ParserTransition) or isinstance(
+                path_transition, ParserOpTransition)
 
             node = path_transition.src
             next_node = path_transition.dst
@@ -769,7 +770,8 @@ class Translator:
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
-        assert len(control_path) == len(self.context_history_lens) or not Config().get_incremental()
+        assert len(control_path) == len(
+            self.context_history_lens) or not Config().get_incremental()
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
         constraints = []
@@ -932,9 +934,9 @@ class Translator:
                         pass
                     else:
                         table_configs.append(
-                            (table_name, transition.get_name(),
-                             table_values_strs, table_key_data,
-                             runtime_data_values, table_entry_priority))
+                            (table_name, transition, table_values_strs,
+                             table_key_data, runtime_data_values,
+                             table_entry_priority))
 
             # Print table configuration
             for table, action, values, key_data, params, priority in table_configs:
@@ -949,22 +951,25 @@ class Translator:
                     params2.append(
                         OrderedDict([('name', param_name), ('value', param_val)
                                      ]))
-                if len(values) == 0 or const_table:
+                if len(values) == 0 or const_table or action.default_entry:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
-                                      table, action, param_vals))
+                                      table, action.get_name(), param_vals))
                     logging.info(ss_cli_cmd)
                     table_setup_info = OrderedDict(
-                        [("command", "table_set_default"),
-                         ("table_name", table), ("action_name", action),
-                         ("action_parameters", params2)])
+                        [("command", "table_set_default"), ("table_name",
+                                                            table),
+                         ("action_name",
+                          action.get_name()), ("action_parameters", params2)])
                 else:
                     ss_cli_cmd = ('table_add ' + self.table_add_cmd_string(
-                        table, action, values, param_vals, priority))
+                        table, action.get_name(), values, param_vals,
+                        priority))
                     table_setup_info = OrderedDict(
-                        [("command", "table_add"), ("table_name", table),
-                         ("keys", key_data), ("action_name", action),
-                         ("action_parameters", params2)])
+                        [("command", "table_add"), ("table_name",
+                                                    table), ("keys", key_data),
+                         ("action_name",
+                          action.get_name()), ("action_parameters", params2)])
                     if priority is not None:
                         table_setup_info['priority'] = priority
                 logging.info(ss_cli_cmd)
@@ -1118,10 +1123,12 @@ class Translator:
 
             # Extract values of parameters, without the names
             param_vals = map(lambda x: x[1], params)
-            if len(values) == 0 or const_table:
-                self.switch.table_set_default(table, action, param_vals)
+            if len(values) == 0 or const_table or action.default_entry:
+                self.switch.table_set_default(table,
+                                              action.get_name(), param_vals)
             else:
-                self.switch.table_add(table, action, values, param_vals,
+                self.switch.table_add(table,
+                                      action.get_name(), values, param_vals,
                                       priority)
 
         extracted_path = self.switch.send_and_check_only_1_packet(

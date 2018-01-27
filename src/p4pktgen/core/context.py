@@ -28,6 +28,8 @@ class Context:
     """The context that is used to generate the symbolic representation of a P4
     program."""
 
+    next_id = 0
+
     def __init__(self):
         # Maps variables to a list of versions
         self.var_to_smt_var = {}
@@ -36,7 +38,6 @@ class Context:
         self.new_vars = set()
 
         self.fields = {}
-        self.id = 0
         # XXX: unify errors
         self.uninitialized_reads = []
         self.invalid_header_writes = []
@@ -67,8 +68,8 @@ class Context:
         self.fields[self.field_to_var(field)] = field
 
     def fresh_var(self, prefix):
-        self.id += 1
-        return '{}_{}'.format(prefix, self.id)
+        Context.next_id += 1
+        return '{}_{}'.format(prefix, Context.next_id)
 
     def field_to_var(self, field):
         assert field.header is not None
@@ -93,9 +94,9 @@ class Context:
                                                        self.source_info))
 
         if do_write:
-            self.id += 1
+            Context.next_id += 1
             new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1],
-                                                   self.id), sym_val.size())
+                                                   Context.next_id), sym_val.size())
             self.new_vars.add(new_smt_var)
             self.var_to_smt_var[var_name] = new_smt_var
             self.var_to_smt_val[new_smt_var] = sym_val
@@ -120,7 +121,7 @@ class Context:
         # XXX: hacky
         for k in list(self.var_to_smt_var.keys()):
             if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
-                self.id += 1
+                Context.next_id += 1
                 self.var_to_smt_var[k] = None
 
     def get_runtime_data_for_table_action(self, table_name, action_name,
