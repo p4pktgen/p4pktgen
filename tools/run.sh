@@ -87,7 +87,12 @@ set -x
 # There are some primitive actions in the JSON that are not yet
 # supported by p4pktgen, like clone and hash.
 #OPTS="--allow-uninitialized-reads --allow-unimplemented-primitives"
-#p4pktgen ${OPTS} examples/switch-p416-nohdrstacks.json
+#OPTS="--allow-uninitialized-reads --allow-unimplemented-primitives -mpp 1 -rss -tlubf"
+# The options on the next line are intended to run with the latest
+# version of p4pktgen as of 2018-Jan-26 on the branch named
+# hybrid_packet
+OPTS="--allow-uninitialized-reads --allow-unimplemented-primitives -mpp 1 -tlubf -epl"
+p4pktgen ${OPTS} examples/switch-p416-nohdrstacks.json
 
 #p4pktgen ${OPTS} $HOME/p4-docs/test-p4-programs/p4c-issue-950.json
 #p4pktgen ${OPTS} $HOME/p4-docs/test-p4-programs/p4c-issue-950-hand-edited1.json
@@ -99,7 +104,7 @@ set -x
 #p4pktgen ${OPTS} examples/chksum-incremental-wrong-rfc1624-eqn2-p4c-2017-11-13.json
 #p4pktgen ${OPTS} examples/chksum-incremental-wrong-rfc1624-eqn2-p4c-2017-11-14.json
 #p4pktgen ${OPTS} examples/chksum-incremental-wrong-rfc1624-eqn2-issue983-workaround-p4c-2017-11-13.json
-p4pktgen ${OPTS} examples/chksum-incremental-wrong-rfc1624-eqn2-issue983-workaround-p4c-2017-11-14.json
+#p4pktgen ${OPTS} examples/chksum-incremental-wrong-rfc1624-eqn2-issue983-workaround-p4c-2017-11-14.json
 
 #p4pktgen ${OPTS} examples/chksum2.json
 #p4pktgen ${OPTS} examples/chksum3.json
