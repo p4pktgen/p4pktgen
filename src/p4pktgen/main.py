@@ -12,9 +12,8 @@ from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
-from p4pktgen.core.strategy import PathCoverageGraphVisitor, EdgeCoverageGraphVisitor, EdgeLabels
+from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor, EdgeCoverageGraphVisitor, EdgeLabels
 from p4pktgen.core.translator import TestPathResult
-from p4pktgen.util.graph import AllPathsGraphVisitor
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.hlir.transition import TransitionType, BoolTransition
@@ -349,12 +348,12 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                   "" % (len(graph_sources), graph_sources, len(graph_sinks),
                         graph_sinks))
     tmp_time = time.time()
-    graph_lcas = {}
-    for v in graph.get_nodes():
-        graph_lcas[v] = graph.lowest_common_ancestor(v)
-    lca_comp_time = time.time() - tmp_time
-    logging.info("%.3f sec to compute lowest common ancestors for ingress",
-                 lca_comp_time)
+    #graph_lcas = {}
+    #for v in graph.get_nodes():
+    #    graph_lcas[v] = graph.lowest_common_ancestor(v)
+    #lca_comp_time = time.time() - tmp_time
+    #logging.info("%.3f sec to compute lowest common ancestors for ingress",
+    #             lca_comp_time)
 
     # Graphviz visualization
     if generate_graphs:
@@ -364,7 +363,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         generate_graphviz_graph(eg_pipeline, eg_graph)
         return
 
-    graph_visitor = AllPathsGraphVisitor()
+    graph_visitor = ParserGraphVisitor(hlir)
     parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink',
                                  graph_visitor)
     parser_paths = graph_visitor.all_paths

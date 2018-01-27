@@ -246,6 +246,13 @@ class P4_HLIR(object):
                 # the parser operator with the same index.
                 self.parser_ops_transitions = []
 
+                # The header stacks that this parser state is extracting into.
+                # This is used for constructing the parser paths.
+                self.header_stack_extracts = []
+
+            def has_header_stack_extracts(self):
+                return len(self.header_stack_extracts) > 0
+
         # Init for parser class
         def __init__(self, json_obj):
             # Set name, it should exist
@@ -317,6 +324,11 @@ class P4_HLIR(object):
 
             self.headers[curr_hdr.name] = curr_hdr
 
+        self.header_stacks = {}
+        for stack_obj in json_obj['header_stacks']:
+            stack = HeaderStack(stack_obj)
+            self.header_stacks[stack.name] = stack
+
         # Get the mapping of error ids to error strings
         self.id_to_errors = {}
         for error in json_obj['errors']:
@@ -337,6 +349,9 @@ class P4_HLIR(object):
                         parser_op.value = []
                         for pair in k['parameters']:
                             parser_op.value.append(parse_type_value(pair))
+
+                    if parser_op.op == p4_parser_ops_enum.extract and isinstance(parser_op.value[0], TypeValueStack):
+                        p4ps.header_stack_extracts.append(parser_op.value[0].header_name)
 
                     if parser_op.op == p4_parser_ops_enum.verify:
                         error_str = self.id_to_errors[parser_op.value[1].value]
@@ -458,6 +473,11 @@ class P4_HLIR(object):
 
         return graph
 
+    def get_parser_state(self, state_name):
+        return self.parsers['parser'].parse_states[state_name]
+
+    def get_header_stack(self, stack_name):
+        return self.header_stacks[stack_name]
 
 class PrimitiveCall:
     def __init__(self, json_obj):
@@ -581,6 +601,8 @@ class Table:
         for action_name in json_obj['actions']:
             self.action_names.append(action_name)
 
+        self.action_id_to_name = dict(zip(self.action_ids, self.action_names))
+
         # Action names should be unique within a single table, but the
         # same action name can be defined differently in different P4
         # control blocks.  The bmv2 JSON file uses the action_id to
@@ -612,7 +634,9 @@ class Table:
                 assert action_id != HIT_ID and action_id != MISS_ID
                 self.next_tables[(action_name, action_id)] = next_table_name
 
-        self.default_entry = DefaultEntry(json_obj['default_entry'])
+        self.default_entry = None
+        if 'default_entry' in json_obj:
+            self.default_entry = DefaultEntry(json_obj['default_entry'])
 
         self.entries = []
         if 'entries' in json_obj:
@@ -622,6 +646,10 @@ class Table:
         self.source_info = None
         if 'source_info' in json_obj:
             self.source_info = SourceInfo.from_json(json_obj['source_info'])
+
+    def get_default_action_name_id(self):
+        assert self.default_entry is not None
+        return (self.action_id_to_name[self.default_entry.action_id], self.default_entry.action_id)
 
     def is_const(self):
         return len(self.entries) != 0
@@ -703,26 +731,28 @@ class Pipeline:
                                                       table.action_ids):
                             transition = ActionTransition(
                                 table_name, next_table,
-                                self.hlir.actions[hit_action_name_id], False)
-                            graph.add_edge(table_name, next_table, transition,
-                                           False)
+                                self.hlir.actions[hit_action_name_id], False, None)
+                            graph.add_edge(table_name, next_table, transition)
                     elif action_name == '__MISS__':
                         if table.has_const_default_entry():
-                            # XXX: implement me
-                            assert False
+                            transisition = ActionTransition(
+                                    table_name, next_table,
+                                    self.hlir.actions[table.get_default_action_name_id()],
+                                    True,
+                                    table.default_entry.action_data)
                         else:
                             for miss_action_name_id in zip(
                                     table.action_names, table.action_ids):
                                 transition = ActionTransition(
                                     table_name, next_table,
                                     self.hlir.actions[miss_action_name_id],
-                                    False)
+                                    True, None)
                                 graph.add_edge(table_name, next_table,
-                                               transition, True)
+                                               transition)
                     else:
                         transition = ActionTransition(
                             table_name, next_table,
-                            self.hlir.actions[action_name_id], False)
+                            self.hlir.actions[action_name_id], False, None)
                         graph.add_edge(table_name, next_table, transition)
                     next_tables.append(next_table)
             else:
@@ -807,3 +837,11 @@ class SourceInfo:
             self.column is None or other.column is None
             or self.column == other.column
         ) and self.source_fragment == other.source_fragment
+
+
+class HeaderStack:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+        self.header_type_name = json_obj['header_type']
+        self.size = int(json_obj['size'])

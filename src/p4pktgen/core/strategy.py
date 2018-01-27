@@ -10,8 +10,54 @@ from p4pktgen.config import Config
 from p4pktgen.core.translator import TestPathResult
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
-from p4pktgen.hlir.transition import ActionTransition
+from p4pktgen.hlir.transition import ActionTransition, ParserTransition
 
+class ParserGraphVisitor(GraphVisitor):
+    def __init__(self, hlir):
+        super(ParserGraphVisitor, self).__init__()
+        self.hlir = hlir
+        self.all_paths = []
+
+    def count(self, stack_counts, state_name):
+        if state_name != 'sink':
+            state = self.hlir.get_parser_state(state_name)
+            for extract in state.header_stack_extracts:
+                stack_counts[extract] += 1
+
+    def preprocess_edges(self, path, edges):
+        filtered_edges = []
+        for edge in edges:
+            if edge.dst != 'sink' and isinstance(edge, ParserTransition):
+                state = self.hlir.get_parser_state(edge.dst)
+                if state.has_header_stack_extracts():
+                    stack_counts = defaultdict(int)
+
+                    if len(path) > 0:
+                        self.count(stack_counts, path[0].src)
+                        for e in path:
+                            self.count(stack_counts, e.dst)
+                        self.count(stack_counts, edge.dst)
+
+                        # If one of the header stacks is overful, remove the edge
+                        valid = True
+                        for stack, count in stack_counts.items():
+                            if self.hlir.get_header_stack(stack).size < count:
+                                valid = False
+                                break
+                        if not valid:
+                            continue
+
+            filtered_edges.append(edge)
+
+        return filtered_edges
+
+    def visit(self, path, is_complete_path):
+        if is_complete_path:
+            self.all_paths.append(path)
+        return VisitResult.CONTINUE
+
+    def backtrack(self):
+        pass
 
 class PathCoverageGraphVisitor(GraphVisitor):
     def __init__(self, translator, parser_path, source_info_to_node_name,

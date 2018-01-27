@@ -56,11 +56,12 @@ class ParserOpTransition(Transition):
 
 
 class ActionTransition(Transition):
-    def __init__(self, src, dest, action, default_entry):
+    def __init__(self, src, dest, action, default_entry, action_data):
         super(ActionTransition,
               self).__init__(TransitionType.ACTION_TRANSITION, src, dest)
         self.action = action
         self.default_entry = default_entry
+        self.action_data = action_data
 
     def get_name(self):
         return self.action.name
@@ -103,9 +104,13 @@ class BoolTransition(Transition):
         if isinstance(other, BoolTransition):
             return self.val == other.val and self.source_info == other.source_info
         else:
-            return (self.val,
-                    (self.source_info.filename, self.source_info.line,
-                     self.source_info.source_fragment)) == other
+            if self.source_info is not None:
+                return (self.val,
+                        (self.source_info.filename, self.source_info.line,
+                         self.source_info.source_fragment)) == other
+            else:
+                # XXX: hack
+                return (self.val == other[0])
 
     def __hash__(self):
         # XXX: hack for test cases
