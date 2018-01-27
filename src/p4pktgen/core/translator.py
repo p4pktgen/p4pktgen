@@ -279,8 +279,10 @@ class Translator:
         if op == p4_parser_ops_enum.extract:
             # Extract expects one parameter
             assert len(parser_op.value) == 1
-            assert isinstance(parser_op.value[0], TypeValueRegular)
-            extract_header = self.hlir.headers[parser_op.value[0].header_name]
+            assert isinstance(parser_op.value[0], TypeValueRegular) or isinstance(parser_op_value[0], TypeValueStack)
+
+            header_name = parser_op.value[0].header_name
+            extract_header = self.hlir.headers[header_name]
 
             if fail == 'PacketTooShort':
                 # XXX: precalculate extract_offset in HLIR
@@ -295,10 +297,10 @@ class Translator:
 
             # Map bits from packet to context
             extract_offset = BitVecVal(0, 32)
-            for name, field in extract_header.fields.items():
+            for field_name, field in extract_header.fields.items():
                 # XXX: deal with valid flags
-                if field.name != '$valid$':
-                    context.insert(field,
+                if field_name != '$valid$':
+                    context.set_field_value(header_name, field_name,
                                    sym_packet.extract(new_pos + extract_offset,
                                                       field.size))
                     extract_offset += BitVecVal(field.size, 32)
@@ -311,7 +313,7 @@ class Translator:
                     # vector value of 1 with the == operator, thus
                     # effectively treating the "ipv4.$valid$" as
                     # if it is a bit<1> type.
-                    context.insert(field, BitVecVal(1, 1))
+                    context.set_field_value(header_name, field_name, BitVecVal(1, 1))
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.set:
@@ -493,6 +495,15 @@ class Translator:
                 context.set_field_value(header_name, '$valid$', BitVecVal(
                     0, 1))
                 context.remove_header_fields(header_name)
+            elif primitive.op == 'assign_header_stack':
+                header_stack_src = self.hlir.get_header_stack(primitive.parameters[1].header_stack_name)
+                header_stack_dst = self.hlir.get_header_stack(primitive.parameters[0].header_stack_name)
+                header_stack_t = self.hlir.get_header_type(header_stack_src.header_type_name)
+
+                for i in range(header_stack_src.size):
+                    for field_name, field in header_stack_t.fields.items():
+                        val = context.get_header_field('{}[{}]'.format(header_stack_src.name, i), field.name)
+                        context.set_field_value('{}[{}]'.format(header_stack_dst.name, i), field.name, val)
             elif (primitive.op in [
                     'modify_field_rng_uniform',
                     'modify_field_with_hash_based_offset',
