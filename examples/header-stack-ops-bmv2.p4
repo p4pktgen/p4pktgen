@@ -92,31 +92,31 @@ control cDoOneOp(inout headers hdr,
             // push_front
             if (op[3:0] == 1) {
                 hdr.h2.push_front(1);
-            } else if (op[3:0] == 2) {
-                hdr.h2.push_front(2);
-            } else if (op[3:0] == 3) {
-                hdr.h2.push_front(3);
+//            } else if (op[3:0] == 2) {
+//                hdr.h2.push_front(2);
+//            } else if (op[3:0] == 3) {
+//                hdr.h2.push_front(3);
             } else if (op[3:0] == 4) {
                 hdr.h2.push_front(4);
             } else if (op[3:0] == 5) {
                 hdr.h2.push_front(5);
-            } else if (op[3:0] == 6) {
-                hdr.h2.push_front(6);
+//            } else if (op[3:0] == 6) {
+//                hdr.h2.push_front(6);
             }
         } else if (op[7:4] == 2) {
             // pop_front
             if (op[3:0] == 1) {
                 hdr.h2.pop_front(1);
-            } else if (op[3:0] == 2) {
-                hdr.h2.pop_front(2);
-            } else if (op[3:0] == 3) {
-                hdr.h2.pop_front(3);
+//            } else if (op[3:0] == 2) {
+//                hdr.h2.pop_front(2);
+//            } else if (op[3:0] == 3) {
+//                hdr.h2.pop_front(3);
             } else if (op[3:0] == 4) {
                 hdr.h2.pop_front(4);
             } else if (op[3:0] == 5) {
                 hdr.h2.pop_front(5);
-            } else if (op[3:0] == 6) {
-                hdr.h2.pop_front(6);
+//            } else if (op[3:0] == 6) {
+//                hdr.h2.pop_front(6);
             }
         } else if (op[7:4] == 3) {
             // setValid
@@ -126,24 +126,24 @@ control cDoOneOp(inout headers hdr,
                 hdr.h2[0].f1 = 0xa0;
                 hdr.h2[0].f2 = 0x0a;
                 hdr.h2[0].next_hdr_type = 9;
-            } else if (op[3:0] == 1) {
-                hdr.h2[1].setValid();
-                hdr.h2[1].hdr_type = 2;
-                hdr.h2[1].f1 = 0xa1;
-                hdr.h2[1].f2 = 0x1a;
-                hdr.h2[1].next_hdr_type = 9;
-            } else if (op[3:0] == 2) {
-                hdr.h2[2].setValid();
-                hdr.h2[2].hdr_type = 2;
-                hdr.h2[2].f1 = 0xa2;
-                hdr.h2[2].f2 = 0x2a;
-                hdr.h2[2].next_hdr_type = 9;
-            } else if (op[3:0] == 3) {
-                hdr.h2[3].setValid();
-                hdr.h2[3].hdr_type = 2;
-                hdr.h2[3].f1 = 0xa3;
-                hdr.h2[3].f2 = 0x3a;
-                hdr.h2[3].next_hdr_type = 9;
+//            } else if (op[3:0] == 1) {
+//                hdr.h2[1].setValid();
+//                hdr.h2[1].hdr_type = 2;
+//                hdr.h2[1].f1 = 0xa1;
+//                hdr.h2[1].f2 = 0x1a;
+//                hdr.h2[1].next_hdr_type = 9;
+//            } else if (op[3:0] == 2) {
+//                hdr.h2[2].setValid();
+//                hdr.h2[2].hdr_type = 2;
+//                hdr.h2[2].f1 = 0xa2;
+//                hdr.h2[2].f2 = 0x2a;
+//                hdr.h2[2].next_hdr_type = 9;
+//            } else if (op[3:0] == 3) {
+//                hdr.h2[3].setValid();
+//                hdr.h2[3].hdr_type = 2;
+//                hdr.h2[3].f1 = 0xa3;
+//                hdr.h2[3].f2 = 0x3a;
+//                hdr.h2[3].next_hdr_type = 9;
             } else if (op[3:0] == 4) {
                 hdr.h2[4].setValid();
                 hdr.h2[4].hdr_type = 2;
@@ -155,12 +155,12 @@ control cDoOneOp(inout headers hdr,
             // setInvalid
             if (op[3:0] == 0) {
                 hdr.h2[0].setInvalid();
-            } else if (op[3:0] == 1) {
-                hdr.h2[1].setInvalid();
-            } else if (op[3:0] == 2) {
-                hdr.h2[2].setInvalid();
-            } else if (op[3:0] == 3) {
-                hdr.h2[3].setInvalid();
+//            } else if (op[3:0] == 1) {
+//                hdr.h2[1].setInvalid();
+//            } else if (op[3:0] == 2) {
+//                hdr.h2[2].setInvalid();
+//            } else if (op[3:0] == 3) {
+//                hdr.h2[3].setInvalid();
             } else if (op[3:0] == 4) {
                 hdr.h2[4].setInvalid();
             }
@@ -173,30 +173,28 @@ control cIngress(inout headers hdr,
                  inout standard_metadata_t stdmeta)
 {
     cDoOneOp() do_one_op;
+    table debug_h2_valid_bits {
+        key = {
+            hdr.h1.h2_valid_bits : exact;
+        }
+        actions = { NoAction; }
+        const default_action = NoAction();
+    }
     apply {
         do_one_op.apply(hdr, hdr.h1.op1);
         do_one_op.apply(hdr, hdr.h1.op2);
-        do_one_op.apply(hdr, hdr.h1.op3);
+//        do_one_op.apply(hdr, hdr.h1.op3);
 
         // Record valid bits of all headers in hdr.h1.h2_valid_bits
         // output header field, so we can easily write unit tests that
         // check whether they have the expected values.
-        hdr.h1.h2_valid_bits = 0;
-        if (hdr.h2[0].isValid()) {
-            hdr.h1.h2_valid_bits[0:0] = 1;
-        }
-        if (hdr.h2[1].isValid()) {
-            hdr.h1.h2_valid_bits[1:1] = 1;
-        }
-        if (hdr.h2[2].isValid()) {
-            hdr.h1.h2_valid_bits[2:2] = 1;
-        }
-        if (hdr.h2[3].isValid()) {
-            hdr.h1.h2_valid_bits[3:3] = 1;
-        }
-        if (hdr.h2[4].isValid()) {
-            hdr.h1.h2_valid_bits[4:4] = 1;
-        }
+        hdr.h1.h2_valid_bits = (
+            (hdr.h2[0].isValid() ? (8w1 << 0) : 0) |
+            (hdr.h2[1].isValid() ? (8w1 << 1) : 0) |
+            (hdr.h2[2].isValid() ? (8w1 << 2) : 0) |
+            (hdr.h2[3].isValid() ? (8w1 << 3) : 0) |
+            (hdr.h2[4].isValid() ? (8w1 << 4) : 0));
+        debug_h2_valid_bits.apply();
     }
 }
 
