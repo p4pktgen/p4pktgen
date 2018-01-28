@@ -217,6 +217,61 @@ class CheckSystem:
     def xfail_parser_parallel_paths(self):
         Config().load_test_defaults()
         results = process_json_file('examples/parser-parallel-paths.json')
+        expected_results = {}
+        assert results == expected_results
+
+    def check_table_hit_miss_with_const_default_action(self):
+        Config().load_test_defaults()
+        results = process_json_file(
+            'examples/table-hit-miss-with-const-default-action.json')
         expected_results = {
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act_0', u'act_0'), (u'node_5', (False, None)), (u't3', u'act5')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act_0', u'act_0'), (u'node_5', (True, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act', u'act'), (u'node_5', (False, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act', u'act'), (u'node_5', (True, None)), (u't2', u'act4')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act2'), (u'tbl_act', u'act'), (u'node_5', (False, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act2'), (u'tbl_act', u'act'), (u'node_5', (True, None)), (u't2', u'act4')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act1'), (u'tbl_act', u'act'), (u'node_5', (False, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act1'), (u'tbl_act', u'act'), (u'node_5', (True, None)), (u't2', u'act4')):
+            TestPathResult.SUCCESS
+        }
+        assert results == expected_results
+
+    def check_table_hit_miss_with_configurable_default_action(self):
+        Config().load_test_defaults()
+        results = process_json_file(
+            'examples/table-hit-miss-with-configurable-default-action.json')
+        expected_results = {
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act_0', u'act_0'), (u'node_5', (False, None)), (u't3', u'act5')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act_0', u'act_0'), (u'node_5', (True, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act2'), (u'tbl_act_0', u'act_0'), (u'node_5', (False, None)), (u't3', u'act5')):
+            TestPathResult.SUCCESS,
+            ('start', 'sink', (u't1', u'act2'), (u'tbl_act_0', u'act_0'), (u'node_5', (True, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act1'), (u'tbl_act_0', u'act_0'), (u'node_5', (False, None)), (u't3', u'act5')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act1'), (u'tbl_act_0', u'act_0'), (u'node_5', (True, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act', u'act'), (u'node_5', (False, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act3'), (u'tbl_act', u'act'), (u'node_5', (True, None)), (u't2', u'act4')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act2'), (u'tbl_act', u'act'), (u'node_5', (False, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act2'), (u'tbl_act', u'act'), (u'node_5', (True, None)), (u't2', u'act4')):
+            TestPathResult.UNINITIALIZED_READ,
+            ('start', 'sink', (u't1', u'act1'), (u'tbl_act', u'act'), (u'node_5', (False, None))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u't1', u'act1'), (u'tbl_act', u'act'), (u'node_5', (True, None)), (u't2', u'act4')):
+            TestPathResult.SUCCESS
         }
         assert results == expected_results
