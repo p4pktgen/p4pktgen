@@ -537,6 +537,64 @@ class Translator:
                                 field.name)
                             context.set_field_value('{}[{}]'.format(
                                 header_stack_dst.name, i), field.name, val)
+            elif primitive.op == 'pop':
+                assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
+                assert isinstance(primitive.parameters[1], TypeValueHexstr)
+                header_stack_name = primitive.parameters[0].header_stack_name
+                header_stack = self.hlir.get_header_stack(header_stack_name)
+                header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
+                pop_n = primitive.parameters[1].value
+
+                for i in range(pop_n, header_stack.size):
+                    j = i - pop_n
+
+                    src_name = '{}[{}]'.format(header_stack_name, i)
+                    dst_name = '{}[{}]'.format(header_stack_name, j)
+                    src_valid = simplify(context.get_header_field(src_name, '$valid$'))
+                    if src_valid == BitVecVal(1, 1):
+                        for field_name, field in header_stack_t.fields.items():
+                            val = context.get_header_field(
+                                src_name,
+                                field.name)
+                            context.set_field_value(dst_name, field.name, val)
+                    else:
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
+
+                for i in range(header_stack.size - pop_n, header_stack.size):
+                    dst_name = '{}[{}]'.format(header_stack_name, i)
+                    context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                    context.remove_header_fields(dst_name)
+            
+            elif primitive.op == 'push':
+                assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
+                assert isinstance(primitive.parameters[1], TypeValueHexstr)
+                header_stack_name = primitive.parameters[0].header_stack_name
+                header_stack = self.hlir.get_header_stack(header_stack_name)
+                header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
+                push_n = primitive.parameters[1].value
+
+                for i in range(push_n, header_stack.size):
+                    j = i - push_n
+
+                    src_name = '{}[{}]'.format(header_stack_name, j)
+                    dst_name = '{}[{}]'.format(header_stack_name, i)
+                    src_valid = simplify(context.get_header_field(src_name, '$valid$'))
+                    if src_valid == BitVecVal(1, 1):
+                        for field_name, field in header_stack_t.fields.items():
+                            val = context.get_header_field(
+                                src_name,
+                                field.name)
+                            context.set_field_value(dst_name, field.name, val)
+                    else:
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
+
+                for i in range(0, push_n):
+                    dst_name = '{}[{}]'.format(header_stack_name, i)
+                    context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                    context.remove_header_fields(dst_name)
+                
             elif (primitive.op in [
                     'modify_field_rng_uniform',
                     'modify_field_with_hash_based_offset',
