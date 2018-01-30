@@ -1,5 +1,5 @@
 {
-  "program" : "p4_programs/simple_ecmp.p4",
+  "program" : "examples/simple_ecmp.p4",
   "__meta__" : {
     "version" : [2, 7],
     "compiler" : "https://github.com/p4lang/p4c"
@@ -108,13 +108,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6],
-    ["BadIPv4Header", 7]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["BadIPv4Header", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -277,7 +277,7 @@
                 },
                 {
                   "type" : "hexstr",
-                  "value" : "7"
+                  "value" : "6"
                 }
               ],
               "op" : "verify"
@@ -300,7 +300,7 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/simple_ecmp.p4",
+        "filename" : "examples/simple_ecmp.p4",
         "line" : 193,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -316,7 +316,7 @@
       "name" : "calc",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/simple_ecmp.p4",
+        "filename" : "examples/simple_ecmp.p4",
         "line" : 206,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
@@ -393,7 +393,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 67,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
@@ -402,7 +402,7 @@
       ]
     },
     {
-      "name" : "set_l2ptr",
+      "name" : "ingress.set_l2ptr",
       "id" : 3,
       "runtime_data" : [
         {
@@ -424,7 +424,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 45,
             "column" : 34,
             "source_fragment" : "1; ..."
@@ -443,7 +443,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 108,
             "column" : 8,
             "source_fragment" : "meta.l2ptr = l2ptr"
@@ -452,7 +452,7 @@
       ]
     },
     {
-      "name" : "set_l2ptr",
+      "name" : "ingress.set_l2ptr",
       "id" : 4,
       "runtime_data" : [
         {
@@ -474,7 +474,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 45,
             "column" : 34,
             "source_fragment" : "1; ..."
@@ -493,7 +493,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 108,
             "column" : 8,
             "source_fragment" : "meta.l2ptr = l2ptr"
@@ -502,7 +502,7 @@
       ]
     },
     {
-      "name" : "set_l2ptr",
+      "name" : "ingress.set_l2ptr",
       "id" : 5,
       "runtime_data" : [
         {
@@ -524,7 +524,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 45,
             "column" : 34,
             "source_fragment" : "1; ..."
@@ -543,7 +543,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 108,
             "column" : 8,
             "source_fragment" : "meta.l2ptr = l2ptr"
@@ -552,7 +552,7 @@
       ]
     },
     {
-      "name" : "set_ecmp_group_idx",
+      "name" : "ingress.set_ecmp_group_idx",
       "id" : 6,
       "runtime_data" : [
         {
@@ -574,7 +574,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 46,
             "column" : 43,
             "source_fragment" : "2; ..."
@@ -593,7 +593,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 112,
             "column" : 8,
             "source_fragment" : "meta.ecmp_group_idx = ecmp_group_idx"
@@ -602,7 +602,7 @@
       ]
     },
     {
-      "name" : "ipv4_da_lpm_drop",
+      "name" : "ingress.ipv4_da_lpm_drop",
       "id" : 7,
       "runtime_data" : [],
       "primitives" : [
@@ -619,7 +619,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 44,
             "column" : 33,
             "source_fragment" : "0; ..."
@@ -629,7 +629,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 67,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
@@ -638,7 +638,7 @@
       ]
     },
     {
-      "name" : "set_ecmp_path_idx",
+      "name" : "ingress.set_ecmp_path_idx",
       "id" : 8,
       "runtime_data" : [
         {
@@ -723,7 +723,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 125,
             "column" : 8,
             "source_fragment" : "meta.ecmp_path_selector = ..."
@@ -732,7 +732,7 @@
       ]
     },
     {
-      "name" : "set_bd_dmac_intf",
+      "name" : "ingress.set_bd_dmac_intf",
       "id" : 9,
       "runtime_data" : [
         {
@@ -762,7 +762,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 142,
             "column" : 8,
             "source_fragment" : "meta.out_bd = bd"
@@ -781,7 +781,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 143,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
@@ -800,7 +800,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 144,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
@@ -842,7 +842,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 145,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
@@ -1041,7 +1041,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 97,
             "column" : 14,
             "source_fragment" : "= (hdr.ipv4.srcAddr[31:16] + hdr.ipv4.srcAddr[15:0] + ..."
@@ -1058,7 +1058,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 67,
             "column" : 4,
             "source_fragment" : "mark_to_drop()"
@@ -1067,7 +1067,7 @@
       ]
     },
     {
-      "name" : "rewrite_mac",
+      "name" : "egress.rewrite_mac",
       "id" : 12,
       "runtime_data" : [
         {
@@ -1089,7 +1089,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 175,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
@@ -1103,7 +1103,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/simple_ecmp.p4",
+        "filename" : "examples/simple_ecmp.p4",
         "line" : 103,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -1122,9 +1122,9 @@
           "direct_meters" : null,
           "action_ids" : [10],
           "actions" : ["act"],
-          "base_default_next" : "ipv4_da_lpm",
+          "base_default_next" : "ingress.ipv4_da_lpm",
           "next_tables" : {
-            "act" : "ipv4_da_lpm"
+            "act" : "ingress.ipv4_da_lpm"
           },
           "default_entry" : {
             "action_id" : 10,
@@ -1134,10 +1134,10 @@
           }
         },
         {
-          "name" : "ipv4_da_lpm",
+          "name" : "ingress.ipv4_da_lpm",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 118,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
@@ -1145,6 +1145,7 @@
           "key" : [
             {
               "match_type" : "lpm",
+              "name" : "hdr.ipv4.dstAddr",
               "target" : ["ipv4", "dstAddr"],
               "mask" : null
             }
@@ -1156,12 +1157,12 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [3, 6, 7],
-          "actions" : ["set_l2ptr", "set_ecmp_group_idx", "ipv4_da_lpm_drop"],
+          "actions" : ["ingress.set_l2ptr", "ingress.set_ecmp_group_idx", "ingress.ipv4_da_lpm_drop"],
           "base_default_next" : "node_5",
           "next_tables" : {
-            "ipv4_da_lpm_drop" : null,
-            "set_l2ptr" : "node_5",
-            "set_ecmp_group_idx" : "node_5"
+            "ingress.ipv4_da_lpm_drop" : null,
+            "ingress.set_l2ptr" : "node_5",
+            "ingress.set_ecmp_group_idx" : "node_5"
           },
           "default_entry" : {
             "action_id" : 7,
@@ -1171,10 +1172,10 @@
           }
         },
         {
-          "name" : "ecmp_group",
+          "name" : "ingress.ecmp_group",
           "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 128,
             "column" : 10,
             "source_fragment" : "ecmp_group"
@@ -1182,6 +1183,7 @@
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "meta.ecmp_group_idx",
               "target" : ["scalars", "metadata.ecmp_group_idx"],
               "mask" : null
             }
@@ -1193,11 +1195,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [8, 4, 0],
-          "actions" : ["set_ecmp_path_idx", "set_l2ptr", "NoAction"],
+          "actions" : ["ingress.set_ecmp_path_idx", "ingress.set_l2ptr", "NoAction"],
           "base_default_next" : "node_7",
           "next_tables" : {
-            "set_ecmp_path_idx" : "node_7",
-            "set_l2ptr" : "node_7",
+            "ingress.set_ecmp_path_idx" : "node_7",
+            "ingress.set_l2ptr" : "node_7",
             "NoAction" : "node_7"
           },
           "default_entry" : {
@@ -1208,10 +1210,10 @@
           }
         },
         {
-          "name" : "ecmp_path",
+          "name" : "ingress.ecmp_path",
           "id" : 3,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 133,
             "column" : 10,
             "source_fragment" : "ecmp_path"
@@ -1219,11 +1221,13 @@
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "meta.ecmp_group_idx",
               "target" : ["scalars", "metadata.ecmp_group_idx"],
               "mask" : null
             },
             {
               "match_type" : "exact",
+              "name" : "meta.ecmp_path_selector",
               "target" : ["scalars", "metadata.ecmp_path_selector"],
               "mask" : null
             }
@@ -1235,11 +1239,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [5, 1],
-          "actions" : ["set_l2ptr", "NoAction"],
-          "base_default_next" : "mac_da",
+          "actions" : ["ingress.set_l2ptr", "NoAction"],
+          "base_default_next" : "ingress.mac_da",
           "next_tables" : {
-            "set_l2ptr" : "mac_da",
-            "NoAction" : "mac_da"
+            "ingress.set_l2ptr" : "ingress.mac_da",
+            "NoAction" : "ingress.mac_da"
           },
           "default_entry" : {
             "action_id" : 1,
@@ -1249,10 +1253,10 @@
           }
         },
         {
-          "name" : "mac_da",
+          "name" : "ingress.mac_da",
           "id" : 4,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 147,
             "column" : 10,
             "source_fragment" : "mac_da"
@@ -1260,6 +1264,7 @@
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "meta.l2ptr",
               "target" : ["scalars", "metadata.l2ptr"],
               "mask" : null
             }
@@ -1271,10 +1276,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [9, 2],
-          "actions" : ["set_bd_dmac_intf", "my_drop"],
+          "actions" : ["ingress.set_bd_dmac_intf", "my_drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "set_bd_dmac_intf" : null,
+            "ingress.set_bd_dmac_intf" : null,
             "my_drop" : null
           },
           "default_entry" : {
@@ -1291,7 +1296,7 @@
           "name" : "node_2",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 154,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid()"
@@ -1314,7 +1319,7 @@
           "name" : "node_5",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 159,
             "column" : 16,
             "source_fragment" : "meta.nexthop_type != NEXTHOP_TYPE_L2PTR"
@@ -1333,14 +1338,14 @@
               }
             }
           },
-          "true_next" : "ecmp_group",
-          "false_next" : "mac_da"
+          "true_next" : "ingress.ecmp_group",
+          "false_next" : "ingress.mac_da"
         },
         {
           "name" : "node_7",
           "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 161,
             "column" : 20,
             "source_fragment" : "meta.nexthop_type != NEXTHOP_TYPE_L2PTR"
@@ -1359,8 +1364,8 @@
               }
             }
           },
-          "true_next" : "ecmp_path",
-          "false_next" : "mac_da"
+          "true_next" : "ingress.ecmp_path",
+          "false_next" : "ingress.mac_da"
         }
       ]
     },
@@ -1368,18 +1373,18 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/simple_ecmp.p4",
+        "filename" : "examples/simple_ecmp.p4",
         "line" : 170,
         "column" : 8,
         "source_fragment" : "egress"
       },
-      "init_table" : "send_frame",
+      "init_table" : "egress.send_frame",
       "tables" : [
         {
-          "name" : "send_frame",
+          "name" : "egress.send_frame",
           "id" : 5,
           "source_info" : {
-            "filename" : "p4_programs/simple_ecmp.p4",
+            "filename" : "examples/simple_ecmp.p4",
             "line" : 177,
             "column" : 10,
             "source_fragment" : "send_frame"
@@ -1387,6 +1392,7 @@
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "meta.out_bd",
               "target" : ["scalars", "metadata.out_bd"],
               "mask" : null
             }
@@ -1398,10 +1404,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [12, 11],
-          "actions" : ["rewrite_mac", "my_drop"],
+          "actions" : ["egress.rewrite_mac", "my_drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "rewrite_mac" : null,
+            "egress.rewrite_mac" : null,
             "my_drop" : null
           },
           "default_entry" : {
@@ -1422,7 +1428,21 @@
       "id" : 0,
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc"
+      "calculation" : "calc",
+      "if_cond" : {
+        "type" : "expression",
+        "value" : {
+          "op" : "==",
+          "left" : {
+            "type" : "field",
+            "value" : ["ipv4", "ihl"]
+          },
+          "right" : {
+            "type" : "hexstr",
+            "value" : "0x05"
+          }
+        }
+      }
     }
   ],
   "force_arith" : [],

@@ -368,6 +368,9 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                                  graph_visitor)
     parser_paths = graph_visitor.all_paths
 
+    #num_parser_paths, num_parser_path_nodes, num_parser_path_edges = \
+    #    parser_graph.count_all_paths('start')
+    num_parser_paths, num_parser_path_nodes, num_parser_path_edges = 0,0,0
     # print('\n'.join([str(p) for p in parser_paths]))
 
     max_path_len = max([len(p) for p in parser_paths])
@@ -377,9 +380,9 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
         graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d paths, %d nodes, %d edges"
-                 " in ingress control flow graph"
-                 "" % (num_control_paths, num_control_path_nodes,
-                       num_control_path_edges))
+                 " in parser + ingress control flow graph"
+                 "" % (len(parser_paths) * num_control_paths, num_parser_path_nodes + num_control_path_nodes,
+                       num_parser_path_edges + num_control_path_edges))
 
     Statistics().init()
     Statistics().num_control_path_edges = num_control_path_edges
