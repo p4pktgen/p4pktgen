@@ -173,11 +173,15 @@ control cIngress(inout headers hdr,
                  inout standard_metadata_t stdmeta)
 {
     cDoOneOp() do_one_op;
+    action debug_match () {
+        // Nothing needed here -- simple_switch log output makes it
+        // clear which action it executes for each table.
+    }
     table debug_h2_valid_bits {
         key = {
             hdr.h1.h2_valid_bits : exact;
         }
-        actions = { NoAction; }
+        actions = { debug_match; NoAction; }
         const default_action = NoAction();
     }
     apply {
@@ -194,6 +198,14 @@ control cIngress(inout headers hdr,
             (hdr.h2[2].isValid() ? (8w1 << 2) : 0) |
             (hdr.h2[3].isValid() ? (8w1 << 3) : 0) |
             (hdr.h2[4].isValid() ? (8w1 << 4) : 0));
+
+        // Since p4pktgen does not (yet) check the contents of output
+        // packets, one straightforward way to make it obvious whether
+        // p4pktgen is predicting the same values as simple_switch for
+        // these bits is to use them as a field in a table search key.
+        // The table needs to have at least 2 different actions to
+        // make it easy for p4pktgen to determine whether its behavior
+        // is the same as, or different than, simple_switch.
         debug_h2_valid_bits.apply();
     }
 }
