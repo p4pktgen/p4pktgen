@@ -474,7 +474,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "examples/header-stack-ops-bmv2.p4",
-        "line" : 220,
+        "line" : 232,
         "column" : 8,
         "source_fragment" : "DeparserI"
       },
@@ -494,8 +494,14 @@
       "primitives" : []
     },
     {
-      "name" : "act",
+      "name" : "cIngress.debug_match",
       "id" : 1,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "act",
+      "id" : 2,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -521,7 +527,7 @@
     },
     {
       "name" : "act_0",
-      "id" : 2,
+      "id" : 3,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -547,7 +553,7 @@
     },
     {
       "name" : "act_1",
-      "id" : 3,
+      "id" : 4,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -573,7 +579,7 @@
     },
     {
       "name" : "act_2",
-      "id" : 4,
+      "id" : 5,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -599,7 +605,7 @@
     },
     {
       "name" : "act_3",
-      "id" : 5,
+      "id" : 6,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -625,7 +631,7 @@
     },
     {
       "name" : "act_4",
-      "id" : 6,
+      "id" : 7,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -651,7 +657,7 @@
     },
     {
       "name" : "act_5",
-      "id" : 7,
+      "id" : 8,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -749,7 +755,7 @@
     },
     {
       "name" : "act_6",
-      "id" : 8,
+      "id" : 9,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -847,7 +853,7 @@
     },
     {
       "name" : "act_7",
-      "id" : 9,
+      "id" : 10,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -869,7 +875,7 @@
     },
     {
       "name" : "act_8",
-      "id" : 10,
+      "id" : 11,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -891,7 +897,7 @@
     },
     {
       "name" : "act_9",
-      "id" : 11,
+      "id" : 12,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -911,7 +917,7 @@
     },
     {
       "name" : "act_10",
-      "id" : 12,
+      "id" : 13,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -937,7 +943,7 @@
     },
     {
       "name" : "act_11",
-      "id" : 13,
+      "id" : 14,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -963,7 +969,7 @@
     },
     {
       "name" : "act_12",
-      "id" : 14,
+      "id" : 15,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -989,7 +995,7 @@
     },
     {
       "name" : "act_13",
-      "id" : 15,
+      "id" : 16,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1015,7 +1021,7 @@
     },
     {
       "name" : "act_14",
-      "id" : 16,
+      "id" : 17,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1041,7 +1047,7 @@
     },
     {
       "name" : "act_15",
-      "id" : 17,
+      "id" : 18,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1067,7 +1073,7 @@
     },
     {
       "name" : "act_16",
-      "id" : 18,
+      "id" : 19,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1165,7 +1171,7 @@
     },
     {
       "name" : "act_17",
-      "id" : 19,
+      "id" : 20,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1263,7 +1269,7 @@
     },
     {
       "name" : "act_18",
-      "id" : 20,
+      "id" : 21,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1285,7 +1291,7 @@
     },
     {
       "name" : "act_19",
-      "id" : 21,
+      "id" : 22,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1307,7 +1313,7 @@
     },
     {
       "name" : "act_20",
-      "id" : 22,
+      "id" : 23,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1327,7 +1333,7 @@
     },
     {
       "name" : "act_21",
-      "id" : 23,
+      "id" : 24,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -1505,7 +1511,7 @@
           ],
           "source_info" : {
             "filename" : "examples/header-stack-ops-bmv2.p4",
-            "line" : 191,
+            "line" : 195,
             "column" : 8,
             "source_fragment" : "hdr.h1.h2_valid_bits = ( ..."
           }
@@ -1535,14 +1541,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [11],
+          "action_ids" : [12],
           "actions" : ["act_9"],
           "base_default_next" : "node_3",
           "next_tables" : {
             "act_9" : "node_3"
           },
           "default_entry" : {
-            "action_id" : 11,
+            "action_id" : 12,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1558,14 +1564,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [1],
+          "action_ids" : [2],
           "actions" : ["act"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 2,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1581,14 +1587,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2],
+          "action_ids" : [3],
           "actions" : ["act_0"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_0" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 2,
+            "action_id" : 3,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1604,14 +1610,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [3],
+          "action_ids" : [4],
           "actions" : ["act_1"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_1" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 3,
+            "action_id" : 4,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1627,14 +1633,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4],
+          "action_ids" : [5],
           "actions" : ["act_2"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_2" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 4,
+            "action_id" : 5,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1650,14 +1656,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [5],
+          "action_ids" : [6],
           "actions" : ["act_3"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_3" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 5,
+            "action_id" : 6,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1673,14 +1679,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [6],
+          "action_ids" : [7],
           "actions" : ["act_4"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_4" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 6,
+            "action_id" : 7,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1696,14 +1702,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [7],
+          "action_ids" : [8],
           "actions" : ["act_5"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_5" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 7,
+            "action_id" : 8,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1719,14 +1725,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [8],
+          "action_ids" : [9],
           "actions" : ["act_6"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_6" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 8,
+            "action_id" : 9,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1742,14 +1748,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [9],
+          "action_ids" : [10],
           "actions" : ["act_7"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_7" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 9,
+            "action_id" : 10,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1765,14 +1771,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [10],
+          "action_ids" : [11],
           "actions" : ["act_8"],
           "base_default_next" : "tbl_act_10",
           "next_tables" : {
             "act_8" : "tbl_act_10"
           },
           "default_entry" : {
-            "action_id" : 10,
+            "action_id" : 11,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1788,14 +1794,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [22],
+          "action_ids" : [23],
           "actions" : ["act_20"],
           "base_default_next" : "node_29",
           "next_tables" : {
             "act_20" : "node_29"
           },
           "default_entry" : {
-            "action_id" : 22,
+            "action_id" : 23,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1811,14 +1817,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [12],
+          "action_ids" : [13],
           "actions" : ["act_10"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_10" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 12,
+            "action_id" : 13,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1834,14 +1840,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [13],
+          "action_ids" : [14],
           "actions" : ["act_11"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_11" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 13,
+            "action_id" : 14,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1857,14 +1863,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [14],
+          "action_ids" : [15],
           "actions" : ["act_12"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_12" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 14,
+            "action_id" : 15,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1880,14 +1886,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [15],
+          "action_ids" : [16],
           "actions" : ["act_13"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_13" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 15,
+            "action_id" : 16,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1903,14 +1909,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [16],
+          "action_ids" : [17],
           "actions" : ["act_14"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_14" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 16,
+            "action_id" : 17,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1926,14 +1932,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [17],
+          "action_ids" : [18],
           "actions" : ["act_15"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_15" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 17,
+            "action_id" : 18,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1949,14 +1955,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [18],
+          "action_ids" : [19],
           "actions" : ["act_16"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_16" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 18,
+            "action_id" : 19,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1972,14 +1978,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [19],
+          "action_ids" : [20],
           "actions" : ["act_17"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_17" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 19,
+            "action_id" : 20,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -1995,14 +2001,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [20],
+          "action_ids" : [21],
           "actions" : ["act_18"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_18" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 20,
+            "action_id" : 21,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -2018,14 +2024,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [21],
+          "action_ids" : [22],
           "actions" : ["act_19"],
           "base_default_next" : "tbl_act_21",
           "next_tables" : {
             "act_19" : "tbl_act_21"
           },
           "default_entry" : {
-            "action_id" : 21,
+            "action_id" : 22,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -2041,31 +2047,32 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [23],
+          "action_ids" : [24],
           "actions" : ["act_21"],
-          "base_default_next" : "debug_h2_valid_bits",
+          "base_default_next" : "cIngress.debug_h2_valid_bits",
           "next_tables" : {
-            "act_21" : "debug_h2_valid_bits"
+            "act_21" : "cIngress.debug_h2_valid_bits"
           },
           "default_entry" : {
-            "action_id" : 23,
+            "action_id" : 24,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "debug_h2_valid_bits",
+          "name" : "cIngress.debug_h2_valid_bits",
           "id" : 23,
           "source_info" : {
             "filename" : "examples/header-stack-ops-bmv2.p4",
-            "line" : 176,
+            "line" : 180,
             "column" : 10,
             "source_fragment" : "debug_h2_valid_bits"
           },
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "hdr.h1.h2_valid_bits",
               "target" : ["h1", "h2_valid_bits"],
               "mask" : null
             }
@@ -2076,10 +2083,11 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [0],
-          "actions" : ["NoAction"],
+          "action_ids" : [1, 0],
+          "actions" : ["cIngress.debug_match", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
+            "cIngress.debug_match" : null,
             "NoAction" : null
           },
           "default_entry" : {
@@ -3319,7 +3327,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "examples/header-stack-ops-bmv2.p4",
-        "line" : 201,
+        "line" : 213,
         "column" : 8,
         "source_fragment" : "cEgress"
       },
