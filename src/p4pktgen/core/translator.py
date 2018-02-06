@@ -308,9 +308,10 @@ class Translator:
                 return new_pos
 
             if isinstance(parser_op.value[0], TypeValueStack):
+                base_header_name = header_name
                 header_name = '{}[{}]'.format(
                     header_name, context.parsed_stacks[header_name])
-                context.parsed_stacks[header_name] += 1
+                context.parsed_stacks[base_header_name] += 1
 
             if isinstance(parser_op.value[0], TypeValueStack) or (
                     isinstance(parser_op.value[0], TypeValueRegular)
@@ -537,6 +538,10 @@ class Translator:
                                 field.name)
                             context.set_field_value('{}[{}]'.format(
                                 header_stack_dst.name, i), field.name, val)
+                    else:
+                        dst_name = '{}[{}]'.format(header_stack_dst.name, i)
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
             elif primitive.op == 'pop':
                 assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
                 assert isinstance(primitive.parameters[1], TypeValueHexstr)
@@ -574,7 +579,7 @@ class Translator:
                 header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
                 push_n = primitive.parameters[1].value
 
-                for i in range(push_n, header_stack.size):
+                for i in range(header_stack.size - 1, push_n - 1, -1):
                     j = i - push_n
 
                     src_name = '{}[{}]'.format(header_stack_name, j)
@@ -1142,7 +1147,7 @@ class Translator:
                     logging.error('Actual:   {}'.format(extracted_path))
                     actual_path_data = extracted_path
                     result = TestPathResult.TEST_FAILED
-                    #assert False
+                    assert False
             else:
                 result = TestPathResult.PACKET_SHORTER_THAN_MIN
                 result = TestPathResult.SUCCESS

@@ -16,6 +16,7 @@ class Config:
         self.dump_test_case = False
         self.no_packet_length_errs = no_packet_length_errs
         self.run_simple_switch = run_simple_switch
+        self.random_tlubf = False
 
         # Physical Ethernet ports have a minimum frame size of 64
         # bytes, which is 14 bytes of header, 46 bytes of payload,
@@ -76,6 +77,7 @@ class Config:
         self.conditional_opt = args.conditional_opt
         self.table_opt = args.table_opt
         self.incremental = args.incremental
+        self.random_tlubf = args.random_tlubf
 
     def get_debug(self):
         return self.debug
@@ -130,3 +132,6 @@ class Config:
 
     def get_incremental(self):
         return self.incremental
+
+    def get_random_tlubf(self):
+        return self.random_tlubf

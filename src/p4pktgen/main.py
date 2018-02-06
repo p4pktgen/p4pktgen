@@ -12,7 +12,7 @@ from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
-from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor, EdgeCoverageGraphVisitor, EdgeLabels
+from p4pktgen.core.strategy import *
 from p4pktgen.core.translator import TestPathResult
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
@@ -152,6 +152,11 @@ def main():
         help=
         """This option is only expected to be useful if you specify options that limit the number of paths generated to fewer than all of them, e.g. --max-paths-per-parser-path.  When enabled, then whenever multiple branches are considered for evaluation (e.g. the true/false branch of an if statement, or the multiple actions possible when applying a table), they will be considered in order from least used to most used, where by 'used' we mean how many times that edge of the control path has appeared in previously generated complete paths with result SUCCESS.  This may help in covering more branches in the code.  Without this option, the default behavior is to always consider these possibilities in the same order every time the branch is considered."""
     )
+    parser.add_argument(
+        '--random-tlubf',
+        dest='random_tlubf',
+        action='store_true',
+        default=False)
     parser.add_argument(
         '-gg',
         '--generate-graphs',
@@ -326,7 +331,6 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
     dot.render(fname, view=False)
     logging.info("Wrote files %s and %s.pdf", fname, fname)
 
-
 def process_json_file(input_file, debug=False, generate_graphs=False):
     top = P4_Top(debug)
     top.build_from_json(input_file)
@@ -334,10 +338,10 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     # Get the parser graph
     hlir = P4_HLIR(debug, top.json_obj)
     parser_graph = hlir.get_parser_graph()
-    parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
-    logging.debug("parser_graph has %d sources %s, %d sinks %s"
-                  "" % (len(parser_sources), parser_sources, len(parser_sinks),
-                        parser_sinks))
+    # parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
+    # logging.debug("parser_graph has %d sources %s, %d sinks %s"
+    #               "" % (len(parser_sources), parser_sources, len(parser_sinks),
+    #                     parser_sinks))
 
     assert 'ingress' in hlir.pipelines
     in_pipeline = hlir.pipelines['ingress']
@@ -347,13 +351,13 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     logging.debug("graph has %d sources %s, %d sinks %s"
                   "" % (len(graph_sources), graph_sources, len(graph_sinks),
                         graph_sinks))
-    tmp_time = time.time()
-    graph_lcas = {}
-    for v in graph.get_nodes():
-        graph_lcas[v] = graph.lowest_common_ancestor(v)
-    lca_comp_time = time.time() - tmp_time
-    logging.info("%.3f sec to compute lowest common ancestors for ingress",
-                 lca_comp_time)
+    # tmp_time = time.time()
+    # graph_lcas = {}
+    # for v in graph.get_nodes():
+    #     graph_lcas[v] = graph.lowest_common_ancestor(v)
+    # lca_comp_time = time.time() - tmp_time
+    # logging.info("%.3f sec to compute lowest common ancestors for ingress",
+    #              lca_comp_time)
 
     # Graphviz visualization
     if generate_graphs:
@@ -363,43 +367,58 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         generate_graphviz_graph(eg_pipeline, eg_graph)
         return
 
+    Statistics().init()
+    # XXX: move
+    labels = defaultdict(lambda: EdgeLabels.UNVISITED)
+    translator = Translator(input_file, hlir, in_pipeline)
+    results = OrderedDict()
+    # TBD: Make this filename specifiable via command line option
+    test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
+
+    num_control_paths, num_control_path_nodes, num_control_path_edges = \
+        graph.count_all_paths(in_pipeline.init_table_name)
+    num_parser_path_edges = parser_graph.num_edges()
+    Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges 
+
+    if Config().get_try_least_used_branches_first():
+        p_visitor = TLUBFParserVisitor(graph, labels, translator, source_info_to_node_name, results, test_case_writer, in_pipeline)
+        lup = LeastUsedPaths(hlir, parser_graph, hlir.parsers['parser'].init_state, p_visitor)
+        lup.visit()
+        exit(0)
+
     graph_visitor = ParserGraphVisitor(hlir)
     parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink',
                                  graph_visitor)
     parser_paths = graph_visitor.all_paths
 
+    num_parser_paths = len(parser_paths)
+    num_parser_path_nodes = 0
     #num_parser_paths, num_parser_path_nodes, num_parser_path_edges = \
     #    parser_graph.count_all_paths('start')
-    num_parser_paths, num_parser_path_nodes, num_parser_path_edges = 0,0,0
     # print('\n'.join([str(p) for p in parser_paths]))
 
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))
 
-    num_control_paths, num_control_path_nodes, num_control_path_edges = \
-        graph.count_all_paths(in_pipeline.init_table_name)
     logging.info("Counted %d paths, %d nodes, %d edges"
                  " in parser + ingress control flow graph"
                  "" % (len(parser_paths) * num_control_paths, num_parser_path_nodes + num_control_path_nodes,
                        num_parser_path_edges + num_control_path_edges))
 
-    Statistics().init()
-    Statistics().num_control_path_edges = num_control_path_edges
-
-    results = OrderedDict()
-    translator = Translator(input_file, hlir, in_pipeline)
-    # TBD: Make this filename specifiable via command line option
-    test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
     # The only reason first_time is a list is so we can mutate the
     # global value inside of a sub-method.
     first_time = [True]
     parser_path_num = 0
 
     # XXX: move
-    labels = defaultdict(lambda: EdgeLabels.UNVISITED)
+    path_count = defaultdict(int)
 
     for parser_path in parser_paths:
+        for e in parser_path:
+            if path_count[e] == 0:
+                Statistics().num_covered_edges += 1
+            path_count[e] += 1
         parser_path_num += 1
         logging.info("Analyzing parser_path %d of %d: %s"
                      "" % (parser_path_num, len(parser_paths), parser_path))
@@ -425,7 +444,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
     logging.info("Final statistics on use of control path edges:")
     Statistics().log_control_path_stats(
-        Statistics().stats_per_control_path_edge, num_control_path_edges)
+        Statistics().stats_per_control_path_edge, Statistics().num_control_path_edges)
     test_case_writer.cleanup()
     translator.cleanup()
 

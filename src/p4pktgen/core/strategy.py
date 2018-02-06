@@ -3,6 +3,8 @@ import json
 import time
 import logging
 from random import shuffle
+import operator
+import random
 
 from enum import Enum
 
@@ -85,6 +87,11 @@ class PathCoverageGraphVisitor(GraphVisitor):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
                 len(self.parser_path + control_path))
+            if not Config().get_try_least_used_branches_first():
+                for e in control_path:
+                    if Statistics().stats_per_control_path_edge[e] == 0:
+                        Statistics().num_covered_edges += 1
+                    Statistics().stats_per_control_path_edge[e] += 1
         if result == TestPathResult.NO_PACKET_FOUND:
             Statistics().avg_unsat_path_len.record(
                 len(self.parser_path + control_path))
@@ -162,10 +169,9 @@ class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
         self.ccc = 0
 
     def preprocess_edges(self, path, edges):
-        """
-        shuffle(edges)
-        return edges
-        """
+        if Config().get_random_tlubf():
+            shuffle(edges)
+            return edges
 
         custom_order = sorted(
                 edges, key=lambda t: Statistics().stats_per_control_path_edge[t])
@@ -255,3 +261,94 @@ class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
         """
 
         return visit_result
+
+class LeastUsedPaths:
+    def __init__(self, hlir, graph, start, visitor):
+        self.graph = graph
+        self.path_count = defaultdict(int)
+        self.start = start
+        self.visitor = visitor
+        self.hlir = hlir
+
+    def choose_edge(self, edges):
+        if Config().get_random_tlubf():
+            return random.choice(edges)
+
+        edge_counts = [self.path_count[e] for e in edges]
+        min_index, min_value = min(enumerate(edge_counts), key=operator.itemgetter(1))
+        return edges[min_index]
+
+    def count(self, stack_counts, state_name):
+        if state_name != 'sink':
+            state = self.hlir.get_parser_state(state_name)
+            for extract in state.header_stack_extracts:
+                stack_counts[extract] += 1
+
+    def preprocess_edges(self, path, edges):
+        filtered_edges = []
+        for edge in edges:
+            if edge.dst != 'sink' and isinstance(edge, ParserTransition):
+                state = self.hlir.get_parser_state(edge.dst)
+                if state.has_header_stack_extracts():
+                    stack_counts = defaultdict(int)
+
+                    if len(path) > 0:
+                        self.count(stack_counts, path[0].src)
+                        for e in path:
+                            self.count(stack_counts, e.dst)
+                        self.count(stack_counts, edge.dst)
+
+                        # If one of the header stacks is overful, remove the edge
+                        valid = True
+                        for stack, count in stack_counts.items():
+                            if self.hlir.get_header_stack(stack).size < count:
+                                valid = False
+                                break
+                        if not valid:
+                            continue
+
+            filtered_edges.append(edge)
+
+        return filtered_edges
+
+    def visit(self):
+        while Statistics().num_covered_edges < Statistics().num_control_path_edges:
+            path = []
+            next_node = self.start
+            while self.graph.get_neighbors(next_node):
+                edges = self.graph.get_neighbors(next_node)
+                if len(edges) == 0:
+                    break
+
+                edges = self.preprocess_edges(path, edges)
+                edge = self.choose_edge(edges)
+                path.append(edge)
+                next_node = edge.dst
+
+            for e in path:
+                if self.path_count[e] == 0:
+                    Statistics().num_covered_edges += 1
+                self.path_count[e] += 1
+            self.visitor.visit(path)
+
+class TLUBFParserVisitor:
+    def __init__(self, graph, labels, translator, source_info_to_node_name, results, test_case_writer, in_pipeline):
+        self.graph = graph
+        self.labels = labels
+        self.translator = translator
+        self.source_info_to_node_name = source_info_to_node_name
+        self.results = results
+        self.test_case_writer = test_case_writer
+        self.in_pipeline = in_pipeline
+
+    def visit(self, parser_path):
+        print("VISIT", parser_path)
+        if not self.translator.generate_parser_constraints(parser_path):
+            # Skip unsatisfiable parser paths
+            return
+
+        graph_visitor = EdgeCoverageGraphVisitor(self.graph, self.labels, self.translator, parser_path,
+                                                 self.source_info_to_node_name,
+                                                 self.results, self.test_case_writer)
+
+        self.graph.visit_all_paths(self.in_pipeline.init_table_name, None, graph_visitor)

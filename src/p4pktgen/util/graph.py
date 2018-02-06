@@ -62,6 +62,12 @@ class Graph:
         self.graph = {}
         self.in_edges = {}
 
+    def num_edges(self):
+        count = 0
+        for _, edges in self.graph.items():
+            count += len(edges)
+        return count
+
     # XXX: This might not be the correct way to override __deepcopy__
     # in Python. I am coding up something that works for this class
     # Graph's use case, and not worrying about the finer details.

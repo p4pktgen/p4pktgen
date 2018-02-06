@@ -74,6 +74,7 @@ class Statistics:
         if Config().get_record_statistics():
             self.timing_file = open('timing.log', 'w')
             self.breakdown_file = open('breakdown.log', 'w')
+            self.edge_file = open('edge.log', 'w')
 
         self.start_time = time.time()
         self.stats = defaultdict(int)
@@ -95,10 +96,13 @@ class Statistics:
             self.timing_file.write(
                 '{},{}\n'.format(result, current_time - self.start_time))
             self.timing_file.flush()
+            self.edge_file.write('{},{},{}\n'.format(self.num_test_cases, self.num_covered_edges, current_time - self.start_time))
+            self.edge_file.flush()
         if self.record_count % 100 == 0:
             self.breakdown_file.write('{},{},{},{},{},{}\n'.format(
                 current_time - self.start_time,
-                self.solver_time.get_time(), translator.total_switch_time,
+                self.num_solver_calls, translator.total_switch_time,
+                Statistics().solver_time,
                 self.avg_full_path_len.get_avg(),
                 self.avg_unsat_path_len.get_avg(),
                 self.count_unsat_paths.counter))
