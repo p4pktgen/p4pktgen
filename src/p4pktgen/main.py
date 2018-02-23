@@ -261,10 +261,12 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
                 # if the entire condition is in the source_fragment,
                 # which requires that the condition all be placed in
                 # one line in the actual P4_16 source file.
-                if 'isValid' in si.source_fragment:
+                if (si is not None) and ('isValid' in si.source_fragment):
                     node_color = "red"
                 node_label_str = ("%s (line %d)\n%s"
-                                  "" % (node_str, si.line,
+                                  "" % (node_str,
+                                        -1 if si is None else si.line,
+                                        "" if si is None else
                                         break_into_lines(si.source_fragment)))
         else:
             node_str = node
