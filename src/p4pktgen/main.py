@@ -1,7 +1,9 @@
 from __future__ import print_function
 import argparse
+import collections
 import logging
 from collections import defaultdict, OrderedDict
+import sys
 import time
 from random import shuffle
 
@@ -402,6 +404,23 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))
+    parser_paths_with_len = collections.defaultdict(list)
+    for p in parser_paths:
+        parser_paths_with_len[len(p)].append(p)
+    for plen in sorted(parser_paths_with_len.keys()):
+        logging.info("%6d parser paths with len %2d"
+                     "" % (len(parser_paths_with_len[plen]), plen))
+    for plen in sorted(parser_paths_with_len.keys()):
+        if plen >= 25:
+            logging.info("Contents of %6d parser paths with len %2d:"
+                         "" % (len(parser_paths_with_len[plen]), plen))
+            i = 0
+            for p in parser_paths_with_len[plen]:
+                i += 1
+                logging.info("Path %d of %d with len %d:"
+                             "" % (i, len(parser_paths_with_len[plen]), plen))
+                print(p)
+    sys.exit(0)
 
     logging.info("Counted %d paths, %d nodes, %d edges"
                  " in parser + ingress control flow graph"
