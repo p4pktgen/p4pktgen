@@ -3,8 +3,10 @@ import os
 import subprocess
 import sys
 import time
+import re
 
-from scapy.all import *
+# from scapy.all import *
+from scapy.utils import RawPcapReader,RawPcapWriter,hexdiff
 
 from p4pktgen.p4_hlir import P4_HLIR
 from p4pktgen.config import Config

@@ -3,6 +3,7 @@ class Config:
 
     def __init__(self):
         self.__dict__ = self.__shared_state
+        self.load_test_defaults(run_simple_switch=False)
 
     def load_test_defaults(self,
                            no_packet_length_errs=True,

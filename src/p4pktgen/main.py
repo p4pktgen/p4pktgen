@@ -3,7 +3,9 @@ import argparse
 import logging
 from collections import defaultdict, OrderedDict
 import time
-
+import tempfile
+import multiprocessing
+import Queue # For Queue.Empty
 import matplotlib.pyplot as plt
 from graphviz import Digraph
 
@@ -14,7 +16,7 @@ from core.translator import Translator
 from p4pktgen.core.strategy import PathCoverageGraphVisitor
 from p4pktgen.core.translator import TestPathResult
 from p4pktgen.util.graph import AllPathsGraphVisitor
-from p4pktgen.util.statistics import Statistics
+from p4pktgen.util.statistics import Statistics, Timer
 from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.hlir.transition import TransitionType, BoolTransition
 
@@ -152,10 +154,21 @@ def main():
     assert args.format in ['json', 'p4']
 
     if args.format == 'json':
+        par_timer = Timer('par_timer')
+        process_json_file_par(args.input_file, debug=args.debug, generate_graphs=args.generate_graphs,
+                              test_cases_json='test-cases-par', test_cases_pcap='test-par')
+        par_timer.stop()
+        ser_timer = Timer('ser_timer')
         process_json_file(
             args.input_file,
             debug=args.debug,
-            generate_graphs=args.generate_graphs)
+            generate_graphs=args.generate_graphs, test_cases_json='test-cases-ser', test_cases_pcap='test-ser')
+        ser_timer.stop()
+        # Or compute speedup ?
+        print('Parallel Code Time: %.3f sec' %
+                     (par_timer.get_time()))
+        print('Serial Code Time: %.3f sec' %
+                     (ser_timer.get_time()))
     else:
         # XXX: revisit
         top.build_from_p4(args.input_file, args.flags)
@@ -296,7 +309,8 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
     logging.info("Wrote files %s and %s.pdf", fname, fname)
 
 
-def process_json_file(input_file, debug=False, generate_graphs=False):
+def process_json_file(input_file, debug=False, generate_graphs=False, test_cases_json='test-cases',
+                      test_cases_pcap='test'):
     top = P4_Top(debug)
     top.build_from_json(input_file)
 
@@ -355,7 +369,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     results = OrderedDict()
     translator = Translator(input_file, hlir, in_pipeline)
     # TBD: Make this filename specifiable via command line option
-    test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
+    test_case_writer = TestCaseWriter(test_cases_json + '.json', test_cases_pcap + '.pcap')
     # The only reason first_time is a list is so we can mutate the
     # global value inside of a sub-method.
     first_time = [True]
@@ -408,6 +422,170 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         print('{{ {} }}'.format(', '.join(str_items)))
 
     return results
+
+
+def proc_path(path_queue, input_file, hlir, in_pipeline, graph, source_info_to_node_name, result):
+    # TODO: The following might break parallelism
+    # parser_path_num += 1
+    # logging.info("Analyzing parser_path %d of %d: %s"
+    #              "" % (parser_path_num, len(parser_paths), parser_path))
+    while True:
+        parser_path = path_queue.get()
+        if parser_path is None:
+            return
+        results = OrderedDict()
+        json_fh, json_file = tempfile.mkstemp()
+        pcap_fh, pcap_file = tempfile.mkstemp()
+        test_case_writer = TestCaseWriter(json_file, pcap_file)
+        translator = Translator(input_file, hlir, in_pipeline)
+        translator.generate_parser_constraints(parser_path)
+        print(parser_path)
+
+        def order_neighbors_by_least_used(node, neighbors):
+            custom_order = sorted(
+                neighbors,
+                key=lambda t: stats_per_control_path_edge[(node, t)])
+            if Config().get_debug():
+                logging.debug("Edges out of node %s"
+                              " ordered from least used to most:", node)
+                for n in custom_order:
+                    edge = (node, n)
+                    logging.debug("    %d %s"
+                                  "" % (stats_per_control_path_edge[edge],
+                                        edge))
+            return custom_order
+
+        if Config().get_try_least_used_branches_first():
+            order_cb_fn = order_neighbors_by_least_used
+        else:
+            # Use default order built into generate_all_paths()
+            order_cb_fn = None
+
+        graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
+                                                 source_info_to_node_name,
+                                                 results, test_case_writer)
+        graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
+        test_case_writer.cleanup()
+        translator.cleanup()
+        result.put(test_case_writer)
+        test_case_writer = None
+    return
+
+def process_json_file_par(input_file, debug=False, generate_graphs=False, test_cases_json='test-cases',
+                      test_cases_pcap='test'):
+    top = P4_Top(debug)
+    top.build_from_json(input_file)
+
+    # Get the parser graph
+    hlir = P4_HLIR(debug, top.json_obj)
+    parser_graph = hlir.get_parser_graph()
+    parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
+    logging.debug("parser_graph has %d sources %s, %d sinks %s"
+                  "" % (len(parser_sources), parser_sources, len(parser_sinks),
+                        parser_sinks))
+
+    assert 'ingress' in hlir.pipelines
+    in_pipeline = hlir.pipelines['ingress']
+    graph, source_info_to_node_name = in_pipeline.generate_CFG()
+    logging.debug(graph)
+    graph_sources, graph_sinks = graph.get_sources_and_sinks()
+    logging.debug("graph has %d sources %s, %d sinks %s"
+                  "" % (len(graph_sources), graph_sources, len(graph_sinks),
+                        graph_sinks))
+    tmp_time = time.time()
+    graph_lcas = {}
+    for v in graph.get_nodes():
+        graph_lcas[v] = graph.lowest_common_ancestor(v)
+    lca_comp_time = time.time() - tmp_time
+    logging.info("%.3f sec to compute lowest common ancestors for ingress",
+                 lca_comp_time)
+
+    # Graphviz visualization
+    if generate_graphs:
+        generate_graphviz_graph(in_pipeline, graph, lcas=graph_lcas)
+        eg_pipeline = hlir.pipelines['egress']
+        eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
+        generate_graphviz_graph(eg_pipeline, eg_graph)
+        return
+
+    graph_visitor = AllPathsGraphVisitor()
+    parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink',
+                                 graph_visitor)
+    parser_paths = graph_visitor.all_paths
+
+    # paths = [[n[0] for n in path] + ['sink'] for path in paths]
+    max_path_len = max([len(p) for p in parser_paths])
+    logging.info("Found %d parser paths, longest with length %d"
+                 "" % (len(parser_paths), max_path_len))
+
+    num_control_paths, num_control_path_nodes, num_control_path_edges = \
+        graph.count_all_paths(in_pipeline.init_table_name)
+    logging.info("Counted %d paths, %d nodes, %d edges"
+                 " in ingress control flow graph"
+                 "" % (num_control_paths, num_control_path_nodes,
+                       num_control_path_edges))
+
+    Statistics().init()
+    Statistics().num_control_path_edges = num_control_path_edges
+
+    results = []
+    proc_objs = []
+    path_queue = multiprocessing.Queue()
+    num_proc = 1 # multiprocessing.cpu_count()
+    for proc_idx in range(num_proc):
+        res_queue = multiprocessing.Queue()
+        proc_objs.append(multiprocessing.Process(target=proc_path, kwargs={'path_queue': path_queue,
+                                                                      'input_file': input_file, 'hlir': hlir,
+                                                                      'in_pipeline': in_pipeline, 'graph': graph,
+                                                                      'source_info_to_node_name': source_info_to_node_name,
+                                                                           'result': res_queue}))
+        results.append(res_queue)
+
+    for proc in proc_objs:
+        proc.start()
+
+    for parser_path in parser_paths:
+        path_queue.put(parser_path)
+
+    for proc_idx in range(num_proc):
+        path_queue.put(None)
+
+    for proc in proc_objs:
+        proc.join()
+
+    # Direct invocation for debugging
+    # proc_path(path_queue=path_queue, input_file=input_file, hlir=hlir, in_pipeline=in_pipeline, graph=graph,
+    #           source_info_to_node_name=source_info_to_node_name, result=res_queue)
+    # Reduce
+    final_case_writer = TestCaseWriter(test_cases_json + '.json', test_cases_pcap + '.pcap')
+    for res_q in results:
+        while True:
+            try:
+                test_case = res_q.get(False)
+            except Queue.Empty:
+                break
+            else:
+                assert len(test_case.test_cases) == len(test_case.packet_lst)
+                for tc, pkt in zip(test_case.test_cases, test_case.packet_lst):
+                    final_case_writer.write(tc, [pkt])
+    final_case_writer.cleanup()
+
+    logging.info("Final statistics on use of control path edges:")
+    Statistics().log_control_path_stats(
+        Statistics().stats_per_control_path_edge, num_control_path_edges)
+
+    Statistics().cleanup()
+
+    for result, count in Statistics().stats.items():
+        print('{}: {}'.format(result, count))
+
+    # if Config().get_dump_test_case():
+    #     str_items = []
+    #     for k, v in results.items():
+    #         str_items.append('{}: {}'.format(k, v))
+    #     print('{{ {} }}'.format(', '.join(str_items)))
+    #
+    # return results
 
 
 if __name__ == '__main__':

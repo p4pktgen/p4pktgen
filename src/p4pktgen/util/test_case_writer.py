@@ -1,7 +1,7 @@
 import json
 
-from scapy.all import *
-
+# from scapy.all import *
+from scapy.utils import RawPcapReader,RawPcapWriter,hexdiff
 
 class TestCaseWriter:
     def __init__(self, json_fn, pcap_fn):
@@ -9,14 +9,18 @@ class TestCaseWriter:
         self.test_casesf.write('[\n')
         self.test_pcapf = RawPcapWriter(pcap_fn, linktype=0)
         self.test_pcapf._write_header(None)
+        self.packet_lst = []
+        self.test_cases = []
         self.first = True
 
     def write(self, test_case, packet_lst):
         if not self.first:
             self.test_casesf.write(',\n')
+        self.test_cases.append(test_case)
         json.dump(test_case, self.test_casesf, indent=2)
         for p in packet_lst:
             self.test_pcapf._write_packet(p)
+            self.packet_lst.append(p)
         self.test_pcapf.flush()
         self.first = False
 

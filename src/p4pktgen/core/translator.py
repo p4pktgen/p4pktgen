@@ -524,6 +524,8 @@ class Translator:
         # See https://github.com/p4lang/behavioral-model/issues/441 for a
         # reference to the relevant part of the behavioral-model JSON
         # spec.
+        # import pdb
+        # pdb.set_trace()
         assert mask is None or isinstance(mask, int) or isinstance(mask, long)
         assert len(sym_transition_keys) >= 1
         bitvecs = []
@@ -537,8 +539,8 @@ class Translator:
         bv_value = BitVecVal(value, sz_total)
         bv_mask = BitVecVal(mask if mask is not None else -1, sz_total)
 
-        logging.debug(
-            "bitvecs {} value {} mask {}".format(bitvecs, bv_value, bv_mask))
+        # logging.debug(
+        #     "bitvecs {} value {} mask {}".format(bitvecs, bv_value, bv_mask))
         if len(sym_transition_keys) > 1:
             constraint = (Concat(bitvecs) & bv_mask) == (bv_value & bv_mask)
         else:
@@ -574,17 +576,18 @@ class Translator:
         # XXX: make this work for multiple parsers
         parser = self.hlir.parsers['parser']
         pos = BitVecVal(0, 32)
-        logging.info('path = {}'.format(' -> '.join(
-            [str(n) for n in list(parser_path)])))
+        # logging.info('path = {}'.format(' -> '.join(
+        #     [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
-            assert isinstance(
-                path_transition,
-                P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
-            ) or isinstance(path_transition, ParserOpTransition)
+            # assert isinstance(
+            #     path_transition,
+            #     P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
+            # ) or isinstance(path_transition, ParserOpTransition)
+
 
             node = path_transition.src
             next_node = path_transition.dst
-            logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
+            # logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
 
@@ -627,17 +630,20 @@ class Translator:
                     # case that we care about
                     other_constraints = []
                     for current_transition in parse_state.transitions:
+                        # import pdb
+                        # pdb.set_trace()
                         if current_transition != path_transition:
-                            other_constraints.append(
-                                self.parser_transition_key_constraint(
+                            tmp_jd_1 = self.parser_transition_key_constraint(
                                     sym_transition_key, current_transition.
-                                    value, current_transition.mask))
+                                    value, current_transition.mask)
+                            other_constraints.append(tmp_jd_1
+                                )
                         else:
                             break
 
                     constraints.append(Not(Or(other_constraints)))
-                    logging.debug(
-                        "Other constraints: {}".format(other_constraints))
+                    # logging.debug(
+                    #     "Other constraints: {}".format(other_constraints))
 
                     # The constraint for the case that we are interested in
                     if path_transition.value is not None:
@@ -646,7 +652,7 @@ class Translator:
                             path_transition.mask)
                         constraints.append(constraint)
 
-                logging.debug(sym_transition_key)
+                # logging.debug(sym_transition_key)
                 pos = simplify(new_pos)
 
         # XXX: workaround
@@ -1022,9 +1028,11 @@ class Translator:
         # especialy long ones.  This makes the shorter and/or more
         # essential information like that above come first, and
         # together.
-        test_case["time_sec_generate_ingress_constraints"] = time3 - time2
-        test_case["time_sec_solve"] = time4 - time3
-        test_case["time_sec_simulate_packet"] = time5 - time4
+        # TODO: Add a command line argument for the stats below
+        if False:
+            test_case["time_sec_generate_ingress_constraints"] = time3 - time2
+            test_case["time_sec_solve"] = time4 - time3
+            test_case["time_sec_simulate_packet"] = time5 - time4
         test_case["parser_path"] = map(str, path)
         test_case["ingress_path"] = map(str, control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data

@@ -5,7 +5,7 @@ import logging
 from pprint import pprint
 from collections import defaultdict, OrderedDict
 
-from p4_utils import p4_parser_ops_enum
+from p4pktgen.p4_utils import p4_parser_ops_enum
 from p4pktgen.hlir.type_value import *
 from p4pktgen.hlir.transition import *
 from p4pktgen.util.graph import Graph, Edge
@@ -232,6 +232,8 @@ class P4_HLIR(object):
                     ) and (self.next_state_name == other.next_state_name) and (
                         self.mask == other.mask) and (
                             self.value == other.value)
+                def __ne__(self, other):
+                    return not self.__eq__(other)
 
                 @classmethod
                 def from_json(cls, state_name, json_obj):
@@ -801,3 +803,11 @@ class SourceInfo:
             self.column is None or other.column is None
             or self.column == other.column
         ) and self.source_fragment == other.source_fragment
+## Hack to make pickle work when doing multiprocessing
+# Due to our nested classes, when pickle looks for HLIR_Parser_Transition it cannot find it in the module, since it is
+# nested. Therefore we set an attribute to temporarily fix it. The correct solution is to overhaul the code and get rid
+# of all the nested classes
+# source for hack is this SO answer: https://stackoverflow.com/questions/1947904/how-can-i-pickle-a-nested-class-in-python
+HLIR_Parser_Transition = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
+HLIR_Parse_States = P4_HLIR.HLIR_Parser.HLIR_Parse_States
+HLIR_Parser_Ops = P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Ops
