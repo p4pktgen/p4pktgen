@@ -158,6 +158,8 @@ def main():
         process_json_file_par(args.input_file, debug=args.debug, generate_graphs=args.generate_graphs,
                               test_cases_json='test-cases-par', test_cases_pcap='test-par')
         par_timer.stop()
+        print('Parallel Code Time: %.3f sec' %
+                     (par_timer.get_time()))
         ser_timer = Timer('ser_timer')
         process_json_file(
             args.input_file,
@@ -424,7 +426,7 @@ def process_json_file(input_file, debug=False, generate_graphs=False, test_cases
     return results
 
 
-def proc_path(path_queue, input_file, hlir, in_pipeline, graph, source_info_to_node_name, result):
+def proc_path(path_queue, input_file, hlir, in_pipeline, graph, source_info_to_node_name, result, done_q):
     # TODO: The following might break parallelism
     # parser_path_num += 1
     # logging.info("Analyzing parser_path %d of %d: %s"
@@ -432,14 +434,14 @@ def proc_path(path_queue, input_file, hlir, in_pipeline, graph, source_info_to_n
     while True:
         parser_path = path_queue.get()
         if parser_path is None:
-            return
+            done_q.put(None)
+            break
         results = OrderedDict()
         json_fh, json_file = tempfile.mkstemp()
         pcap_fh, pcap_file = tempfile.mkstemp()
         test_case_writer = TestCaseWriter(json_file, pcap_file)
         translator = Translator(input_file, hlir, in_pipeline)
         translator.generate_parser_constraints(parser_path)
-        print(parser_path)
 
         def order_neighbors_by_least_used(node, neighbors):
             custom_order = sorted(
@@ -469,10 +471,12 @@ def proc_path(path_queue, input_file, hlir, in_pipeline, graph, source_info_to_n
         translator.cleanup()
         result.put(test_case_writer)
         test_case_writer = None
+    print('Terminating Process')
     return
 
 def process_json_file_par(input_file, debug=False, generate_graphs=False, test_cases_json='test-cases',
                       test_cases_pcap='test'):
+    print('process_json_file_par')
     top = P4_Top(debug)
     top.build_from_json(input_file)
 
@@ -529,17 +533,21 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
     Statistics().num_control_path_edges = num_control_path_edges
 
     results = []
+    done_qs = []
     proc_objs = []
     path_queue = multiprocessing.Queue()
-    num_proc = 1 # multiprocessing.cpu_count()
+    num_proc = multiprocessing.cpu_count()
+    print('Total number of CPUs: {}'.format(num_proc))
     for proc_idx in range(num_proc):
         res_queue = multiprocessing.Queue()
+        done_q = multiprocessing.Queue()
         proc_objs.append(multiprocessing.Process(target=proc_path, kwargs={'path_queue': path_queue,
                                                                       'input_file': input_file, 'hlir': hlir,
                                                                       'in_pipeline': in_pipeline, 'graph': graph,
                                                                       'source_info_to_node_name': source_info_to_node_name,
-                                                                           'result': res_queue}))
+                                                                           'result': res_queue, 'done_q': done_q}))
         results.append(res_queue)
+        done_qs.append(done_q)
 
     for proc in proc_objs:
         proc.start()
@@ -550,9 +558,11 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
     for proc_idx in range(num_proc):
         path_queue.put(None)
 
-    for proc in proc_objs:
-        proc.join()
+    print('Waiting on processes to finish ... ')
 
+    for q in done_qs:
+        q.get()
+    print('All finish signals received')
     # Direct invocation for debugging
     # proc_path(path_queue=path_queue, input_file=input_file, hlir=hlir, in_pipeline=in_pipeline, graph=graph,
     #           source_info_to_node_name=source_info_to_node_name, result=res_queue)
@@ -569,6 +579,9 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
                 for tc, pkt in zip(test_case.test_cases, test_case.packet_lst):
                     final_case_writer.write(tc, [pkt])
     final_case_writer.cleanup()
+    print('Test cases merged')
+    for proc in proc_objs:
+        proc.join()
 
     logging.info("Final statistics on use of control path edges:")
     Statistics().log_control_path_stats(
