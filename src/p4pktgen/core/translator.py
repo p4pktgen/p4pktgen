@@ -20,7 +20,7 @@ from p4pktgen.hlir.transition import *
 from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *
 from p4pktgen.switch.simple_switch import SimpleSwitch
-from p4pktgen.util.statistics import Timer
+from p4pktgen.util.statistics import Statistics, Timer
 from p4pktgen.util.table import Table
 
 TestPathResult = Enum(
@@ -101,9 +101,11 @@ class Translator:
         self.hlir = hlir
         self.pipeline = pipeline
         self.context_history = [Context()]  # XXX: implement better mechanism
+        self.result_history = [[]]
         self.context_history_lens = []
-        self.total_solver_time = 0.0
         self.total_switch_time = 0.0
+
+        self.constraints = None if Config().get_incremental() else [[]]
 
     def current_context(self):
         return self.context_history[-1]
@@ -111,11 +113,21 @@ class Translator:
     def push(self):
         self.solver.push()
         self.context_history_lens.append(len(self.context_history))
+        self.result_history.append([])
+
+        if self.constraints is not None:
+            self.constraints.append([])
 
     def pop(self):
-        self.solver.pop()
+        if Config().get_incremental():
+            self.solver.pop()
+
         old_len = self.context_history_lens.pop()
         self.context_history = self.context_history[:old_len]
+        self.result_history.pop()
+
+        if self.constraints is not None:
+            self.constraints.pop()
 
     def cleanup(self):
         #if Config().get_run_simple_switch():
@@ -155,10 +167,15 @@ class Translator:
         if isinstance(type_value, TypeValueLookahead):
             assert sym_packet is not None and pos is not None
             offset = BitVecVal(type_value.offset, pos.size())
-            return sym_packet.extract(pos + offset, type_value.size)
+            return sym_packet.extract(
+                pos + offset, type_value.size, lookahead=True)
         if isinstance(type_value, TypeValueField):
             return context.get_header_field(type_value.header_name,
                                             type_value.header_field)
+        if isinstance(type_value, TypeValueStackField):
+            return context.get_last_header_field(
+                type_value.header_name, type_value.header_field,
+                self.hlir.get_header_stack(type_value.header_name).size)
         if isinstance(type_value, TypeValueRuntimeData):
             return context.get_runtime_data(type_value.index)
         if isinstance(type_value, TypeValueExpression):
@@ -256,7 +273,8 @@ class Translator:
                                 format(type_value.op))
         else:
             # XXX: implement other operators
-            raise Exception('Type value {} not supported'.format(type_value))
+            raise Exception('Type value {} not supported (type: {})'.format(
+                type_value, type_value.__class__))
 
     # XXX: "fail" should not be a string
     # XXX: pos/new_pos should be part of the context
@@ -266,39 +284,57 @@ class Translator:
         if op == p4_parser_ops_enum.extract:
             # Extract expects one parameter
             assert len(parser_op.value) == 1
-            assert isinstance(parser_op.value[0], TypeValueRegular)
-            extract_header = self.hlir.headers[parser_op.value[0].header_name]
+            assert isinstance(parser_op.value[0],
+                              TypeValueRegular) or isinstance(
+                                  parser_op.value[0], TypeValueStack)
+
+            header_name = parser_op.value[0].header_name
+            header_type = None
+            if isinstance(parser_op.value[0], TypeValueRegular):
+                header_type = self.hlir.headers[header_name].header_type
+            else:
+                type_name = self.hlir.header_stacks[
+                    header_name].header_type_name
+                header_type = self.hlir.get_header_type(type_name)
 
             if fail == 'PacketTooShort':
                 # XXX: precalculate extract_offset in HLIR
                 extract_offset = sum([
                     BitVecVal(field.size, 32)
-                    for _, field in extract_header.fields.items()
-                    if field.name != '$valid$'
+                    for _, field in header_type.fields.items()
                 ])
                 self.sym_packet.set_max_length(
                     simplify(new_pos + extract_offset - 8))
                 return new_pos
 
+            if isinstance(parser_op.value[0], TypeValueStack):
+                base_header_name = header_name
+                header_name = '{}[{}]'.format(
+                    header_name, context.parsed_stacks[header_name])
+                context.parsed_stacks[base_header_name] += 1
+
+            if isinstance(parser_op.value[0], TypeValueStack) or (
+                    isinstance(parser_op.value[0], TypeValueRegular)
+                    and not self.hlir.headers[header_name].metadata):
+                # Even though the P4_16 isValid() method
+                # returns a boolean value, it appears that
+                # when p4c-bm2-ss compiles expressions like
+                # "if (ipv4.isValid())" into a JSON file, it
+                # compares the "ipv4.$valid$" field to a bit
+                # vector value of 1 with the == operator, thus
+                # effectively treating the "ipv4.$valid$" as
+                # if it is a bit<1> type.
+                context.set_field_value(header_name, '$valid$', BitVecVal(
+                    1, 1))
+
             # Map bits from packet to context
             extract_offset = BitVecVal(0, 32)
-            for name, field in extract_header.fields.items():
-                # XXX: deal with valid flags
-                if field.name != '$valid$':
-                    context.insert(field,
-                                   sym_packet.extract(new_pos + extract_offset,
-                                                      field.size))
-                    extract_offset += BitVecVal(field.size, 32)
-                else:
-                    # Even though the P4_16 isValid() method
-                    # returns a boolean value, it appears that
-                    # when p4c-bm2-ss compiles expressions like
-                    # "if (ipv4.isValid())" into a JSON file, it
-                    # compares the "ipv4.$valid$" field to a bit
-                    # vector value of 1 with the == operator, thus
-                    # effectively treating the "ipv4.$valid$" as
-                    # if it is a bit<1> type.
-                    context.insert(field, BitVecVal(1, 1))
+            for field_name, field in header_type.fields.items():
+                context.set_field_value(header_name, field_name,
+                                        sym_packet.extract(
+                                            new_pos + extract_offset,
+                                            field.size))
+                extract_offset += BitVecVal(field.size, 32)
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.set:
@@ -480,6 +516,90 @@ class Translator:
                 context.set_field_value(header_name, '$valid$', BitVecVal(
                     0, 1))
                 context.remove_header_fields(header_name)
+            elif primitive.op == 'assign_header_stack':
+                header_stack_src = self.hlir.get_header_stack(
+                    primitive.parameters[1].header_stack_name)
+                header_stack_dst = self.hlir.get_header_stack(
+                    primitive.parameters[0].header_stack_name)
+                header_stack_t = self.hlir.get_header_type(
+                    header_stack_src.header_type_name)
+
+                for i in range(header_stack_src.size):
+                    src_valid = simplify(
+                        context.get_header_field('{}[{}]'.format(
+                            header_stack_src.name, i), '$valid$'))
+                    context.set_field_value('{}[{}]'.format(
+                        header_stack_dst.name, i), '$valid$', src_valid)
+
+                    if src_valid == BitVecVal(1, 1):
+                        for field_name, field in header_stack_t.fields.items():
+                            val = context.get_header_field(
+                                '{}[{}]'.format(header_stack_src.name, i),
+                                field.name)
+                            context.set_field_value('{}[{}]'.format(
+                                header_stack_dst.name, i), field.name, val)
+                    else:
+                        dst_name = '{}[{}]'.format(header_stack_dst.name, i)
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
+            elif primitive.op == 'pop':
+                assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
+                assert isinstance(primitive.parameters[1], TypeValueHexstr)
+                header_stack_name = primitive.parameters[0].header_stack_name
+                header_stack = self.hlir.get_header_stack(header_stack_name)
+                header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
+                pop_n = primitive.parameters[1].value
+
+                for i in range(pop_n, header_stack.size):
+                    j = i - pop_n
+
+                    src_name = '{}[{}]'.format(header_stack_name, i)
+                    dst_name = '{}[{}]'.format(header_stack_name, j)
+                    src_valid = simplify(context.get_header_field(src_name, '$valid$'))
+                    if src_valid == BitVecVal(1, 1):
+                        for field_name, field in header_stack_t.fields.items():
+                            val = context.get_header_field(
+                                src_name,
+                                field.name)
+                            context.set_field_value(dst_name, field.name, val)
+                    else:
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
+
+                for i in range(header_stack.size - pop_n, header_stack.size):
+                    dst_name = '{}[{}]'.format(header_stack_name, i)
+                    context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                    context.remove_header_fields(dst_name)
+            
+            elif primitive.op == 'push':
+                assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
+                assert isinstance(primitive.parameters[1], TypeValueHexstr)
+                header_stack_name = primitive.parameters[0].header_stack_name
+                header_stack = self.hlir.get_header_stack(header_stack_name)
+                header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
+                push_n = primitive.parameters[1].value
+
+                for i in range(header_stack.size - 1, push_n - 1, -1):
+                    j = i - push_n
+
+                    src_name = '{}[{}]'.format(header_stack_name, j)
+                    dst_name = '{}[{}]'.format(header_stack_name, i)
+                    src_valid = simplify(context.get_header_field(src_name, '$valid$'))
+                    if src_valid == BitVecVal(1, 1):
+                        for field_name, field in header_stack_t.fields.items():
+                            val = context.get_header_field(
+                                src_name,
+                                field.name)
+                            context.set_field_value(dst_name, field.name, val)
+                    else:
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
+
+                for i in range(0, push_n):
+                    dst_name = '{}[{}]'.format(header_stack_name, i)
+                    context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                    context.remove_header_fields(dst_name)
+                
             elif (primitive.op in [
                     'modify_field_rng_uniform',
                     'modify_field_with_hash_based_offset',
@@ -524,8 +644,6 @@ class Translator:
         # See https://github.com/p4lang/behavioral-model/issues/441 for a
         # reference to the relevant part of the behavioral-model JSON
         # spec.
-        # import pdb
-        # pdb.set_trace()
         assert mask is None or isinstance(mask, int) or isinstance(mask, long)
         assert len(sym_transition_keys) >= 1
         bitvecs = []
@@ -539,8 +657,8 @@ class Translator:
         bv_value = BitVecVal(value, sz_total)
         bv_mask = BitVecVal(mask if mask is not None else -1, sz_total)
 
-        # logging.debug(
-        #     "bitvecs {} value {} mask {}".format(bitvecs, bv_value, bv_mask))
+        logging.debug(
+            "bitvecs {} value {} mask {}".format(bitvecs, bv_value, bv_mask))
         if len(sym_transition_keys) > 1:
             constraint = (Concat(bitvecs) & bv_mask) == (bv_value & bv_mask)
         else:
@@ -549,6 +667,7 @@ class Translator:
 
     def init_context(self):
         assert len(self.context_history) == 1
+        assert len(self.result_history) == 1
 
         context = Context()
 
@@ -561,33 +680,48 @@ class Translator:
                 else:
                     context.register_field(field)
 
+        for stack_name, stack in self.hlir.header_stacks.items():
+            for i in range(stack.size):
+                context.set_field_value('{}[{}]'.format(stack_name, i),
+                                        '$valid$', BitVecVal(0, 1))
+
+        # XXX: refactor
+        context.set_field_value('standard_metadata', 'ingress_port',
+                                BitVec('$ingress_port$', 9))
+        context.set_field_value('standard_metadata', 'packet_length',
+                                self.sym_packet.get_sym_packet_size())
+        context.set_field_value('standard_metadata', 'instance_type',
+                                BitVec('$instance_type$', 32))
+        context.set_field_value('standard_metadata', 'egress_spec',
+                                BitVecVal(0, 9))
+
         self.context_history[0] = context
+        self.result_history[0] = []
 
     def generate_parser_constraints(self, parser_path):
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
+        parser_constraints_gen_timer.start()
 
-        self.solver.pop()
-        self.solver.push()
+        if Config().get_incremental():
+            self.solver.pop()
+            self.solver.push()
 
-        self.init_context()
         self.sym_packet = Packet()
+        self.init_context()
         constraints = []
 
         # XXX: make this work for multiple parsers
         parser = self.hlir.parsers['parser']
         pos = BitVecVal(0, 32)
-        # logging.info('path = {}'.format(' -> '.join(
-        #     [str(n) for n in list(parser_path)])))
+        logging.info('path = {}'.format(' -> '.join(
+            [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
-            # assert isinstance(
-            #     path_transition,
-            #     P4_HLIR.HLIR_Parser.HLIR_Parse_States.HLIR_Parser_Transition
-            # ) or isinstance(path_transition, ParserOpTransition)
-
+            assert isinstance(path_transition, ParserTransition) or isinstance(
+                path_transition, ParserOpTransition)
 
             node = path_transition.src
             next_node = path_transition.dst
-            # logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
+            logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
 
@@ -619,6 +753,13 @@ class Translator:
                         sym_transition_key.append(self.current_context(
                         ).get_header_field(transition_key_elem.header_name,
                                            transition_key_elem.header_field))
+                    elif isinstance(transition_key_elem, TypeValueStackField):
+                        sym_transition_key.append(
+                            self.current_context().get_last_header_field(
+                                transition_key_elem.header_name,
+                                transition_key_elem.header_field,
+                                self.hlir.get_header_stack(
+                                    transition_key_elem.header_name).size))
                     else:
                         raise Exception(
                             'Transition key type not supported: {}'.format(
@@ -630,20 +771,17 @@ class Translator:
                     # case that we care about
                     other_constraints = []
                     for current_transition in parse_state.transitions:
-                        # import pdb
-                        # pdb.set_trace()
                         if current_transition != path_transition:
-                            tmp_jd_1 = self.parser_transition_key_constraint(
+                            other_constraints.append(
+                                self.parser_transition_key_constraint(
                                     sym_transition_key, current_transition.
-                                    value, current_transition.mask)
-                            other_constraints.append(tmp_jd_1
-                                )
+                                    value, current_transition.mask))
                         else:
                             break
 
                     constraints.append(Not(Or(other_constraints)))
-                    # logging.debug(
-                    #     "Other constraints: {}".format(other_constraints))
+                    logging.debug(
+                        "Other constraints: {}".format(other_constraints))
 
                     # The constraint for the case that we are interested in
                     if path_transition.value is not None:
@@ -652,19 +790,30 @@ class Translator:
                             path_transition.mask)
                         constraints.append(constraint)
 
-                # logging.debug(sym_transition_key)
+                logging.debug(sym_transition_key)
                 pos = simplify(new_pos)
 
         # XXX: workaround
         self.current_context().set_field_value('meta_meta', 'packet_len',
                                                self.sym_packet.packet_size_var)
         constraints.append(self.sym_packet.get_length_constraint())
-
+        constraints.extend(self.current_context().get_name_constraints())
         self.solver.add(And(constraints))
 
         parser_constraints_gen_timer.stop()
         logging.info('Generate parser constraints: %.3f sec' %
                      (parser_constraints_gen_timer.get_time()))
+
+        Statistics().solver_time.start()
+        result = self.solver.check()
+        Statistics().num_solver_calls += 1
+        Statistics().solver_time.stop()
+
+        if not Config().get_incremental():
+            self.constraints[0] = constraints
+            self.solver.reset()
+
+        return result == sat
 
     def parser_op_trans_to_str(self, op_trans):
         # XXX: after unifying type value representations
@@ -731,7 +880,6 @@ class Translator:
     def generate_constraints(self, path, control_path,
                              source_info_to_node_name, count,
                              is_complete_control_path):
-
         # XXX: This is very hacky right now
         expected_path = [
             n.src if not isinstance(n, ParserOpTransition) else
@@ -743,7 +891,8 @@ class Translator:
                            len(path) + len(control_path),
                            is_complete_control_path, expected_path))
 
-        assert len(control_path) == len(self.context_history_lens)
+        assert len(control_path) == len(
+            self.context_history_lens) or not Config().get_incremental()
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
         constraints = []
@@ -753,6 +902,7 @@ class Translator:
         # XXX: very ugly to split parsing/control like that, need better solution
         logging.info('control_path = {}'.format(control_path))
 
+        transition = None
         if len(control_path) > 0:
             transition = control_path[-1]
             constraints.extend(
@@ -761,16 +911,49 @@ class Translator:
             context = self.current_context()
 
         constraints.extend(context.get_name_constraints())
+        # XXX: Workaround for simple_switch issue
+        constraints.append(Or(ULT(context.get_header_field('standard_metadata', 'egress_spec'), 256), context.get_header_field('standard_metadata', 'egress_spec') == 511))
 
-        time3 = time.time()
+        if not Config().get_incremental():
+            for cs in self.constraints:
+                self.solver.add(And(cs))
+            self.constraints[-1].extend(constraints)
 
         # Construct and test the packet
         # logging.debug(And(constraints))
         self.solver.add(And(constraints))
-        smt_result = self.solver.check()
 
+        # If the last part of the path is a table with no const entries
+        # and the prefix of the current path is satisfiable, so is the new
+        # path
+        if transition is not None and not is_complete_control_path and len(
+                context.uninitialized_reads) == 0 and len(
+                    context.invalid_header_writes) == 0:
+            if Config().get_table_opt(
+            ) and transition.transition_type == TransitionType.ACTION_TRANSITION:
+                assert transition.src in self.pipeline.tables
+                table = self.pipeline.tables[transition.src]
+                assert not table.is_const()
+                result = TestPathResult.SUCCESS
+                self.result_history[-2].append(result)
+                return (expected_path, result, None, None)
+            elif Config().get_conditional_opt(
+            ) and transition.transition_type == TransitionType.BOOL_TRANSITION:
+                cond_history = self.result_history[-2]
+                if len(
+                        cond_history
+                ) > 0 and cond_history[0] == TestPathResult.NO_PACKET_FOUND:
+                    assert len(cond_history) == 1
+                    result = TestPathResult.SUCCESS
+                    self.result_history[-2].append(result)
+                    return (expected_path, result, None, None)
+
+        time3 = time.time()
+        Statistics().solver_time.start()
+        smt_result = self.solver.check()
+        Statistics().num_solver_calls += 1
+        Statistics().solver_time.stop()
         time4 = time.time()
-        self.total_solver_time += time4 - time3
 
         packet_hexstr = None
         payload = None
@@ -874,9 +1057,9 @@ class Translator:
                         pass
                     else:
                         table_configs.append(
-                            (table_name, transition.get_name(),
-                             table_values_strs, table_key_data,
-                             runtime_data_values, table_entry_priority))
+                            (table_name, transition, table_values_strs,
+                             table_key_data, runtime_data_values,
+                             table_entry_priority))
 
             # Print table configuration
             for table, action, values, key_data, params, priority in table_configs:
@@ -891,22 +1074,25 @@ class Translator:
                     params2.append(
                         OrderedDict([('name', param_name), ('value', param_val)
                                      ]))
-                if len(values) == 0 or const_table:
+                if len(values) == 0 or const_table or action.default_entry:
                     ss_cli_cmd = ('table_set_default ' +
                                   self.table_set_default_cmd_string(
-                                      table, action, param_vals))
+                                      table, action.get_name(), param_vals))
                     logging.info(ss_cli_cmd)
                     table_setup_info = OrderedDict(
-                        [("command", "table_set_default"),
-                         ("table_name", table), ("action_name", action),
-                         ("action_parameters", params2)])
+                        [("command", "table_set_default"), ("table_name",
+                                                            table),
+                         ("action_name",
+                          action.get_name()), ("action_parameters", params2)])
                 else:
                     ss_cli_cmd = ('table_add ' + self.table_add_cmd_string(
-                        table, action, values, param_vals, priority))
+                        table, action.get_name(), values, param_vals,
+                        priority))
                     table_setup_info = OrderedDict(
-                        [("command", "table_add"), ("table_name", table),
-                         ("keys", key_data), ("action_name", action),
-                         ("action_parameters", params2)])
+                        [("command", "table_add"), ("table_name",
+                                                    table), ("keys", key_data),
+                         ("action_name",
+                          action.get_name()), ("action_parameters", params2)])
                     if priority is not None:
                         table_setup_info['priority'] = priority
                 logging.info(ss_cli_cmd)
@@ -938,7 +1124,8 @@ class Translator:
                         OrderedDict([("variable_name", var_name), (
                             "source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
-                if Config().get_run_simple_switch():
+                if Config().get_run_simple_switch(
+                ) and is_complete_control_path:
                     extracted_path = self.test_packet(payload, table_configs,
                                                       source_info_to_node_name)
 
@@ -960,8 +1147,10 @@ class Translator:
                     logging.error('Actual:   {}'.format(extracted_path))
                     actual_path_data = extracted_path
                     result = TestPathResult.TEST_FAILED
+                    assert False
             else:
                 result = TestPathResult.PACKET_SHORTER_THAN_MIN
+                result = TestPathResult.SUCCESS
                 logging.warning('Packet not sent (%d bytes is shorter than'
                                 ' minimum %d supported)'
                                 '' % (len(payload),
@@ -970,6 +1159,7 @@ class Translator:
             logging.info(
                 'Unable to find packet for path: {}'.format(expected_path))
             result = TestPathResult.NO_PACKET_FOUND
+
         time5 = time.time()
         self.total_switch_time += time5 - time4
 
@@ -1028,11 +1218,9 @@ class Translator:
         # especialy long ones.  This makes the shorter and/or more
         # essential information like that above come first, and
         # together.
-        # TODO: Add a command line argument for the stats below
-        if False:
-            test_case["time_sec_generate_ingress_constraints"] = time3 - time2
-            test_case["time_sec_solve"] = time4 - time3
-            test_case["time_sec_simulate_packet"] = time5 - time4
+        test_case["time_sec_generate_ingress_constraints"] = time3 - time2
+        test_case["time_sec_solve"] = time4 - time3
+        test_case["time_sec_simulate_packet"] = time5 - time4
         test_case["parser_path"] = map(str, path)
         test_case["ingress_path"] = map(str, control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data
@@ -1040,6 +1228,13 @@ class Translator:
         payloads = []
         if payload:
             payloads.append(payload)
+
+        if not Config().get_incremental():
+            self.solver.reset()
+
+        self.result_history[-2].append(result)
+        if test_case is None or payloads is None:
+            print('Bingo')
         return (expected_path, result, test_case, payloads)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):
@@ -1056,10 +1251,12 @@ class Translator:
 
             # Extract values of parameters, without the names
             param_vals = map(lambda x: x[1], params)
-            if len(values) == 0 or const_table:
-                self.switch.table_set_default(table, action, param_vals)
+            if len(values) == 0 or const_table or action.default_entry:
+                self.switch.table_set_default(table,
+                                              action.get_name(), param_vals)
             else:
-                self.switch.table_add(table, action, values, param_vals,
+                self.switch.table_add(table,
+                                      action.get_name(), values, param_vals,
                                       priority)
 
         extracted_path = self.switch.send_and_check_only_1_packet(

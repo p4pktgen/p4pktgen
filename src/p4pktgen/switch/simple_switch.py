@@ -420,6 +420,22 @@ class SimpleSwitch:
                                                     source_frag))))
                 prev_match = 'condition'
                 continue
+
+            # Parse condition without source info
+            m = re.search(
+                r'\[cxt \d+\] Condition "(.*)" (?:\((.*)\) )?is (.*)',
+                line)
+            if m is not None:
+                node_name = m.group(1)
+                value_str = m.group(3)
+                if value_str == 'true':
+                    condition_value = True
+                else:
+                    condition_value = False
+                extracted_path.append((node_name, (condition_value, None)))
+                prev_match = 'condition'
+                continue
+
             if 'Parser \'parser\': end' in line:
                 extracted_path.append('sink')
                 prev_match = 'parser_exception'
