@@ -14,10 +14,11 @@ class TestCaseWriter:
         self.first = True
 
     def write(self, test_case, packet_lst):
-        if not self.first:
-            self.test_casesf.write(',\n')
-        self.test_cases.append(test_case)
-        json.dump(test_case, self.test_casesf, indent=2)
+        if test_case is not None:
+            if not self.first:
+                self.test_casesf.write(',\n')
+            self.test_cases.append(test_case)
+            json.dump(test_case, self.test_casesf, indent=2)
         for p in packet_lst:
             self.test_pcapf._write_packet(p)
             self.packet_lst.append(p)
