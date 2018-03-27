@@ -1215,9 +1215,11 @@ class Translator:
         # especialy long ones.  This makes the shorter and/or more
         # essential information like that above come first, and
         # together.
-        test_case["time_sec_generate_ingress_constraints"] = time3 - time2
-        test_case["time_sec_solve"] = time4 - time3
-        test_case["time_sec_simulate_packet"] = time5 - time4
+        # TODO: Add config options for these times
+        if False:
+            test_case["time_sec_generate_ingress_constraints"] = time3 - time2
+            test_case["time_sec_solve"] = time4 - time3
+            test_case["time_sec_simulate_packet"] = time5 - time4
         test_case["parser_path"] = map(str, path)
         test_case["ingress_path"] = map(str, control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data

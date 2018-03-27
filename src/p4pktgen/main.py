@@ -194,8 +194,8 @@ def main():
     if args.format == 'json':
         par_timer = Timer('par_timer')
         par_timer.start()
-        # process_json_file_par(args.input_file, debug=args.debug, generate_graphs=args.generate_graphs,
-        #                       test_cases_json='test-cases-par', test_cases_pcap='test-par')
+        process_json_file_par(args.input_file, debug=args.debug, generate_graphs=args.generate_graphs,
+                              test_cases_json='test-cases-par', test_cases_pcap='test-par')
         par_timer.stop()
         print('Parallel Code Time: %.3f sec' %
                      (par_timer.get_time()))
@@ -527,35 +527,9 @@ def proc_path(path_queue, input_file, hlir, in_pipeline, graph, source_info_to_n
         test_case_writer.cleanup()
         translator.cleanup()
         result.put(test_case_writer)
-
-        #
-        # def order_neighbors_by_least_used(node, neighbors):
-        #     custom_order = sorted(
-        #         neighbors,
-        #         key=lambda t: stats_per_control_path_edge[(node, t)])
-        #     if Config().get_debug():
-        #         logging.debug("Edges out of node %s"
-        #                       " ordered from least used to most:", node)
-        #         for n in custom_order:
-        #             edge = (node, n)
-        #             logging.debug("    %d %s"
-        #                           "" % (stats_per_control_path_edge[edge],
-        #                                 edge))
-        #     return custom_order
-        #
-        # if Config().get_try_least_used_branches_first():
-        #     order_cb_fn = order_neighbors_by_least_used
-        # else:
-        #     # Use default order built into generate_all_paths()
-        #     order_cb_fn = None
-        #
-        # graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
-        #                                          source_info_to_node_name,
-        #                                          results, test_case_writer)
-        # graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
-
     print('Terminating Process')
     return
+
 
 def process_json_file_par(input_file, debug=False, generate_graphs=False, test_cases_json='test-cases',
                       test_cases_pcap='test'):
@@ -586,9 +560,6 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
     # XXX: move
     labels = defaultdict(lambda: EdgeLabels.UNVISITED)
     translator = Translator(input_file, hlir, in_pipeline)
-    results = OrderedDict()
-    test_case_writer = TestCaseWriter(test_cases_json + '.json', test_cases_pcap + '.pcap')
-
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
         graph.count_all_paths(in_pipeline.init_table_name)
     num_parser_path_edges = parser_graph.num_edges()
@@ -625,37 +596,6 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
     first_time = [True]
     parser_path_num = 0
 
-    # XXX: move
-    path_count = defaultdict(int)
-
-    for parser_path in parser_paths:
-        for e in parser_path:
-            if path_count[e] == 0:
-                Statistics().num_covered_edges += 1
-            path_count[e] += 1
-        parser_path_num += 1
-        logging.info("Analyzing parser_path %d of %d: %s"
-                     "" % (parser_path_num, len(parser_paths), parser_path))
-        if not translator.generate_parser_constraints(parser_path):
-            # Skip unsatisfiable parser paths
-            continue
-
-        graph_visitor = None
-        if Config().get_try_least_used_branches_first():
-            graph_visitor = EdgeCoverageGraphVisitor(graph, labels, translator, parser_path,
-                                                     source_info_to_node_name,
-                                                     results, test_case_writer)
-        else:
-            graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
-                                                     source_info_to_node_name,
-                                                     results, test_case_writer)
-
-        graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
-
-        # Check if we generated enough test cases
-        if Statistics().num_test_cases == Config().get_num_test_cases():
-            break
-
     results = []
     done_qs = []
     proc_objs = []
@@ -684,6 +624,7 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
 
     print('Waiting on processes to finish ... ')
 
+    # TODO: This loop hangs if the process crashed
     for q in done_qs:
         q.get()
     print('All finish signals received')
@@ -710,7 +651,6 @@ def process_json_file_par(input_file, debug=False, generate_graphs=False, test_c
     logging.info("Final statistics on use of control path edges:")
     Statistics().log_control_path_stats(
         Statistics().stats_per_control_path_edge, Statistics().num_control_path_edges)
-    test_case_writer.cleanup()
     translator.cleanup()
 
     Statistics().dump()
