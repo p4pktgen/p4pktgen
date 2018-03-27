@@ -22,11 +22,8 @@ from p4pktgen.p4_hlir import *
 from p4pktgen.switch.simple_switch import SimpleSwitch
 from p4pktgen.util.statistics import Statistics, Timer
 from p4pktgen.util.table import Table
+from p4pktgen.core.enum_types import TestPathResult
 
-TestPathResult = Enum(
-    'TestPathResult',
-    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE PACKET_SHORTER_THAN_MIN'
-)
 
 
 def min_bits_for_uint(uint):
@@ -1233,8 +1230,6 @@ class Translator:
             self.solver.reset()
 
         self.result_history[-2].append(result)
-        if test_case is None or payloads is None:
-            print('Bingo')
         return (expected_path, result, test_case, payloads)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):

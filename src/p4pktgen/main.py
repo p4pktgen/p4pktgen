@@ -192,21 +192,23 @@ def main():
     assert args.format in ['json', 'p4']
 
     if args.format == 'json':
-        # par_timer = Timer('par_timer')
+        par_timer = Timer('par_timer')
+        par_timer.start()
         # process_json_file_par(args.input_file, debug=args.debug, generate_graphs=args.generate_graphs,
         #                       test_cases_json='test-cases-par', test_cases_pcap='test-par')
-        # par_timer.stop()
-        # print('Parallel Code Time: %.3f sec' %
-        #              (par_timer.get_time()))
+        par_timer.stop()
+        print('Parallel Code Time: %.3f sec' %
+                     (par_timer.get_time()))
         ser_timer = Timer('ser_timer')
+        ser_timer.start()
         process_json_file(
             args.input_file,
             debug=args.debug,
             generate_graphs=args.generate_graphs, test_cases_json='test-cases-ser', test_cases_pcap='test-ser')
         ser_timer.stop()
         # Or compute speedup ?
-        # print('Parallel Code Time: %.3f sec' %
-        #              (par_timer.get_time()))
+        print('Parallel Code Time: %.3f sec' %
+                     (par_timer.get_time()))
         print('Serial Code Time: %.3f sec' %
                      (ser_timer.get_time()))
     else:

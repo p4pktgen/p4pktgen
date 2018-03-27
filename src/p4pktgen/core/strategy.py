@@ -9,7 +9,8 @@ import random
 from enum import Enum
 
 from p4pktgen.config import Config
-from p4pktgen.core.translator import TestPathResult
+# from p4pktgen.core.translator import TestPathResult
+from p4pktgen.core.enum_types import TestPathResult
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.hlir.transition import ActionTransition, ParserTransition
@@ -83,8 +84,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
             self.translator.generate_constraints(
                 self.parser_path, control_path,
                 self.source_info_to_node_name, self.path_count, is_complete_control_path)
-        if test_case is None or packet_lst is None:
-            print('Bingo')
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
                 len(self.parser_path + control_path))
@@ -100,7 +99,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
 
         if Config().get_record_statistics():
             Statistics().record(result, is_complete_control_path, self.translator)
-
         record_result = (is_complete_control_path
                          or (result != TestPathResult.SUCCESS))
         if record_result:

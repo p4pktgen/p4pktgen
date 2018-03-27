@@ -1,0 +1,5 @@
+from enum import Enum
+TestPathResult = Enum(
+    'TestPathResult',
+    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE PACKET_SHORTER_THAN_MIN'
+)
