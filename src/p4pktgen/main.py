@@ -357,6 +357,16 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
     logging.info("Wrote files %s and %s.pdf", fname, fname)
 
 def json_cmp(json_a, json_b):
+    def dict_compare(d1, d2):
+        d1_keys = set(d1.keys())
+        d2_keys = set(d2.keys())
+        intersect_keys = d1_keys.intersection(d2_keys)
+        added = d1_keys - d2_keys
+        removed = d2_keys - d1_keys
+        modified = {o: (d1[o], d2[o]) for o in intersect_keys if d1[o] != d2[o]}
+        same = set(o for o in intersect_keys if d1[o] == d2[o])
+        return added, removed, modified, same
+
     assert isinstance(json_a, basestring)
     assert isinstance(json_b, basestring)
     fh_a = open(json_a)
@@ -366,7 +376,9 @@ def json_cmp(json_a, json_b):
     fh_a.close()
     fh_b.close()
     if len(json_obj_a) != len(json_obj_b):
+        logging.error('Lengths of the two JSON files dont match')
         return False
+    not_found = []
     for it_a in json_obj_a:
         found_idx = None
         for idx, it_b in enumerate(json_obj_b):
@@ -377,10 +389,15 @@ def json_cmp(json_a, json_b):
                 break
         if found_idx is not None:
             del json_obj_b[found_idx]
+        else:
+            not_found.append(it_a)
     if len(json_obj_b) != 0:
-        logging.debug('The parallel and serial results dont match')
-        logging.debug('Offending entries are:')
-        logging.debug(json_obj_b)
+        logging.error('The parallel and serial results dont match')
+        logging.error('Offending entries parallel:')
+        logging.error(json_obj_b)
+        logging.error('Offending entries serial:')
+        logging.error(not_found)
+        assert len(not_found) == len(json_obj_b), 'Something is seriously wrong'
         return False
     else:
         return True
