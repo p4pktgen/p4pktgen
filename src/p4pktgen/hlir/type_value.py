@@ -35,6 +35,13 @@ class TypeValueField(TypeValue):
     def __repr__(self):
         return '{}.{}'.format(self.header_name, self.header_field)
 
+class TypeValueStackField(TypeValue):
+    def __init__(self, json_obj):
+        self.header_name = json_obj[0]
+        self.header_field = json_obj[1]
+
+    def __repr__(self):
+        return '{}.{}'.format(self.header_name, self.header_field)
 
 class TypeValueHexstr(TypeValue):
     def __init__(self, json_obj):
@@ -45,6 +52,13 @@ class TypeValueHexstr(TypeValue):
 
 
 class TypeValueHeader(TypeValue):
+    def __init__(self, json_obj):
+        self.header_name = json_obj
+
+    def __repr__(self):
+        return self.header_name
+
+class TypeValueStack(TypeValue):
     def __init__(self, json_obj):
         self.header_name = json_obj
 
@@ -100,6 +114,14 @@ class TypeValueMeterArray(TypeValue):
         return 'MeterArray<{}>'.format(self.counter_meter_name)
 
 
+class TypeValueRegisterArray(TypeValue):
+    def __init__(self, json_obj):
+        self.register_name = json_obj
+
+    def __repr__(self):
+        return 'RegisterArray<{}>'.format(self.register_name)
+
+
 class TypeValueRegular(TypeValue):
     def __init__(self, json_obj):
         self.header_name = json_obj
@@ -121,12 +143,16 @@ def parse_type_value(json_obj):
         return TypeValueExpression(value)
     elif p4_type_str == 'field':
         return TypeValueField(value)
+    elif p4_type_str == 'stack_field':
+        return TypeValueStackField(value)
     elif p4_type_str == 'hexstr':
         return TypeValueHexstr(value)
     elif p4_type_str == 'header':
         return TypeValueHeader(value)
+    elif p4_type_str == 'stack':
+        return TypeValueStack(value)
     elif p4_type_str == 'header_stack':
-        return TypeValueHeader(value)
+        return TypeValueHeaderStack(value)
     elif p4_type_str == 'bool':
         return TypeValueBool(value)
     elif p4_type_str == 'runtime_data':
@@ -145,6 +171,8 @@ def parse_type_value(json_obj):
         return TypeValueCounterArray(value)
     elif p4_type_str == 'meter_array':
         return TypeValueMeterArray(value)
+    elif p4_type_str == 'register_array':
+        return TypeValueRegisterArray(value)
     elif p4_type_str == 'regular':
         return TypeValueRegular(value)
     elif p4_type_str == 'lookahead':

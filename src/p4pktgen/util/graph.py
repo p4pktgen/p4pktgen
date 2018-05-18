@@ -2,6 +2,10 @@ import logging
 import collections
 import copy
 
+from enum import Enum
+
+VisitResult = Enum('VisitResult', 'CONTINUE BACKTRACK ABORT')
+
 
 class Edge(object):
     def __init__(self, src, dst):
@@ -16,11 +20,11 @@ class GraphVisitor(object):
     def __init__(self):
         self.all_paths = []
 
-    def preprocess_edges(self, neighbors):
-        return neighbors
+    def preprocess_edges(self, path, edges):
+        return edges
 
     def visit(self, path, is_complete_path):
-        return True
+        return VisitResult.CONTINUE
 
     def backtrack(self):
         pass
@@ -31,13 +35,13 @@ class AllPathsGraphVisitor(GraphVisitor):
         super(AllPathsGraphVisitor, self).__init__()
         self.all_paths = []
 
-    def preprocess_edges(self, neighbors):
-        return neighbors
+    def preprocess_edges(self, path, edges):
+        return edges
 
     def visit(self, path, is_complete_path):
         if is_complete_path:
             self.all_paths.append(path)
-        return True
+        return VisitResult.CONTINUE
 
     def backtrack(self):
         pass
@@ -57,6 +61,12 @@ class Graph:
     def __init__(self):
         self.graph = {}
         self.in_edges = {}
+
+    def num_edges(self):
+        count = 0
+        for _, edges in self.graph.items():
+            count += len(edges)
+        return count
 
     # XXX: This might not be the correct way to override __deepcopy__
     # in Python. I am coding up something that works for this class
@@ -399,44 +409,10 @@ class Graph:
         assert e.src[0] == e.dst[0]
         return e.src[0]
 
-    def generate_all_paths(self,
-                           v_start,
-                           v_end,
-                           callback=None,
-                           backtrack_callback=None,
-                           neighbor_order_callback=None):
-        all_paths = []
-        queue = [[n] for n in self.get_neighbors(v_start)]
-        last_len = 0
-        while len(queue) > 0:
-            current_path = queue.pop()
-            last_node = current_path[-1].dst
-            is_full_path = (last_node == v_end)
-
-            if backtrack_callback is not None:
-                for i in range(last_len - len(current_path) + 1):
-                    backtrack_callback()
-            last_len = len(current_path)
-
-            go_deeper = True
-            if callback is not None:
-                go_deeper = callback(current_path, is_full_path)
-            elif is_full_path:
-                all_paths.append(current_path)
-
-            if go_deeper and not is_full_path:
-                for n in self.get_neighbors(last_node):
-                    queue.append(current_path + [n])
-
-        if backtrack_callback is not None:
-            for i in range(last_len):
-                backtrack_callback()
-        return all_paths
-
     def visit_all_paths(self, v_start, v_end, graph_visitor):
         queue = [[
             n
-        ] for n in graph_visitor.preprocess_edges(self.get_neighbors(v_start))]
+        ] for n in graph_visitor.preprocess_edges([], self.get_neighbors(v_start))]
         last_len = 0
         while len(queue) > 0:
             current_path = queue.pop()
@@ -447,11 +423,13 @@ class Graph:
                 graph_visitor.backtrack()
             last_len = len(current_path)
 
-            go_deeper = graph_visitor.visit(current_path, is_full_path)
-            if go_deeper and not is_full_path:
-                for n in graph_visitor.preprocess_edges(
+            visit_result = graph_visitor.visit(current_path, is_full_path)
+            if visit_result == VisitResult.CONTINUE and not is_full_path:
+                for e in graph_visitor.preprocess_edges(current_path,
                         self.get_neighbors(last_node)):
-                    queue.append(current_path + [n])
+                    queue.append(current_path + [e])
+            elif visit_result == VisitResult.ABORT:
+                break
 
         for i in range(last_len):
             graph_visitor.backtrack()
