@@ -411,15 +411,14 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         logging.info("%6d parser paths with len %2d"
                      "" % (len(parser_paths_with_len[plen]), plen))
     for plen in sorted(parser_paths_with_len.keys()):
-        if plen >= 25:
-            logging.info("Contents of %6d parser paths with len %2d:"
-                         "" % (len(parser_paths_with_len[plen]), plen))
-            i = 0
-            for p in parser_paths_with_len[plen]:
-                i += 1
-                logging.info("Path %d of %d with len %d:"
-                             "" % (i, len(parser_paths_with_len[plen]), plen))
-                print(p)
+        logging.info("Contents of %6d parser paths with len %2d:"
+                     "" % (len(parser_paths_with_len[plen]), plen))
+        i = 0
+        for p in parser_paths_with_len[plen]:
+            i += 1
+            logging.info("Path %d of %d with len %d:"
+                         "" % (i, len(parser_paths_with_len[plen]), plen))
+            print(p)
     sys.exit(0)
 
     logging.info("Counted %d paths, %d nodes, %d edges"
