@@ -13,6 +13,6 @@ pytz==2017.2
 scapy==2.3.3
 six==1.10.0
 subprocess32==3.2.7
-thrift==0.10.0
+thrift==0.11.0
 yapf==0.16.3
 z3-solver==4.5.1.0.post2
