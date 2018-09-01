@@ -695,6 +695,27 @@ class Translator:
         context.set_field_value('standard_metadata', 'egress_spec',
                                 BitVecVal(0, 9))
 
+        # Experiment to create fresh SMT variables for metadata input
+        # fields that arrive to the ingress parser with the packet.
+        # They have no initial value.  The SMT solver is expected to
+        # find values to fill them in with for the particular
+        # execution path taken, just as it does for the contents of
+        # the input packet.
+        self.input_metadata_fields = [
+            {'header_name': 'userMetadata.input',
+             'field_name': 'skip_bytes',
+             'size_bits': 5
+            },
+            {'header_name': 'userMetadata.input',
+             'field_name': 'skip_bytes_flag',
+             'size_bits': 5
+            },
+        ]
+        for imf in self.input_metadata_fields:
+            var_name = '$%s$.$%s$' % (imf['header_name'], imf['field_name'])
+            context.set_field_value(imf['header_name'], imf['field_name'],
+                                    BitVec(var_name, imf['size_bits']))
+
         self.context_history[0] = context
         self.result_history[0] = []
 
@@ -1178,11 +1199,24 @@ class Translator:
         else:
             # TBD: Currently we always send packets into port 0.
             # Should generalize that later.
-            input_packets = [
-                OrderedDict([("port", 0), ("packet_len_bytes",
-                                           packet_len_bytes), ("packet_hexstr",
-                                                               packet_hexstr)])
-            ]
+            packet_dict = OrderedDict([("port", 0),
+                                       ("packet_len_bytes", packet_len_bytes),
+                                       ("packet_hexstr", packet_hexstr)])
+            # TBD: If we were being really thorough, we might want to
+            # verify that the value of these variables never changed
+            # during the execution.  For now, assume so, and just get
+            # the last value.
+            #for i, context in enumerate(self.context_history):
+            #    last_ctx = context
+            last_ctx = self.context_history[-1]
+            for imf in self.input_metadata_fields:
+                field_as_tuple = (imf['header_name'], imf['field_name'])
+                field_as_str = imf['header_name'] + '.' + imf['field_name']
+                smt_var = last_ctx.var_to_smt_var[field_as_tuple]
+                assert smt_var is not None
+                smt_var_val = model.eval(smt_var)
+                packet_dict[field_as_str] = int(str(smt_var_val))
+            input_packets = [ packet_dict ]
 
         # TBD: Would be nice to get rid of u in front of strings on
         # paths, e.g. u'node_2', u'p4_programs/demo1b.p4'.  Maybe it
