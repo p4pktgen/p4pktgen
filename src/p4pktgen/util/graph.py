@@ -410,6 +410,10 @@ class Graph:
         return e.src[0]
 
     def visit_all_paths(self, v_start, v_end, graph_visitor):
+        if v_start is None:
+            print("p4pktgen does not handle empty ingress control blocks gracefully")
+            print("Consider making at least one statement or table apply operation in your ingress control block")
+            assert False
         queue = [[
             n
         ] for n in graph_visitor.preprocess_edges([], self.get_neighbors(v_start))]
