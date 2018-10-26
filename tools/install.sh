@@ -38,10 +38,10 @@ then
 fi
 
 warning() {
-    1>&2 echo "This software has only been tested on Ubuntu 16.04 so far."
+    1>&2 echo "This software has only been tested on Ubuntu 16.04 and 18.04 so far."
     1>&2 echo "Proceed installing manually at your own risk of"
     1>&2 echo "significant time spent figuring out how to make it all work, or"
-    1>&2 echo "consider getting VirtualBox and creating an Ubuntu 16.04 virtual"
+    1>&2 echo "consider getting VirtualBox and creating an Ubuntu 16.04 or 18.04 virtual"
     1>&2 echo "machine."
 }
 
@@ -53,8 +53,12 @@ then
     exit 1
 fi
 
-if [ `lsb_release -si` != "Ubuntu" -o `lsb_release -sr` != "16.04" ]
+distributor_id=`lsb_release -si`
+release=`lsb_release -sr`
+if [ "${distributor_id}" = "Ubuntu" -a \( "${release}" = "16.04" -o "${release}" = "18.04" \) ]
 then
+    echo "Found distributor '${distributor_id}' release '${release}'.  Continuing with installation."
+else
     warning
     1>&2 echo ""
     1>&2 echo "Here is what command 'lsb_release -a' shows this OS to be:"
