@@ -1,9 +1,4 @@
 {
-  "program" : "p4_programs/demo1_rm_header.p4",
-  "__meta__" : {
-    "version" : [2, 7],
-    "compiler" : "https://github.com/p4lang/p4c"
-  },
   "header_types" : [
     {
       "name" : "scalars_0",
@@ -11,8 +6,36 @@
       "fields" : []
     },
     {
-      "name" : "ethernet_t",
+      "name" : "standard_metadata",
       "id" : 1,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 32, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 2,
       "fields" : [
         ["dstAddr", 48, false],
         ["srcAddr", 48, false],
@@ -21,7 +44,7 @@
     },
     {
       "name" : "ipv4_t",
-      "id" : 2,
+      "id" : 3,
       "fields" : [
         ["version", 4, false],
         ["ihl", 4, false],
@@ -39,35 +62,10 @@
     },
     {
       "name" : "fwd_metadata_t",
-      "id" : 3,
+      "id" : 4,
       "fields" : [
         ["l2ptr", 32, false],
         ["out_bd", 24, false]
-      ]
-    },
-    {
-      "name" : "standard_metadata",
-      "id" : 4,
-      "fields" : [
-        ["ingress_port", 9, false],
-        ["egress_spec", 9, false],
-        ["egress_port", 9, false],
-        ["clone_spec", 32, false],
-        ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
-        ["packet_length", 32, false],
-        ["enq_timestamp", 32, false],
-        ["enq_qdepth", 19, false],
-        ["deq_timedelta", 32, false],
-        ["deq_qdepth", 19, false],
-        ["ingress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
-        ["mcast_grp", 16, false],
-        ["resubmit_flag", 1, false],
-        ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
-        ["_padding", 4, false]
       ]
     }
   ],
@@ -101,7 +99,7 @@
       "pi_omit" : true
     },
     {
-      "name" : "fwd_metadata",
+      "name" : "userMetadata.fwd_metadata",
       "id" : 4,
       "header_type" : "fwd_metadata_t",
       "metadata" : true,
@@ -144,6 +142,7 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x0800",
               "mask" : null,
               "next_state" : "parse_ipv4"
@@ -187,12 +186,13 @@
       ]
     }
   ],
+  "parse_vsets" : [],
   "deparsers" : [
     {
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1_rm_header.p4",
+        "filename" : "demo1_rm_header.p4",
         "line" : 96,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -220,7 +220,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1_rm_header.p4",
+            "filename" : "demo1_rm_header.p4",
             "line" : 83,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.setInvalid()"
@@ -239,7 +239,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1_rm_header.p4",
+            "filename" : "demo1_rm_header.p4",
             "line" : 84,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = 1"
@@ -253,7 +253,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1_rm_header.p4",
+        "filename" : "demo1_rm_header.p4",
         "line" : 79,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -291,7 +291,7 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo1_rm_header.p4",
+        "filename" : "demo1_rm_header.p4",
         "line" : 88,
         "column" : 8,
         "source_fragment" : "egress"
@@ -327,6 +327,10 @@
       ["standard_metadata", "ingress_global_timestamp"]
     ],
     [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
       "intrinsic_metadata.lf_field_list",
       ["standard_metadata", "lf_field_list"]
     ],
@@ -341,6 +345,15 @@
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
     ]
-  ]
+  ],
+  "program" : "./demo1_rm_header.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
 }

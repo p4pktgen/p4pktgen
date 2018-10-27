@@ -1,9 +1,4 @@
 {
-  "program" : "p4_programs/demo9b.p4",
-  "__meta__" : {
-    "version" : [2, 7],
-    "compiler" : "https://github.com/p4lang/p4c"
-  },
   "header_types" : [
     {
       "name" : "scalars_0",
@@ -11,8 +6,36 @@
       "fields" : []
     },
     {
-      "name" : "ethernet_t",
+      "name" : "standard_metadata",
       "id" : 1,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 32, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 2,
       "fields" : [
         ["dstAddr", 48, false],
         ["srcAddr", 48, false],
@@ -21,7 +44,7 @@
     },
     {
       "name" : "ipv4_t",
-      "id" : 2,
+      "id" : 3,
       "fields" : [
         ["version", 4, false],
         ["ihl", 4, false],
@@ -39,7 +62,7 @@
     },
     {
       "name" : "ipv6_t",
-      "id" : 3,
+      "id" : 4,
       "fields" : [
         ["version", 4, false],
         ["trafficClass", 8, false],
@@ -53,7 +76,7 @@
     },
     {
       "name" : "tcp_t",
-      "id" : 4,
+      "id" : 5,
       "fields" : [
         ["srcPort", 16, false],
         ["dstPort", 16, false],
@@ -69,7 +92,7 @@
     },
     {
       "name" : "udp_t",
-      "id" : 5,
+      "id" : 6,
       "fields" : [
         ["srcPort", 16, false],
         ["dstPort", 16, false],
@@ -79,7 +102,7 @@
     },
     {
       "name" : "fwd_metadata_t",
-      "id" : 6,
+      "id" : 7,
       "fields" : [
         ["l2ptr", 24, false],
         ["out_bd", 24, false]
@@ -87,35 +110,10 @@
     },
     {
       "name" : "l3_metadata_t",
-      "id" : 7,
+      "id" : 8,
       "fields" : [
         ["lkp_outer_l4_sport", 16, false],
         ["lkp_outer_l4_dport", 16, false]
-      ]
-    },
-    {
-      "name" : "standard_metadata",
-      "id" : 8,
-      "fields" : [
-        ["ingress_port", 9, false],
-        ["egress_spec", 9, false],
-        ["egress_port", 9, false],
-        ["clone_spec", 32, false],
-        ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
-        ["packet_length", 32, false],
-        ["enq_timestamp", 32, false],
-        ["enq_qdepth", 19, false],
-        ["deq_timedelta", 32, false],
-        ["deq_qdepth", 19, false],
-        ["ingress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
-        ["mcast_grp", 16, false],
-        ["resubmit_flag", 1, false],
-        ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
-        ["_padding", 4, false]
       ]
     }
   ],
@@ -170,14 +168,14 @@
       "pi_omit" : true
     },
     {
-      "name" : "fwd_metadata",
+      "name" : "userMetadata.fwd_metadata",
       "id" : 7,
       "header_type" : "fwd_metadata_t",
       "metadata" : true,
       "pi_omit" : true
     },
     {
-      "name" : "l3_metadata",
+      "name" : "userMetadata.l3_metadata",
       "id" : 8,
       "header_type" : "l3_metadata_t",
       "metadata" : true,
@@ -221,11 +219,13 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x0800",
               "mask" : null,
               "next_state" : "parse_ipv4"
             },
             {
+              "type" : "hexstr",
               "value" : "0x86dd",
               "mask" : null,
               "next_state" : "parse_ipv6"
@@ -259,11 +259,13 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x00000506",
               "mask" : null,
               "next_state" : "parse_tcp"
             },
             {
+              "type" : "hexstr",
               "value" : "0x00000511",
               "mask" : null,
               "next_state" : "parse_udp"
@@ -305,11 +307,13 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x06",
               "mask" : null,
               "next_state" : "parse_tcp"
             },
             {
+              "type" : "hexstr",
               "value" : "0x11",
               "mask" : null,
               "next_state" : "parse_udp"
@@ -344,7 +348,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["l3_metadata", "lkp_outer_l4_sport"]
+                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_sport"]
                 },
                 {
                   "type" : "field",
@@ -357,7 +361,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["l3_metadata", "lkp_outer_l4_dport"]
+                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_dport"]
                 },
                 {
                   "type" : "field",
@@ -393,7 +397,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["l3_metadata", "lkp_outer_l4_sport"]
+                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_sport"]
                 },
                 {
                   "type" : "field",
@@ -406,7 +410,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["l3_metadata", "lkp_outer_l4_dport"]
+                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_dport"]
                 },
                 {
                   "type" : "field",
@@ -441,12 +445,13 @@
       ]
     }
   ],
+  "parse_vsets" : [],
   "deparsers" : [
     {
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo9b.p4",
+        "filename" : "demo9b.p4",
         "line" : 168,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -501,7 +506,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo9b.p4",
+            "filename" : "demo9b.p4",
             "line" : 161,
             "column" : 12,
             "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 1"
@@ -550,7 +555,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo9b.p4",
+            "filename" : "demo9b.p4",
             "line" : 163,
             "column" : 12,
             "source_fragment" : "hdr.ethernet.dstAddr = hdr.ethernet.srcAddr + 3"
@@ -564,7 +569,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo9b.p4",
+        "filename" : "demo9b.p4",
         "line" : 148,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -624,7 +629,7 @@
           "name" : "node_2",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/demo9b.p4",
+            "filename" : "demo9b.p4",
             "line" : 157,
             "column" : 12,
             "source_fragment" : "hdr.ipv6.version != 6"
@@ -650,7 +655,7 @@
           "name" : "node_3",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/demo9b.p4",
+            "filename" : "demo9b.p4",
             "line" : 160,
             "column" : 12,
             "source_fragment" : "hdr.ethernet.srcAddr == 123456"
@@ -678,7 +683,7 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo9b.p4",
+        "filename" : "demo9b.p4",
         "line" : 143,
         "column" : 8,
         "source_fragment" : "egress"
@@ -714,6 +719,10 @@
       ["standard_metadata", "ingress_global_timestamp"]
     ],
     [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
       "intrinsic_metadata.lf_field_list",
       ["standard_metadata", "lf_field_list"]
     ],
@@ -728,6 +737,15 @@
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
     ]
-  ]
+  ],
+  "program" : "./demo9b.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
 }

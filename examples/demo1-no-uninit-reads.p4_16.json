@@ -1,9 +1,4 @@
 {
-  "program" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
-  "__meta__" : {
-    "version" : [2, 7],
-    "compiler" : "https://github.com/p4lang/p4c"
-  },
   "header_types" : [
     {
       "name" : "scalars_0",
@@ -11,8 +6,36 @@
       "fields" : []
     },
     {
-      "name" : "ethernet_t",
+      "name" : "standard_metadata",
       "id" : 1,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 32, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 2,
       "fields" : [
         ["dstAddr", 48, false],
         ["srcAddr", 48, false],
@@ -21,7 +44,7 @@
     },
     {
       "name" : "ipv4_t",
-      "id" : 2,
+      "id" : 3,
       "fields" : [
         ["version", 4, false],
         ["ihl", 4, false],
@@ -39,37 +62,12 @@
     },
     {
       "name" : "fwd_metadata_t",
-      "id" : 3,
+      "id" : 4,
       "fields" : [
         ["l2ptr", 32, false],
         ["dropped", 1, 0],
         ["out_bd", 24, false],
-        ["_padding", 7, false]
-      ]
-    },
-    {
-      "name" : "standard_metadata",
-      "id" : 4,
-      "fields" : [
-        ["ingress_port", 9, false],
-        ["egress_spec", 9, false],
-        ["egress_port", 9, false],
-        ["clone_spec", 32, false],
-        ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
-        ["packet_length", 32, false],
-        ["enq_timestamp", 32, false],
-        ["enq_qdepth", 19, false],
-        ["deq_timedelta", 32, false],
-        ["deq_qdepth", 19, false],
-        ["ingress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
-        ["mcast_grp", 16, false],
-        ["resubmit_flag", 1, false],
-        ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
-        ["_padding_0", 4, false]
+        ["_padding_0", 7, false]
       ]
     }
   ],
@@ -103,7 +101,7 @@
       "pi_omit" : true
     },
     {
-      "name" : "fwd_metadata",
+      "name" : "userMetadata.fwd_metadata",
       "id" : 4,
       "header_type" : "fwd_metadata_t",
       "metadata" : true,
@@ -146,6 +144,7 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x0800",
               "mask" : null,
               "next_state" : "parse_ipv4"
@@ -189,12 +188,13 @@
       ]
     }
   ],
+  "parse_vsets" : [],
   "deparsers" : [
     {
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
         "line" : 156,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -210,10 +210,10 @@
       "name" : "calc",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
-        "line" : 165,
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
+        "line" : 183,
         "column" : 8,
-        "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
+        "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
       },
       "algo" : "csum16",
       "input" : [
@@ -267,10 +267,10 @@
       "name" : "calc_0",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
-        "line" : 183,
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
+        "line" : 165,
         "column" : 8,
-        "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
+        "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
       },
       "algo" : "csum16",
       "input" : [
@@ -324,7 +324,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "set_l2ptr",
+      "name" : "ingress.set_l2ptr",
       "id" : 0,
       "runtime_data" : [
         {
@@ -338,7 +338,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "l2ptr"]
+              "value" : ["userMetadata.fwd_metadata", "l2ptr"]
             },
             {
               "type" : "runtime_data",
@@ -346,7 +346,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 85,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
@@ -355,7 +355,7 @@
       ]
     },
     {
-      "name" : "my_drop",
+      "name" : "ingress.my_drop",
       "id" : 1,
       "runtime_data" : [],
       "primitives" : [
@@ -364,7 +364,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "dropped"]
+              "value" : ["userMetadata.fwd_metadata", "dropped"]
             },
             {
               "type" : "expression",
@@ -382,7 +382,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 88,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.dropped = true"
@@ -392,7 +392,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 89,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
@@ -401,7 +401,7 @@
       ]
     },
     {
-      "name" : "my_drop",
+      "name" : "ingress.my_drop",
       "id" : 2,
       "runtime_data" : [],
       "primitives" : [
@@ -410,7 +410,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "dropped"]
+              "value" : ["userMetadata.fwd_metadata", "dropped"]
             },
             {
               "type" : "expression",
@@ -428,7 +428,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 88,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.dropped = true"
@@ -438,7 +438,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 89,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
@@ -447,7 +447,7 @@
       ]
     },
     {
-      "name" : "set_bd_dmac_intf",
+      "name" : "ingress.set_bd_dmac_intf",
       "id" : 3,
       "runtime_data" : [
         {
@@ -469,7 +469,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "out_bd"]
+              "value" : ["userMetadata.fwd_metadata", "out_bd"]
             },
             {
               "type" : "runtime_data",
@@ -477,7 +477,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 103,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
@@ -496,7 +496,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 104,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
@@ -515,7 +515,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 105,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
@@ -557,7 +557,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 106,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
@@ -575,7 +575,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "dropped"]
+              "value" : ["userMetadata.fwd_metadata", "dropped"]
             },
             {
               "type" : "expression",
@@ -593,7 +593,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 120,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.dropped = false"
@@ -602,7 +602,7 @@
       ]
     },
     {
-      "name" : "rewrite_mac",
+      "name" : "egress.rewrite_mac",
       "id" : 5,
       "runtime_data" : [
         {
@@ -624,7 +624,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 135,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
@@ -633,7 +633,7 @@
       ]
     },
     {
-      "name" : "my_drop",
+      "name" : "egress.my_drop",
       "id" : 6,
       "runtime_data" : [],
       "primitives" : [
@@ -641,7 +641,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 138,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
@@ -655,7 +655,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
         "line" : 80,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -686,10 +686,10 @@
           }
         },
         {
-          "name" : "ipv4_da_lpm",
+          "name" : "ingress.ipv4_da_lpm",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 91,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
@@ -697,6 +697,7 @@
           "key" : [
             {
               "match_type" : "lpm",
+              "name" : "hdr.ipv4.dstAddr",
               "target" : ["ipv4", "dstAddr"],
               "mask" : null
             }
@@ -708,11 +709,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0, 1],
-          "actions" : ["set_l2ptr", "my_drop"],
+          "actions" : ["ingress.set_l2ptr", "ingress.my_drop"],
           "base_default_next" : "node_5",
           "next_tables" : {
-            "set_l2ptr" : "node_5",
-            "my_drop" : "node_5"
+            "ingress.set_l2ptr" : "node_5",
+            "ingress.my_drop" : "node_5"
           },
           "default_entry" : {
             "action_id" : 1,
@@ -722,10 +723,10 @@
           }
         },
         {
-          "name" : "mac_da",
+          "name" : "ingress.mac_da",
           "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 108,
             "column" : 10,
             "source_fragment" : "mac_da"
@@ -733,7 +734,8 @@
           "key" : [
             {
               "match_type" : "exact",
-              "target" : ["fwd_metadata", "l2ptr"],
+              "name" : "meta.fwd_metadata.l2ptr",
+              "target" : ["userMetadata.fwd_metadata", "l2ptr"],
               "mask" : null
             }
           ],
@@ -744,11 +746,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [3, 2],
-          "actions" : ["set_bd_dmac_intf", "my_drop"],
+          "actions" : ["ingress.set_bd_dmac_intf", "ingress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "set_bd_dmac_intf" : null,
-            "my_drop" : null
+            "ingress.set_bd_dmac_intf" : null,
+            "ingress.my_drop" : null
           },
           "default_entry" : {
             "action_id" : 2,
@@ -764,7 +766,7 @@
           "name" : "node_3",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 121,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid()"
@@ -781,13 +783,13 @@
             }
           },
           "false_next" : null,
-          "true_next" : "ipv4_da_lpm"
+          "true_next" : "ingress.ipv4_da_lpm"
         },
         {
           "name" : "node_5",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 123,
             "column" : 16,
             "source_fragment" : "!meta.fwd_metadata.dropped"
@@ -804,14 +806,14 @@
                   "left" : null,
                   "right" : {
                     "type" : "field",
-                    "value" : ["fwd_metadata", "dropped"]
+                    "value" : ["userMetadata.fwd_metadata", "dropped"]
                   }
                 }
               }
             }
           },
           "false_next" : null,
-          "true_next" : "mac_da"
+          "true_next" : "ingress.mac_da"
         }
       ]
     },
@@ -819,18 +821,18 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
         "line" : 130,
         "column" : 8,
         "source_fragment" : "egress"
       },
-      "init_table" : "send_frame",
+      "init_table" : "egress.send_frame",
       "tables" : [
         {
-          "name" : "send_frame",
+          "name" : "egress.send_frame",
           "id" : 3,
           "source_info" : {
-            "filename" : "p4_programs/demo1-no-uninit-reads.p4_16.p4",
+            "filename" : "demo1-no-uninit-reads.p4_16.p4",
             "line" : 140,
             "column" : 10,
             "source_fragment" : "send_frame"
@@ -838,7 +840,8 @@
           "key" : [
             {
               "match_type" : "exact",
-              "target" : ["fwd_metadata", "out_bd"],
+              "name" : "meta.fwd_metadata.out_bd",
+              "target" : ["userMetadata.fwd_metadata", "out_bd"],
               "mask" : null
             }
           ],
@@ -849,11 +852,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [5, 6],
-          "actions" : ["rewrite_mac", "my_drop"],
+          "actions" : ["egress.rewrite_mac", "egress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "rewrite_mac" : null,
-            "my_drop" : null
+            "egress.rewrite_mac" : null,
+            "egress.my_drop" : null
           },
           "default_entry" : {
             "action_id" : 6,
@@ -871,16 +874,56 @@
     {
       "name" : "cksum",
       "id" : 0,
+      "source_info" : {
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
+        "line" : 183,
+        "column" : 8,
+        "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
+      },
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc"
+      "calculation" : "calc",
+      "if_cond" : {
+        "type" : "expression",
+        "value" : {
+          "op" : "==",
+          "left" : {
+            "type" : "field",
+            "value" : ["ipv4", "ihl"]
+          },
+          "right" : {
+            "type" : "hexstr",
+            "value" : "0x05"
+          }
+        }
+      }
     },
     {
       "name" : "cksum_0",
       "id" : 1,
+      "source_info" : {
+        "filename" : "demo1-no-uninit-reads.p4_16.p4",
+        "line" : 165,
+        "column" : 8,
+        "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
+      },
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_0"
+      "calculation" : "calc_0",
+      "if_cond" : {
+        "type" : "expression",
+        "value" : {
+          "op" : "==",
+          "left" : {
+            "type" : "field",
+            "value" : ["ipv4", "ihl"]
+          },
+          "right" : {
+            "type" : "hexstr",
+            "value" : "0x05"
+          }
+        }
+      }
     }
   ],
   "force_arith" : [],
@@ -907,6 +950,10 @@
       ["standard_metadata", "ingress_global_timestamp"]
     ],
     [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
       "intrinsic_metadata.lf_field_list",
       ["standard_metadata", "lf_field_list"]
     ],
@@ -921,6 +968,15 @@
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
     ]
-  ]
+  ],
+  "program" : "./demo1-no-uninit-reads.p4_16.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
 }

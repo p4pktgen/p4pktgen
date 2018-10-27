@@ -1,21 +1,16 @@
 {
-  "program" : "p4_programs/checksum-ipv4-with-options.p4",
-  "__meta__" : {
-    "version" : [2, 7],
-    "compiler" : "https://github.com/p4lang/p4c"
-  },
   "header_types" : [
     {
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["tmp_5", 9, false],
-        ["tmp_6", 9, false],
-        ["tmp_7", 9, false],
-        ["tmp_8", 32, false],
-        ["tmp", 8, false],
-        ["tmp_0", 1, false],
-        ["tmp_1", 1, false],
+        ["tmp_0", 9, false],
+        ["tmp_1", 9, false],
+        ["tmp_2", 9, false],
+        ["tmp_3", 32, false],
+        ["tmp_4", 8, false],
+        ["tmp_5", 1, false],
+        ["tmp_6", 1, false],
         ["_padding_0", 3, false]
       ]
     },
@@ -28,8 +23,36 @@
       ]
     },
     {
-      "name" : "ethernet_t",
+      "name" : "standard_metadata",
       "id" : 2,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 32, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 3,
       "fields" : [
         ["dstAddr", 48, false],
         ["srcAddr", 48, false],
@@ -38,7 +61,7 @@
     },
     {
       "name" : "ipv4_t",
-      "id" : 3,
+      "id" : 4,
       "fields" : [
         ["version", 4, false],
         ["ihl", 4, false],
@@ -58,7 +81,7 @@
     },
     {
       "name" : "tcp_t",
-      "id" : 4,
+      "id" : 5,
       "fields" : [
         ["srcPort", 16, false],
         ["dstPort", 16, false],
@@ -75,41 +98,16 @@
     },
     {
       "name" : "mystruct1_t",
-      "id" : 5,
+      "id" : 6,
       "fields" : [
         ["a", 4, false],
         ["b", 4, false]
-      ]
-    },
-    {
-      "name" : "standard_metadata",
-      "id" : 6,
-      "fields" : [
-        ["ingress_port", 9, false],
-        ["egress_spec", 9, false],
-        ["egress_port", 9, false],
-        ["clone_spec", 32, false],
-        ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
-        ["packet_length", 32, false],
-        ["enq_timestamp", 32, false],
-        ["enq_qdepth", 19, false],
-        ["deq_timedelta", 32, false],
-        ["deq_qdepth", 19, false],
-        ["ingress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
-        ["mcast_grp", 16, false],
-        ["resubmit_flag", 1, false],
-        ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
-        ["_padding", 4, false]
       ]
     }
   ],
   "headers" : [
     {
-      "name" : "tmp_4",
+      "name" : "tmp",
       "id" : 0,
       "header_type" : "IPv4_up_to_ihl_only_h",
       "metadata" : false,
@@ -151,7 +149,7 @@
       "pi_omit" : true
     },
     {
-      "name" : "mystruct1",
+      "name" : "userMetadata.mystruct1",
       "id" : 6,
       "header_type" : "mystruct1_t",
       "metadata" : true,
@@ -197,6 +195,7 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x0800",
               "mask" : null,
               "next_state" : "parse_ipv4"
@@ -222,7 +221,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp"]
+                  "value" : ["scalars", "tmp_4"]
                 },
                 {
                   "type" : "lookahead",
@@ -237,7 +236,7 @@
                   "parameters" : [
                     {
                       "type" : "header",
-                      "value" : "tmp_4"
+                      "value" : "tmp"
                     }
                   ],
                   "op" : "add_header"
@@ -249,7 +248,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["tmp_4", "version"]
+                  "value" : ["tmp", "version"]
                 },
                 {
                   "type" : "expression",
@@ -267,7 +266,7 @@
                               "op" : ">>",
                               "left" : {
                                 "type" : "field",
-                                "value" : ["scalars", "tmp"]
+                                "value" : ["scalars", "tmp_4"]
                               },
                               "right" : {
                                 "type" : "hexstr",
@@ -295,7 +294,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["tmp_4", "ihl"]
+                  "value" : ["tmp", "ihl"]
                 },
                 {
                   "type" : "expression",
@@ -305,7 +304,7 @@
                       "op" : "&",
                       "left" : {
                         "type" : "field",
-                        "value" : ["scalars", "tmp"]
+                        "value" : ["scalars", "tmp_4"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -321,7 +320,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_5"]
+                  "value" : ["scalars", "tmp_0"]
                 },
                 {
                   "type" : "expression",
@@ -339,7 +338,7 @@
                               "op" : "&",
                               "left" : {
                                 "type" : "field",
-                                "value" : ["tmp_4", "ihl"]
+                                "value" : ["tmp", "ihl"]
                               },
                               "right" : {
                                 "type" : "hexstr",
@@ -367,7 +366,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_6"]
+                  "value" : ["scalars", "tmp_1"]
                 },
                 {
                   "type" : "expression",
@@ -381,7 +380,7 @@
                           "op" : "+",
                           "left" : {
                             "type" : "field",
-                            "value" : ["scalars", "tmp_5"]
+                            "value" : ["scalars", "tmp_0"]
                           },
                           "right" : {
                             "type" : "hexstr",
@@ -403,7 +402,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_7"]
+                  "value" : ["scalars", "tmp_2"]
                 },
                 {
                   "type" : "expression",
@@ -417,7 +416,7 @@
                           "op" : "<<",
                           "left" : {
                             "type" : "field",
-                            "value" : ["scalars", "tmp_6"]
+                            "value" : ["scalars", "tmp_1"]
                           },
                           "right" : {
                             "type" : "hexstr",
@@ -439,7 +438,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_8"]
+                  "value" : ["scalars", "tmp_3"]
                 },
                 {
                   "type" : "expression",
@@ -449,7 +448,7 @@
                       "op" : "&",
                       "left" : {
                         "type" : "field",
-                        "value" : ["scalars", "tmp_7"]
+                        "value" : ["scalars", "tmp_2"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -471,7 +470,7 @@
                   "type" : "expression",
                   "value" : {
                     "type" : "field",
-                    "value" : ["scalars", "tmp_8"]
+                    "value" : ["scalars", "tmp_3"]
                   }
                 }
               ],
@@ -481,7 +480,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_0"]
+                  "value" : ["scalars", "tmp_5"]
                 },
                 {
                   "type" : "expression",
@@ -519,7 +518,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_0"]
+                      "value" : ["scalars", "tmp_5"]
                     }
                   }
                 },
@@ -534,7 +533,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_1"]
+                  "value" : ["scalars", "tmp_6"]
                 },
                 {
                   "type" : "expression",
@@ -572,7 +571,7 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_1"]
+                      "value" : ["scalars", "tmp_6"]
                     }
                   }
                 },
@@ -586,6 +585,7 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x06",
               "mask" : null,
               "next_state" : "parse_tcp"
@@ -629,12 +629,13 @@
       ]
     }
   ],
+  "parse_vsets" : [],
   "deparsers" : [
     {
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+        "filename" : "checksum-ipv4-with-options.p4",
         "line" : 160,
         "column" : 8,
         "source_fragment" : "DeparserI"
@@ -649,7 +650,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "foo",
+      "name" : "cIngress.foo",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
@@ -689,7 +690,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+            "filename" : "checksum-ipv4-with-options.p4",
             "line" : 113,
             "column" : 8,
             "source_fragment" : "hdr.tcp.srcPort = hdr.tcp.srcPort + 1"
@@ -731,7 +732,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+            "filename" : "checksum-ipv4-with-options.p4",
             "line" : 114,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
@@ -773,7 +774,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+            "filename" : "checksum-ipv4-with-options.p4",
             "line" : 115,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.dstAddr = hdr.ipv4.dstAddr + 4"
@@ -787,7 +788,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+        "filename" : "checksum-ipv4-with-options.p4",
         "line" : 108,
         "column" : 8,
         "source_fragment" : "cIngress"
@@ -795,10 +796,10 @@
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "guh",
+          "name" : "cIngress.guh",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+            "filename" : "checksum-ipv4-with-options.p4",
             "line" : 117,
             "column" : 10,
             "source_fragment" : "guh"
@@ -806,6 +807,7 @@
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "hdr.tcp.dstPort",
               "target" : ["tcp", "dstPort"],
               "mask" : null
             }
@@ -817,10 +819,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0],
-          "actions" : ["foo"],
+          "actions" : ["cIngress.foo"],
           "base_default_next" : null,
           "next_tables" : {
-            "foo" : null
+            "cIngress.foo" : null
           },
           "default_entry" : {
             "action_id" : 0,
@@ -836,7 +838,7 @@
           "name" : "node_2",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+            "filename" : "checksum-ipv4-with-options.p4",
             "line" : 125,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid() && hdr.tcp.isValid()"
@@ -876,7 +878,7 @@
           "name" : "node_3",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+            "filename" : "checksum-ipv4-with-options.p4",
             "line" : 130,
             "column" : 16,
             "source_fragment" : "hdr.ipv4.ihl == 14"
@@ -896,7 +898,7 @@
             }
           },
           "true_next" : null,
-          "false_next" : "guh"
+          "false_next" : "cIngress.guh"
         }
       ]
     },
@@ -904,7 +906,7 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/checksum-ipv4-with-options.p4",
+        "filename" : "checksum-ipv4-with-options.p4",
         "line" : 138,
         "column" : 8,
         "source_fragment" : "cEgress"
@@ -940,6 +942,10 @@
       ["standard_metadata", "ingress_global_timestamp"]
     ],
     [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
       "intrinsic_metadata.lf_field_list",
       ["standard_metadata", "lf_field_list"]
     ],
@@ -954,6 +960,15 @@
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
     ]
-  ]
+  ],
+  "program" : "./checksum-ipv4-with-options.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
 }

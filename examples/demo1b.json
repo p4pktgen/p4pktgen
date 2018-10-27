@@ -1,21 +1,44 @@
 {
-  "program" : "p4_programs/demo1b.p4",
-  "__meta__" : {
-    "version" : [2, 7],
-    "compiler" : "https://github.com/p4lang/p4c"
-  },
   "header_types" : [
     {
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["acl_drop", 1, false],
+        ["acl_drop_0", 1, false],
         ["_padding_0", 7, false]
       ]
     },
     {
-      "name" : "ethernet_t",
+      "name" : "standard_metadata",
       "id" : 1,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 32, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 2,
       "fields" : [
         ["dstAddr", 48, false],
         ["srcAddr", 48, false],
@@ -24,7 +47,7 @@
     },
     {
       "name" : "ipv4_t",
-      "id" : 2,
+      "id" : 3,
       "fields" : [
         ["version", 4, false],
         ["ihl", 4, false],
@@ -42,35 +65,10 @@
     },
     {
       "name" : "fwd_metadata_t",
-      "id" : 3,
+      "id" : 4,
       "fields" : [
         ["l2ptr", 32, false],
         ["out_bd", 24, false]
-      ]
-    },
-    {
-      "name" : "standard_metadata",
-      "id" : 4,
-      "fields" : [
-        ["ingress_port", 9, false],
-        ["egress_spec", 9, false],
-        ["egress_port", 9, false],
-        ["clone_spec", 32, false],
-        ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
-        ["packet_length", 32, false],
-        ["enq_timestamp", 32, false],
-        ["enq_qdepth", 19, false],
-        ["deq_timedelta", 32, false],
-        ["deq_qdepth", 19, false],
-        ["ingress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
-        ["mcast_grp", 16, false],
-        ["resubmit_flag", 1, false],
-        ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
-        ["_padding", 4, false]
       ]
     }
   ],
@@ -104,7 +102,7 @@
       "pi_omit" : true
     },
     {
-      "name" : "fwd_metadata",
+      "name" : "userMetadata.fwd_metadata",
       "id" : 4,
       "header_type" : "fwd_metadata_t",
       "metadata" : true,
@@ -147,6 +145,7 @@
           ],
           "transitions" : [
             {
+              "type" : "hexstr",
               "value" : "0x0800",
               "mask" : null,
               "next_state" : "parse_ipv4"
@@ -190,12 +189,13 @@
       ]
     }
   ],
+  "parse_vsets" : [],
   "deparsers" : [
     {
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1b.p4",
+        "filename" : "demo1b.p4",
         "line" : 182,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
@@ -210,7 +210,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "do_acl_permit",
+      "name" : "ingress.do_acl_permit",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
@@ -219,7 +219,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "acl_drop"]
+              "value" : ["scalars", "acl_drop_0"]
             },
             {
               "type" : "expression",
@@ -237,7 +237,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 86,
             "column" : 8,
             "source_fragment" : "acl_drop = false"
@@ -246,7 +246,7 @@
       ]
     },
     {
-      "name" : "do_acl_drop",
+      "name" : "ingress.do_acl_drop",
       "id" : 1,
       "runtime_data" : [],
       "primitives" : [
@@ -255,7 +255,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "acl_drop"]
+              "value" : ["scalars", "acl_drop_0"]
             },
             {
               "type" : "expression",
@@ -273,7 +273,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 89,
             "column" : 8,
             "source_fragment" : "acl_drop = true"
@@ -282,7 +282,7 @@
       ]
     },
     {
-      "name" : "set_l2ptr",
+      "name" : "ingress.set_l2ptr",
       "id" : 2,
       "runtime_data" : [
         {
@@ -296,7 +296,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "l2ptr"]
+              "value" : ["userMetadata.fwd_metadata", "l2ptr"]
             },
             {
               "type" : "runtime_data",
@@ -304,7 +304,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 106,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
@@ -313,7 +313,7 @@
       ]
     },
     {
-      "name" : "my_drop",
+      "name" : "ingress.my_drop",
       "id" : 3,
       "runtime_data" : [],
       "primitives" : [
@@ -321,7 +321,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 109,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
@@ -330,7 +330,7 @@
       ]
     },
     {
-      "name" : "my_drop",
+      "name" : "ingress.my_drop",
       "id" : 4,
       "runtime_data" : [],
       "primitives" : [
@@ -338,7 +338,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 109,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
@@ -347,7 +347,7 @@
       ]
     },
     {
-      "name" : "set_bd_dmac_intf",
+      "name" : "ingress.set_bd_dmac_intf",
       "id" : 5,
       "runtime_data" : [
         {
@@ -369,7 +369,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "out_bd"]
+              "value" : ["userMetadata.fwd_metadata", "out_bd"]
             },
             {
               "type" : "runtime_data",
@@ -377,7 +377,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 123,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
@@ -396,7 +396,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 124,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
@@ -415,7 +415,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 125,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
@@ -457,7 +457,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 126,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
@@ -474,7 +474,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 144,
             "column" : 16,
             "source_fragment" : "mark_to_drop()"
@@ -492,7 +492,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["fwd_metadata", "l2ptr"]
+              "value" : ["userMetadata.fwd_metadata", "l2ptr"]
             },
             {
               "type" : "hexstr",
@@ -500,7 +500,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 140,
             "column" : 36,
             "source_fragment" : "0; ..."
@@ -509,7 +509,7 @@
       ]
     },
     {
-      "name" : "rewrite_mac",
+      "name" : "egress.rewrite_mac",
       "id" : 8,
       "runtime_data" : [
         {
@@ -531,7 +531,7 @@
             }
           ],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 161,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
@@ -540,7 +540,7 @@
       ]
     },
     {
-      "name" : "my_drop",
+      "name" : "egress.my_drop",
       "id" : 9,
       "runtime_data" : [],
       "primitives" : [
@@ -548,7 +548,7 @@
           "op" : "drop",
           "parameters" : [],
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 164,
             "column" : 8,
             "source_fragment" : "mark_to_drop()"
@@ -562,7 +562,7 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "p4_programs/demo1b.p4",
+        "filename" : "demo1b.p4",
         "line" : 79,
         "column" : 8,
         "source_fragment" : "ingress"
@@ -570,10 +570,10 @@
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "ipv4_acl",
+          "name" : "ingress.ipv4_acl",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 91,
             "column" : 10,
             "source_fragment" : "ipv4_acl"
@@ -581,21 +581,25 @@
           "key" : [
             {
               "match_type" : "ternary",
+              "name" : "hdr.ipv4.srcAddr",
               "target" : ["ipv4", "srcAddr"],
               "mask" : null
             },
             {
               "match_type" : "ternary",
+              "name" : "hdr.ipv4.dstAddr",
               "target" : ["ipv4", "dstAddr"],
               "mask" : null
             },
             {
               "match_type" : "ternary",
+              "name" : "hdr.ipv4.protocol",
               "target" : ["ipv4", "protocol"],
               "mask" : null
             },
             {
               "match_type" : "range",
+              "name" : "hdr.ipv4.ttl",
               "target" : ["ipv4", "ttl"],
               "mask" : null
             }
@@ -607,11 +611,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0, 1],
-          "actions" : ["do_acl_permit", "do_acl_drop"],
+          "actions" : ["ingress.do_acl_permit", "ingress.do_acl_drop"],
           "base_default_next" : "node_4",
           "next_tables" : {
-            "do_acl_permit" : "node_4",
-            "do_acl_drop" : "node_4"
+            "ingress.do_acl_permit" : "node_4",
+            "ingress.do_acl_drop" : "node_4"
           },
           "default_entry" : {
             "action_id" : 1,
@@ -655,9 +659,9 @@
           "direct_meters" : null,
           "action_ids" : [7],
           "actions" : ["act_0"],
-          "base_default_next" : "ipv4_da_lpm",
+          "base_default_next" : "ingress.ipv4_da_lpm",
           "next_tables" : {
-            "act_0" : "ipv4_da_lpm"
+            "act_0" : "ingress.ipv4_da_lpm"
           },
           "default_entry" : {
             "action_id" : 7,
@@ -667,10 +671,10 @@
           }
         },
         {
-          "name" : "ipv4_da_lpm",
+          "name" : "ingress.ipv4_da_lpm",
           "id" : 3,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 111,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
@@ -678,6 +682,7 @@
           "key" : [
             {
               "match_type" : "lpm",
+              "name" : "hdr.ipv4.dstAddr",
               "target" : ["ipv4", "dstAddr"],
               "mask" : null
             }
@@ -689,11 +694,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [2, 3],
-          "actions" : ["set_l2ptr", "my_drop"],
+          "actions" : ["ingress.set_l2ptr", "ingress.my_drop"],
           "base_default_next" : "node_8",
           "next_tables" : {
-            "set_l2ptr" : "node_8",
-            "my_drop" : "node_8"
+            "ingress.set_l2ptr" : "node_8",
+            "ingress.my_drop" : "node_8"
           },
           "default_entry" : {
             "action_id" : 3,
@@ -703,10 +708,10 @@
           }
         },
         {
-          "name" : "mac_da",
+          "name" : "ingress.mac_da",
           "id" : 4,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 128,
             "column" : 10,
             "source_fragment" : "mac_da"
@@ -714,7 +719,8 @@
           "key" : [
             {
               "match_type" : "exact",
-              "target" : ["fwd_metadata", "l2ptr"],
+              "name" : "meta.fwd_metadata.l2ptr",
+              "target" : ["userMetadata.fwd_metadata", "l2ptr"],
               "mask" : null
             }
           ],
@@ -725,11 +731,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [5, 4],
-          "actions" : ["set_bd_dmac_intf", "my_drop"],
+          "actions" : ["ingress.set_bd_dmac_intf", "ingress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "set_bd_dmac_intf" : null,
-            "my_drop" : null
+            "ingress.set_bd_dmac_intf" : null,
+            "ingress.my_drop" : null
           },
           "default_entry" : {
             "action_id" : 4,
@@ -745,7 +751,7 @@
           "name" : "node_2",
           "id" : 0,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 141,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid()"
@@ -762,13 +768,13 @@
             }
           },
           "false_next" : null,
-          "true_next" : "ipv4_acl"
+          "true_next" : "ingress.ipv4_acl"
         },
         {
           "name" : "node_4",
           "id" : 1,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 143,
             "column" : 16,
             "source_fragment" : "acl_drop"
@@ -780,7 +786,7 @@
               "left" : null,
               "right" : {
                 "type" : "field",
-                "value" : ["scalars", "acl_drop"]
+                "value" : ["scalars", "acl_drop_0"]
               }
             }
           },
@@ -791,7 +797,7 @@
           "name" : "node_8",
           "id" : 2,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 149,
             "column" : 16,
             "source_fragment" : "meta.fwd_metadata.l2ptr != L2PTR_UNSET"
@@ -802,7 +808,7 @@
               "op" : "!=",
               "left" : {
                 "type" : "field",
-                "value" : ["fwd_metadata", "l2ptr"]
+                "value" : ["userMetadata.fwd_metadata", "l2ptr"]
               },
               "right" : {
                 "type" : "hexstr",
@@ -811,7 +817,7 @@
             }
           },
           "false_next" : null,
-          "true_next" : "mac_da"
+          "true_next" : "ingress.mac_da"
         }
       ]
     },
@@ -819,18 +825,18 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "p4_programs/demo1b.p4",
+        "filename" : "demo1b.p4",
         "line" : 156,
         "column" : 8,
         "source_fragment" : "egress"
       },
-      "init_table" : "send_frame",
+      "init_table" : "egress.send_frame",
       "tables" : [
         {
-          "name" : "send_frame",
+          "name" : "egress.send_frame",
           "id" : 5,
           "source_info" : {
-            "filename" : "p4_programs/demo1b.p4",
+            "filename" : "demo1b.p4",
             "line" : 166,
             "column" : 10,
             "source_fragment" : "send_frame"
@@ -838,7 +844,8 @@
           "key" : [
             {
               "match_type" : "exact",
-              "target" : ["fwd_metadata", "out_bd"],
+              "name" : "meta.fwd_metadata.out_bd",
+              "target" : ["userMetadata.fwd_metadata", "out_bd"],
               "mask" : null
             }
           ],
@@ -849,11 +856,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [8, 9],
-          "actions" : ["rewrite_mac", "my_drop"],
+          "actions" : ["egress.rewrite_mac", "egress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "rewrite_mac" : null,
-            "my_drop" : null
+            "egress.rewrite_mac" : null,
+            "egress.my_drop" : null
           },
           "default_entry" : {
             "action_id" : 9,
@@ -892,6 +899,10 @@
       ["standard_metadata", "ingress_global_timestamp"]
     ],
     [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
       "intrinsic_metadata.lf_field_list",
       ["standard_metadata", "lf_field_list"]
     ],
@@ -906,6 +917,15 @@
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
     ]
-  ]
+  ],
+  "program" : "./demo1b.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
 }

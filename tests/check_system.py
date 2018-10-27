@@ -8,27 +8,27 @@ class CheckSystem:
         Config().load_test_defaults()
         results = process_json_file('examples/demo1b.json')
         expected_results = {
-            ('start', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (False, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
+             TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_permit'), (u'node_4', (True, (u'demo1b.p4', 143, u'acl_drop')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (True, (u'p4_programs/demo1b.p4', 143, u'acl_drop')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_drop'), (u'node_4', (False, (u'demo1b.p4', 143, u'acl_drop')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_drop'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_permit'), (u'node_4', (False, (u'demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_8', (True, (u'demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'my_drop'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
-            TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (False, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (False, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_drop'), (u'node_4', (True, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act', u'act')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_drop'), (u'node_4', (True, (u'demo1b.p4', 143, u'acl_drop'))), (u'tbl_act', u'act')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'my_drop'), (u'node_8', (False, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_permit'), (u'node_4', (False, (u'demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_8', (False, (u'demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (False, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_permit'), (u'node_4', (False, (u'demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_8', (False, (u'demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_permit'), (u'node_4', (False, (u'demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_8', (True, (u'demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ipv4_acl', u'do_acl_permit'), (u'node_4', (False, (u'p4_programs/demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_8', (True, (u'p4_programs/demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_acl', u'ingress.do_acl_permit'), (u'node_4', (False, (u'demo1b.p4', 143, u'acl_drop'))), (u'tbl_act_0', u'act_0'), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_8', (True, (u'demo1b.p4', 149, u'meta.fwd_metadata.l2ptr != L2PTR_UNSET'))), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.SUCCESS
         }
         assert results == expected_results
@@ -38,17 +38,17 @@ class CheckSystem:
         results = process_json_file(
             'examples/demo1-action-names-uniquified.p4_16.json')
         expected_results = {
-            ('start', 'sink', (u'ipv4_da_lpm', u'set_l2ptr')):
+            ('start', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'sink', (u'ipv4_da_lpm', u'my_drop1')):
+            ('start', 'sink', (u'ingress.ipv4_da_lpm', u'my_drop1')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'ipv4_da_lpm', u'set_l2ptr'), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'ipv4_da_lpm', u'set_l2ptr'), (u'mac_da', u'my_drop2')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'ingress.mac_da', u'my_drop2')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'ipv4_da_lpm', u'my_drop1'), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'my_drop1'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'ipv4_da_lpm', u'my_drop1'), (u'mac_da', u'my_drop2')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'my_drop1'), (u'ingress.mac_da', u'my_drop2')):
             TestPathResult.UNINITIALIZED_READ
         }
         assert results == expected_results
@@ -58,21 +58,21 @@ class CheckSystem:
         results = process_json_file(
             'examples/demo1-no-uninit-reads.p4_16.json')
         expected_results = {
-            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
+            ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_5', (True, (u'demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
+            ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_5', (False, (u'demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_5', (True, (u'demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_5', (True, (u'demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_5', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
+            ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_5', (False, (u'demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'tbl_act', u'act'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'p4_programs/demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'tbl_act', u'act'), (u'node_3', (False, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()')))):
             TestPathResult.SUCCESS
         }
         assert results == expected_results
@@ -81,39 +81,39 @@ class CheckSystem:
         Config().load_test_defaults()
         results = process_json_file('examples/demo9b.json')
         expected_results = {
-            ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (True, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'p4_programs/demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'p4_programs/demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'p4_programs/demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'p4_programs/demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'p4_programs/demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'p4_programs/demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'p4_programs/demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
+            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
             TestPathResult.SUCCESS
         }
         assert results == expected_results
@@ -122,21 +122,21 @@ class CheckSystem:
         Config().load_test_defaults()
         results = process_json_file('examples/config-table.json')
         expected_results = {
-            ('start', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'my_drop')):
+            ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'my_drop')):
             TestPathResult.SUCCESS,
-            ('start', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'my_drop')):
+            ('start', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'my_drop')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'set_config_parameters'), (u'mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'my_drop')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'switch_config_params', u'NoAction'), (u'mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'my_drop')):
             TestPathResult.UNINITIALIZED_READ
         }
         assert results == expected_results
@@ -158,27 +158,27 @@ class CheckSystem:
         results = process_json_file(
             'examples/add-remove-header.json')
         expected_results = {
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'my_drop')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'my_drop')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'set_l2ptr'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (False, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'set_bd_dmac_intf')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'mac_da', u'my_drop')):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'my_drop')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'my_drop'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'my_drop'), (u'node_4', (False, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'add_outer_ipv4'), (u'node_4', (True, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.add_outer_ipv4'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ipv4_da_lpm', u'add_outer_ipv4'), (u'node_4', (False, (u'p4_programs/add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.add_outer_ipv4'), (u'node_4', (False, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (True, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (False, (u'p4_programs/add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (False, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
             TestPathResult.SUCCESS
         }
         assert results == expected_results
@@ -190,20 +190,20 @@ class CheckSystem:
         results = process_json_file(
             'examples/checksum-ipv4-with-options.json')
         expected_results = {
-            ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()'))), (u'node_3', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 130, u'hdr.ipv4.ihl == 14')))):
+            ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (True, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()'))), (u'node_3', (True, (u'checksum-ipv4-with-options.p4', 130, u'hdr.ipv4.ihl == 14')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()'))), (u'node_3', (False, (u'p4_programs/checksum-ipv4-with-options.p4', 130, u'hdr.ipv4.ihl == 14'))), (u'guh', u'foo')):
+            ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (True, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()'))), (u'node_3', (False, (u'checksum-ipv4-with-options.p4', 130, u'hdr.ipv4.ihl == 14'))), (u'cIngress.guh', u'cIngress.foo')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (False, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
+            ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (False, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
 
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
+            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.SUCCESS,
-            ('start', 'sink', (u'node_2', (True, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
+            ('start', 'sink', (u'node_2', (True, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (False, (u'p4_programs/checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
+            ('start', 'sink', (u'node_2', (False, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.SUCCESS
         }
         assert results == expected_results
