@@ -618,10 +618,11 @@ class Table:
         self.action_name_to_id = {}
         for i in range(len(self.action_ids)):
             if self.action_names[i] in self.action_name_to_id:
-                logging.error("Same action name %s appears twice"
-                              " for table %s"
-                              "", self.action_names[i], self.name)
-                assert False
+                msg = ("Same action name %s appears twice"
+                       " for table %s"
+                       "", self.action_names[i], self.name)
+                logging.error(msg)
+                raise ValueError(msg)
             self.action_name_to_id[self.action_names[i]] = self.action_ids[i]
 
         self.base_default_next_name = json_obj['base_default_next']
@@ -719,59 +720,211 @@ class Pipeline:
             next_tables = []
             if table_name in self.tables:
                 table = self.tables[table_name]
+
+                logging.debug("Begin generate_CFG processing for table '%s'",
+                              table_name)
+                # A table in BMv2 JSON file should have next_tables
+                # that contains either:
+                #
+                # (a) One element for each of the table's actions,
+                #     with the keys being exactly the same as the set
+                #     of all action names/ids.
+                #
+                # or
+                #
+                # (b) Exactly two elements, one with 'action name'
+                #     '__HIT__', and the other with 'action name'
+                #     '__MISS__'.  This occurs for tables that have
+                #     'if (table_name.apply().hit)' in the P4 source
+                #     code.
+                #
+                # Determine which of these two cases it is, printing
+                # an error and raising an exception if it is neither
+                # of these.
+                action_set = set(table.action_names)
+                next_tables_key_set = set()
+                for action_name_id, next_table in table.next_tables.items():
+                    logging.debug("action_name_id=%s next_table='%s'",
+                                  action_name_id, next_table)
+                    action_name, action_id = action_name_id
+                    if action_name in next_tables_key_set:
+                        msg = ("Found duplicate action name '%s'"
+                               " in 'next_tables' of table '%s'"
+                               "" % (action_name, table_name))
+                        logging.error(msg)
+                        raise ValueError(msg)
+                    next_tables_key_set.add(action_name)
+                hit_miss_table = False
+                if next_tables_key_set == {'__HIT__', '__MISS__'}:
+                    hit_miss_table = True
+                elif next_tables_key_set == action_set:
+                    pass
+                else:
+                    msg = ("Table '%s' has set of keys for 'next_tables'"
+                           " that is neither {'__HIT__', '__MISS__'} nor"
+                           " the set of action names %s.  Instead it is"
+                           " %s"
+                           "" % (table_name, action_set, next_tables_key_set))
+                    logging.error(msg)
+                    raise ValueError(msg)
+                logging.debug("hit_miss_table=%s next_tables_key_set=%s",
+                              hit_miss_table, next_tables_key_set)
+
+                # If the table has 'const entries' in the source code,
+                # they will be stored in table.entries.  The only
+                # thing that the control plane software might be able
+                # to change about the behavior of the table later is
+                # the default_action, but then only if it is not
+                # declared const.
+
+                # The latest p4c as of 2018-Oct-27 gives a compile
+                # time error if a table has 'const entries = { }' with
+                # an empty list of entries.  Thus we can conclude from
+                # the BMv2 JSON file that if it table.entries empty,
+                # then there was no 'const entries' declared in the
+                # source code.
+                table_has_const_entries = False
+                prev_const_entry = None
+                prev_transition = None
                 for entry in table.entries:
+                    if prev_const_entry is not None:
+                        if entry.priority != (prev_const_entry.priority + 1):
+                            msg = ("Expected const entry '%s' with priority %d"
+                                   " to be one more than prev const entry '%s'"
+                                   " but it has priority %d"
+                                   "" % (entry, entry.priority,
+                                         prev_const_entry,
+                                         prev_const_entry.priority))
+                            logging.error(msg)
+                            raise ValueError(msg)
+
+                    table_has_const_entries = True
                     action = self.hlir.get_action_by_id(entry.get_action_id())
-                    next_table = table.next_table_for_action(action)
+                    if hit_miss_table:
+                        # All execution paths matching any of the
+                        # const entries will be treated as a hit, as
+                        # far as determining what code to execute
+                        # next.
+                        next_table = table.next_tables['__HIT__']
+                    else:
+                        next_table = table.next_table_for_action(action)
+                    logging.debug("const entry='%s' action.name='%s'"
+                                  " action.id='%s' next_table='%s'",
+                                  entry, action.name, action.id, next_table)
                     transition = ConstActionTransition(table_name, next_table,
                                                        action,
-                                                       entry.get_action_data())
+                                                       entry.get_action_data(),
+                                                       prev_transition)
                     graph.add_edge(table_name, next_table, transition)
+                    next_tables.append(next_table)
+                    prev_const_entry = entry
+                    prev_transition = transition
 
-                for action_name_id, next_table in table.next_tables.items():
-                    action_name, action_id = action_name_id
-                    if action_name == '__HIT__':
-                        for hit_action_name_id in zip(table.action_names,
-                                                      table.action_ids):
-                            transition = ActionTransition(
-                                table_name, next_table,
-                                self.hlir.actions[hit_action_name_id], False, None)
-                            graph.add_edge(table_name, next_table, transition)
-                    elif action_name == '__MISS__':
-                        if table.has_const_default_entry():
-                            transition = ActionTransition(
-                                    table_name, next_table,
-                                    self.hlir.actions[table.get_default_action_name_id()],
-                                    True,
-                                    table.default_entry.action_data)
-                            graph.add_edge(table_name, next_table, transition)
+                if not table_has_const_entries:
+                    # then p4pktgen should try each action that is
+                    # _not_ annotated with @defaultonly as a table hit
+                    # action.
+                    for hit_action_name_id in zip(table.action_names,
+                                                  table.action_ids):
+                        # TBD: Get the info about which actions are
+                        # annotated @defaultonly from reading the P4
+                        # info file.  Until then, assume that none of
+                        # them are annotated that way.
+                        action_is_defaultonly = False
+                        if action_is_defaultonly:
+                            logging.debug("hit_action_name_id='%s'"
+                                          " is defaultonly, thus not adding it"
+                                          " as a normal table hit action",
+                                          hit_action_name_id)
+                            continue
+                        if hit_miss_table:
+                            tmp_act = '__HIT__'
                         else:
-                            for miss_action_name_id in zip(
-                                    table.action_names, table.action_ids):
-                                transition = ActionTransition(
-                                    table_name, next_table,
-                                    self.hlir.actions[miss_action_name_id],
-                                    True, None)
-                                graph.add_edge(table_name, next_table,
-                                               transition)
-                    else:
+                            tmp_act = hit_action_name_id
+                        next_table = table.next_tables[tmp_act]
+                        logging.debug("hit_action_name_id='%s'"
+                                      " not defaultonly, thus adding it"
+                                      " as a normal table hit action"
+                                      " with next table '%s'",
+                                      hit_action_name_id, next_table)
                         transition = ActionTransition(
                             table_name, next_table,
-                            self.hlir.actions[action_name_id], False, None)
+                            self.hlir.actions[hit_action_name_id], False, None)
                         graph.add_edge(table_name, next_table, transition)
+                        next_tables.append(next_table)
+
+                # Now add possible default actions.
+
+                if table.has_const_default_entry():
+                    # If the P4 code declared a 'const
+                    # default_action', there is only that action
+                    # possible.
+                    logging.debug("table has const default_action"
+                                  " hit_action_name_id='%s'"
+                                  " not defaultonly, thus adding it"
+                                  " as a normal table hit action"
+                                  " with next table '%s'",
+                                  hit_action_name_id, next_table)
+                    transition = ActionTransition(
+                            table_name, next_table,
+                            self.hlir.actions[table.get_default_action_name_id()],
+                            True,
+                            table.default_entry.action_data)
+                    graph.add_edge(table_name, next_table, transition)
                     next_tables.append(next_table)
+                else:
+                    # If the table's default_action is not declared
+                    # with the 'const' modifier, then no matter what
+                    # the initial value might be declared to be in the
+                    # source code, the control plane is allowed to
+                    # change it to any action that is not annotated
+                    # with @tableonly.
+                    logging.debug("table has non-const default_action,"
+                                  " thus adding all actions not annotated"
+                                  " @tableonly as possible miss actions")
+                    for miss_action_name_id in zip(
+                            table.action_names, table.action_ids):
+                        # TBD: Get the info about which actions are
+                        # annotated @tableonly from reading the P4
+                        # info file.  Until then, assume that none of
+                        # them are annotated that way.
+                        action_is_tableonly = False
+                        if action_is_tableonly:
+                            continue
+                        if hit_miss_table:
+                            tmp_act = '__MISS__'
+                        else:
+                            tmp_act = miss_action_name_id
+                        next_table = table.next_tables[tmp_act]
+                        logging.debug("miss_action_name_id='%s'"
+                                      " not tableonly, thus adding it"
+                                      " as a miss table hit action"
+                                      " with next table '%s'",
+                                      miss_action_name_id, next_table)
+                        transition = ActionTransition(
+                            table_name, next_table,
+                            self.hlir.actions[miss_action_name_id],
+                            True, None)
+                        graph.add_edge(table_name, next_table, transition)
+                        next_tables.append(next_table)
+                logging.debug("End generate_CFG processing for table '%s'",
+                              table_name)
             else:
                 assert table_name in self.conditionals
+                logging.debug("generate_CFG processing conditional node '%s'",
+                              table_name)
                 conditional = self.conditionals[table_name]
                 source_info = conditional.source_info
                 source_info_to_node_name[source_info].append(table_name)
                 for branch, next_name in [(True, conditional.true_next_name),
                                           (False,
                                            conditional.false_next_name)]:
-                    next_tables.append(next_name)
                     transition = BoolTransition(table_name, next_name, branch,
                                                 source_info)
                     graph.add_edge(table_name, next_name, transition)
+                    next_tables.append(next_name)
 
+            logging.debug("next_tables='%s'", next_tables)
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:
                     queue.append(next_table)

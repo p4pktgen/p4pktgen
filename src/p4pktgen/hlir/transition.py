@@ -81,11 +81,12 @@ class ActionTransition(Transition):
 
 
 class ConstActionTransition(Transition):
-    def __init__(self, src, dest, action, action_data):
+    def __init__(self, src, dest, action, action_data, prev_const_action_transition):
         super(ConstActionTransition,
               self).__init__(TransitionType.CONST_ACTION_TRANSITION, src, dest)
         self.action = action
         self.action_data = action_data
+        self.prev_const_action_transition = prev_const_action_transition
 
 
 class BoolTransition(Transition):

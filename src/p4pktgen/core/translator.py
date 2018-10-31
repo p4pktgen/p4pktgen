@@ -870,6 +870,13 @@ class Translator:
 
             context.set_table_values(table_name, sym_key_elems)
             self.action_to_smt(context, table_name, transition.action)
+        elif transition.transition_type == TransitionType.CONST_ACTION_TRANSITION:
+            logging.debug("const action transition table_name='%s'"
+                          " action='%s' action_data='%s' prev='%s'",
+                          table_name, transition.action,
+                          transition.action_data,
+                          transition.prev_const_action_transition)
+            raise Exception('ConstActionTransition is not yet supported')
         else:
             raise Exception('Transition type {} not supported!'.format(
                 transition.transition_type))
