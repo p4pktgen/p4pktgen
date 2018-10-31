@@ -1,9 +1,4 @@
 {
-  "program" : "table-entries-valid-bmv2.p4",
-  "__meta__" : {
-    "version" : [2, 7],
-    "compiler" : "https://github.com/p4lang/p4c"
-  },
   "header_types" : [
     {
       "name" : "scalars_0",
@@ -11,20 +6,8 @@
       "fields" : []
     },
     {
-      "name" : "hdr",
-      "id" : 1,
-      "fields" : [
-        ["e", 8, false],
-        ["t", 16, false],
-        ["l", 8, false],
-        ["r", 8, false],
-        ["v", 1, false],
-        ["_padding", 7, false]
-      ]
-    },
-    {
       "name" : "standard_metadata",
-      "id" : 2,
+      "id" : 1,
       "fields" : [
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
@@ -39,12 +22,26 @@
         ["deq_timedelta", 32, false],
         ["deq_qdepth", 19, false],
         ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
         ["lf_field_list", 32, false],
         ["mcast_grp", 16, false],
-        ["resubmit_flag", 1, false],
+        ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
         ["checksum_error", 1, false],
-        ["_padding_0", 4, false]
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "hdr",
+      "id" : 2,
+      "fields" : [
+        ["e", 8, false],
+        ["t", 16, false],
+        ["l", 8, false],
+        ["r", 8, false],
+        ["v", 8, false]
       ]
     }
   ],
@@ -117,6 +114,7 @@
       ]
     }
   ],
+  "parse_vsets" : [],
   "deparsers" : [
     {
       "name" : "deparser",
@@ -137,7 +135,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "a",
+      "name" : "ingress.a",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
@@ -163,7 +161,7 @@
       ]
     },
     {
-      "name" : "a_with_control_params",
+      "name" : "ingress.a_with_control_params",
       "id" : 1,
       "runtime_data" : [
         {
@@ -204,10 +202,10 @@
         "column" : 8,
         "source_fragment" : "ingress"
       },
-      "init_table" : "t_valid",
+      "init_table" : "ingress.t_valid",
       "tables" : [
         {
-          "name" : "t_valid",
+          "name" : "ingress.t_valid",
           "id" : 0,
           "source_info" : {
             "filename" : "table-entries-valid-bmv2.p4",
@@ -218,11 +216,13 @@
           "key" : [
             {
               "match_type" : "exact",
+              "name" : "h.h.$valid$",
               "target" : ["h", "$valid$"],
               "mask" : null
             },
             {
               "match_type" : "exact",
+              "name" : "h.h.e",
               "target" : ["h", "e"],
               "mask" : null
             }
@@ -234,11 +234,11 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0, 1],
-          "actions" : ["a", "a_with_control_params"],
+          "actions" : ["ingress.a", "ingress.a_with_control_params"],
           "base_default_next" : null,
           "next_tables" : {
-            "a" : null,
-            "a_with_control_params" : null
+            "ingress.a" : null,
+            "ingress.a_with_control_params" : null
           },
           "default_entry" : {
             "action_id" : 0,
@@ -248,6 +248,12 @@
           },
           "entries" : [
             {
+              "source_info" : {
+                "filename" : "table-entries-valid-bmv2.p4",
+                "line" : 65,
+                "column" : 12,
+                "source_fragment" : "(true, 0x01) : a_with_control_params(1)"
+              },
               "match_key" : [
                 {
                   "match_type" : "exact",
@@ -265,6 +271,12 @@
               "priority" : 1
             },
             {
+              "source_info" : {
+                "filename" : "table-entries-valid-bmv2.p4",
+                "line" : 66,
+                "column" : 12,
+                "source_fragment" : "(false, 0x02) : a_with_control_params(2)"
+              },
               "match_key" : [
                 {
                   "match_type" : "exact",
@@ -327,6 +339,10 @@
       ["standard_metadata", "ingress_global_timestamp"]
     ],
     [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
       "intrinsic_metadata.lf_field_list",
       ["standard_metadata", "lf_field_list"]
     ],
@@ -341,6 +357,15 @@
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
     ]
-  ]
+  ],
+  "program" : "./table-entries-valid-bmv2.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
 }

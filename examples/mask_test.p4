@@ -12,9 +12,14 @@ struct l3_metadata_t {
 }
 
 header ethernet_t {
+    // Yes, this is not the definition of a real Ethernet header.  It
+    // is intentionally a little weird in having non-multiple-of-8
+    // address fields, to test non-multiple-of-8 size values and masks
+    // in the parser code.
     bit<47> dstAddr;
     bit<47> srcAddr;
     bit<16> etherType;
+    bit<2>  rsvd;
 }
 
 header ipv4_t {
