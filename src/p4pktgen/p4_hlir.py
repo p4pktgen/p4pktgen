@@ -723,6 +723,17 @@ class Pipeline:
 
                 logging.debug("Begin generate_CFG processing for table '%s'",
                               table_name)
+
+                # Tables with no key fields cannot ever achieve a
+                # 'hit' result, only a 'miss', because no table
+                # entries can be added to such a table.  The open
+                # source p4c compiler often creates such tables, even
+                # if they do not exist in the P4 program as written by
+                # the developer.
+                empty_key = False
+                if len(table.key) == 0:
+                    empty_key = True
+
                 # A table in BMv2 JSON file should have next_tables
                 # that contains either:
                 #
@@ -767,8 +778,9 @@ class Pipeline:
                            "" % (table_name, action_set, next_tables_key_set))
                     logging.error(msg)
                     raise ValueError(msg)
-                logging.debug("hit_miss_table=%s next_tables_key_set=%s",
-                              hit_miss_table, next_tables_key_set)
+                logging.debug("empty_key=%s hit_miss_table=%s"
+                              " next_tables_key_set=%s",
+                              empty_key, hit_miss_table, next_tables_key_set)
 
                 # If the table has 'const entries' in the source code,
                 # they will be stored in table.entries.  The only
@@ -786,6 +798,21 @@ class Pipeline:
                 table_has_const_entries = False
                 prev_const_entry = None
                 prev_transition = None
+
+                # I have written some small test programs that attempt
+                # to have a non-empty 'const entries' for a table that
+                # has no key fields, and all gave a compilation error.
+                # That is as I would expect.  Raise an exception here
+                # if that combination occurs in a BMv2 JSON file,
+                # because I don't think it makes any sense, and should
+                # be investigated as a possible bug.
+                if empty_key and len(table.entries) != 0:
+                    msg = ("Table '%s' has 0 key fields, but %d const entries."
+                           "  This seems like it should be impossible."
+                           "" % (table_name, len(table.entries)))
+                    logging.error(msg)
+                    raise ValueError(msg)
+
                 for entry in table.entries:
                     if prev_const_entry is not None:
                         if entry.priority != (prev_const_entry.priority + 1):
@@ -820,7 +847,7 @@ class Pipeline:
                     prev_const_entry = entry
                     prev_transition = transition
 
-                if not table_has_const_entries:
+                if (not empty_key) and (not table_has_const_entries):
                     # then p4pktgen should try each action that is
                     # _not_ annotated with @defaultonly as a table hit
                     # action.
@@ -855,23 +882,13 @@ class Pipeline:
 
                 # Now add possible default actions.
 
+                possible_default_actions = []
                 if table.has_const_default_entry():
                     # If the P4 code declared a 'const
                     # default_action', there is only that action
                     # possible.
-                    logging.debug("table has const default_action"
-                                  " hit_action_name_id='%s'"
-                                  " not defaultonly, thus adding it"
-                                  " as a normal table hit action"
-                                  " with next table '%s'",
-                                  hit_action_name_id, next_table)
-                    transition = ActionTransition(
-                            table_name, next_table,
-                            self.hlir.actions[table.get_default_action_name_id()],
-                            True,
-                            table.default_entry.action_data)
-                    graph.add_edge(table_name, next_table, transition)
-                    next_tables.append(next_table)
+                    possible_default_actions.append(
+                        table.get_default_action_name_id())
                 else:
                     # If the table's default_action is not declared
                     # with the 'const' modifier, then no matter what
@@ -882,31 +899,39 @@ class Pipeline:
                     logging.debug("table has non-const default_action,"
                                   " thus adding all actions not annotated"
                                   " @tableonly as possible miss actions")
-                    for miss_action_name_id in zip(
-                            table.action_names, table.action_ids):
+                    for miss_action_name_id in zip(table.action_names,
+                                                   table.action_ids):
                         # TBD: Get the info about which actions are
                         # annotated @tableonly from reading the P4
                         # info file.  Until then, assume that none of
                         # them are annotated that way.
                         action_is_tableonly = False
-                        if action_is_tableonly:
-                            continue
-                        if hit_miss_table:
-                            tmp_act = '__MISS__'
-                        else:
-                            tmp_act = miss_action_name_id
-                        next_table = table.next_tables[tmp_act]
-                        logging.debug("miss_action_name_id='%s'"
-                                      " not tableonly, thus adding it"
-                                      " as a miss table hit action"
-                                      " with next table '%s'",
-                                      miss_action_name_id, next_table)
-                        transition = ActionTransition(
-                            table_name, next_table,
-                            self.hlir.actions[miss_action_name_id],
-                            True, None)
-                        graph.add_edge(table_name, next_table, transition)
-                        next_tables.append(next_table)
+                        if not action_is_tableonly:
+                            possible_default_actions.append(miss_action_name_id)
+                for default_action in possible_default_actions:
+                    if hit_miss_table:
+                        tmp_act = '__MISS__'
+                    else:
+                        tmp_act = default_action
+                    next_table = table.next_tables[tmp_act]
+                    logging.debug("default_action='%s'"
+                                  " is not tableonly, thus adding it"
+                                  " as a miss table action"
+                                  " with next table '%s'",
+                                  default_action, next_table)
+                    # TBD: I suspect that maybe the last parameter
+                    # that is 'None' below should sometimes have a
+                    # different value, e.g. if the default action has
+                    # action parameters.  Should write a test P4_16
+                    # program that tries to cause that to happen and
+                    # see what the BMv2 JSON file looks like.
+                    transition = ActionTransition(
+                        table_name, next_table,
+                        self.hlir.actions[default_action],
+                        True, None)
+                    graph.add_edge(table_name, next_table, transition)
+                    next_tables.append(next_table)
+
                 logging.debug("End generate_CFG processing for table '%s'",
                               table_name)
             else:

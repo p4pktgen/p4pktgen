@@ -876,7 +876,15 @@ class Translator:
                           table_name, transition.action,
                           transition.action_data,
                           transition.prev_const_action_transition)
+            # See the code in this file beginning with the line
+            # 'other_constraints = []' in the function
+            # generate_parser_constraints for reference.  We want to
+            # do something similar to that here: We want the packet
+            # fields and metadata _not_ to match any earlier entries
+            # in the 'const entries' list, and we want them _to_ match
+            # the current entry being considered.
             raise Exception('ConstActionTransition is not yet supported')
+
         else:
             raise Exception('Transition type {} not supported!'.format(
                 transition.transition_type))
