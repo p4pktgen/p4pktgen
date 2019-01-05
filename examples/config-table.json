@@ -3,7 +3,10 @@
     {
       "name" : "scalars_0",
       "id" : 0,
-      "fields" : []
+      "fields" : [
+        ["metadata._fwd_metadata_l2ptr0", 32, false],
+        ["metadata._fwd_metadata_out_bd1", 24, false]
+      ]
     },
     {
       "name" : "standard_metadata",
@@ -59,14 +62,6 @@
         ["srcAddr", 32, false],
         ["dstAddr", 32, false]
       ]
-    },
-    {
-      "name" : "fwd_metadata_t",
-      "id" : 4,
-      "fields" : [
-        ["l2ptr", 32, false],
-        ["out_bd", 24, false]
-      ]
     }
   ],
   "headers" : [
@@ -97,13 +92,6 @@
       "header_type" : "ipv4_t",
       "metadata" : false,
       "pi_omit" : true
-    },
-    {
-      "name" : "userMetadata.fwd_metadata",
-      "id" : 4,
-      "header_type" : "fwd_metadata_t",
-      "metadata" : true,
-      "pi_omit" : true
     }
   ],
   "header_stacks" : [],
@@ -112,12 +100,12 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5]
   ],
   "enums" : [],
   "parsers" : [
@@ -359,7 +347,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["userMetadata.fwd_metadata", "l2ptr"]
+              "value" : ["scalars", "metadata._fwd_metadata_l2ptr0"]
             },
             {
               "type" : "runtime_data",
@@ -398,7 +386,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["userMetadata.fwd_metadata", "out_bd"]
+              "value" : ["scalars", "metadata._fwd_metadata_out_bd1"]
             },
             {
               "type" : "runtime_data",
@@ -598,7 +586,7 @@
             {
               "match_type" : "exact",
               "name" : "meta.fwd_metadata.l2ptr",
-              "target" : ["userMetadata.fwd_metadata", "l2ptr"],
+              "target" : ["scalars", "metadata._fwd_metadata_l2ptr0"],
               "mask" : null
             }
           ],
@@ -650,7 +638,7 @@
             {
               "match_type" : "exact",
               "name" : "meta.fwd_metadata.out_bd",
-              "target" : ["userMetadata.fwd_metadata", "out_bd"],
+              "target" : ["scalars", "metadata._fwd_metadata_out_bd1"],
               "mask" : null
             }
           ],
@@ -692,6 +680,8 @@
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
       "calculation" : "calc",
+      "verify" : false,
+      "update" : true,
       "if_cond" : {
         "type" : "expression",
         "value" : {
@@ -719,6 +709,8 @@
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
       "calculation" : "calc_0",
+      "verify" : true,
+      "update" : false,
       "if_cond" : {
         "type" : "expression",
         "value" : {

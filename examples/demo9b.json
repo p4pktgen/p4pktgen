@@ -3,7 +3,12 @@
     {
       "name" : "scalars_0",
       "id" : 0,
-      "fields" : []
+      "fields" : [
+        ["metadata._fwd_metadata_l2ptr0", 24, false],
+        ["metadata._fwd_metadata_out_bd1", 24, false],
+        ["metadata._l3_metadata_lkp_outer_l4_sport2", 16, false],
+        ["metadata._l3_metadata_lkp_outer_l4_dport3", 16, false]
+      ]
     },
     {
       "name" : "standard_metadata",
@@ -99,22 +104,6 @@
         ["length", 16, false],
         ["checksum", 16, false]
       ]
-    },
-    {
-      "name" : "fwd_metadata_t",
-      "id" : 7,
-      "fields" : [
-        ["l2ptr", 24, false],
-        ["out_bd", 24, false]
-      ]
-    },
-    {
-      "name" : "l3_metadata_t",
-      "id" : 8,
-      "fields" : [
-        ["lkp_outer_l4_sport", 16, false],
-        ["lkp_outer_l4_dport", 16, false]
-      ]
     }
   ],
   "headers" : [
@@ -166,20 +155,6 @@
       "header_type" : "udp_t",
       "metadata" : false,
       "pi_omit" : true
-    },
-    {
-      "name" : "userMetadata.fwd_metadata",
-      "id" : 7,
-      "header_type" : "fwd_metadata_t",
-      "metadata" : true,
-      "pi_omit" : true
-    },
-    {
-      "name" : "userMetadata.l3_metadata",
-      "id" : 8,
-      "header_type" : "l3_metadata_t",
-      "metadata" : true,
-      "pi_omit" : true
     }
   ],
   "header_stacks" : [],
@@ -188,13 +163,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6],
-    ["BadIPv6Version", 7]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["BadIPv6Version", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -348,7 +323,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_sport"]
+                  "value" : ["scalars", "metadata._l3_metadata_lkp_outer_l4_sport2"]
                 },
                 {
                   "type" : "field",
@@ -361,7 +336,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_dport"]
+                  "value" : ["scalars", "metadata._l3_metadata_lkp_outer_l4_dport3"]
                 },
                 {
                   "type" : "field",
@@ -397,7 +372,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_sport"]
+                  "value" : ["scalars", "metadata._l3_metadata_lkp_outer_l4_sport2"]
                 },
                 {
                   "type" : "field",
@@ -410,7 +385,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["userMetadata.l3_metadata", "lkp_outer_l4_dport"]
+                  "value" : ["scalars", "metadata._l3_metadata_lkp_outer_l4_dport3"]
                 },
                 {
                   "type" : "field",

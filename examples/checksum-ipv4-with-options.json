@@ -4,14 +4,13 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["tmp_0", 9, false],
-        ["tmp_1", 9, false],
-        ["tmp_2", 9, false],
-        ["tmp_3", 32, false],
         ["tmp_4", 8, false],
-        ["tmp_5", 1, false],
-        ["tmp_6", 1, false],
-        ["_padding_0", 3, false]
+        ["tmp_0", 32, false],
+        ["tmp_1", 1, false],
+        ["tmp_2", 1, false],
+        ["metadata._mystruct1_a0", 4, false],
+        ["metadata._mystruct1_b1", 4, false],
+        ["_padding_0", 6, false]
       ]
     },
     {
@@ -95,14 +94,6 @@
         ["checksum", 16, false],
         ["urgentPtr", 16, false]
       ]
-    },
-    {
-      "name" : "mystruct1_t",
-      "id" : 6,
-      "fields" : [
-        ["a", 4, false],
-        ["b", 4, false]
-      ]
     }
   ],
   "headers" : [
@@ -147,13 +138,6 @@
       "header_type" : "tcp_t",
       "metadata" : false,
       "pi_omit" : true
-    },
-    {
-      "name" : "userMetadata.mystruct1",
-      "id" : 6,
-      "header_type" : "mystruct1_t",
-      "metadata" : true,
-      "pi_omit" : true
     }
   ],
   "header_stacks" : [],
@@ -162,15 +146,15 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6],
-    ["IPv4HeaderTooShort", 7],
-    ["IPv4IncorrectVersion", 8],
-    ["IPv4ChecksumError", 9]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["IPv4HeaderTooShort", 6],
+    ["IPv4IncorrectVersion", 7],
+    ["IPv4ChecksumError", 8]
   ],
   "enums" : [],
   "parsers" : [
@@ -331,124 +315,86 @@
                       "left" : {
                         "type" : "expression",
                         "value" : {
-                          "op" : "<<",
+                          "op" : "&",
                           "left" : {
                             "type" : "expression",
                             "value" : {
-                              "op" : "&",
+                              "op" : "<<",
                               "left" : {
-                                "type" : "field",
-                                "value" : ["tmp", "ihl"]
+                                "type" : "expression",
+                                "value" : {
+                                  "op" : "&",
+                                  "left" : {
+                                    "type" : "expression",
+                                    "value" : {
+                                      "op" : "+",
+                                      "left" : {
+                                        "type" : "expression",
+                                        "value" : {
+                                          "op" : "&",
+                                          "left" : {
+                                            "type" : "expression",
+                                            "value" : {
+                                              "op" : "<<",
+                                              "left" : {
+                                                "type" : "expression",
+                                                "value" : {
+                                                  "op" : "&",
+                                                  "left" : {
+                                                    "type" : "expression",
+                                                    "value" : {
+                                                      "op" : "&",
+                                                      "left" : {
+                                                        "type" : "field",
+                                                        "value" : ["scalars", "tmp_4"]
+                                                      },
+                                                      "right" : {
+                                                        "type" : "hexstr",
+                                                        "value" : "0x0f"
+                                                      }
+                                                    }
+                                                  },
+                                                  "right" : {
+                                                    "type" : "hexstr",
+                                                    "value" : "0x01ff"
+                                                  }
+                                                }
+                                              },
+                                              "right" : {
+                                                "type" : "hexstr",
+                                                "value" : "0x2"
+                                              }
+                                            }
+                                          },
+                                          "right" : {
+                                            "type" : "hexstr",
+                                            "value" : "0x01ff"
+                                          }
+                                        }
+                                      },
+                                      "right" : {
+                                        "type" : "hexstr",
+                                        "value" : "0x01ec"
+                                      }
+                                    }
+                                  },
+                                  "right" : {
+                                    "type" : "hexstr",
+                                    "value" : "0x01ff"
+                                  }
+                                }
                               },
                               "right" : {
                                 "type" : "hexstr",
-                                "value" : "0x01ff"
+                                "value" : "0x3"
                               }
                             }
                           },
                           "right" : {
                             "type" : "hexstr",
-                            "value" : "0x2"
+                            "value" : "0x01ff"
                           }
                         }
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01ff"
-                      }
-                    }
-                  }
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["scalars", "tmp_1"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "&",
-                      "left" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : "+",
-                          "left" : {
-                            "type" : "field",
-                            "value" : ["scalars", "tmp_0"]
-                          },
-                          "right" : {
-                            "type" : "hexstr",
-                            "value" : "0x01ec"
-                          }
-                        }
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01ff"
-                      }
-                    }
-                  }
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["scalars", "tmp_2"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "&",
-                      "left" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : "<<",
-                          "left" : {
-                            "type" : "field",
-                            "value" : ["scalars", "tmp_1"]
-                          },
-                          "right" : {
-                            "type" : "hexstr",
-                            "value" : "0x3"
-                          }
-                        }
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0x01ff"
-                      }
-                    }
-                  }
-                }
-              ],
-              "op" : "set"
-            },
-            {
-              "parameters" : [
-                {
-                  "type" : "field",
-                  "value" : ["scalars", "tmp_3"]
-                },
-                {
-                  "type" : "expression",
-                  "value" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "&",
-                      "left" : {
-                        "type" : "field",
-                        "value" : ["scalars", "tmp_2"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -470,7 +416,7 @@
                   "type" : "expression",
                   "value" : {
                     "type" : "field",
-                    "value" : ["scalars", "tmp_3"]
+                    "value" : ["scalars", "tmp_0"]
                   }
                 }
               ],
@@ -480,7 +426,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_5"]
+                  "value" : ["scalars", "tmp_1"]
                 },
                 {
                   "type" : "expression",
@@ -518,13 +464,13 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_5"]
+                      "value" : ["scalars", "tmp_1"]
                     }
                   }
                 },
                 {
                   "type" : "hexstr",
-                  "value" : "8"
+                  "value" : "7"
                 }
               ],
               "op" : "verify"
@@ -533,7 +479,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "tmp_6"]
+                  "value" : ["scalars", "tmp_2"]
                 },
                 {
                   "type" : "expression",
@@ -571,13 +517,13 @@
                     "left" : null,
                     "right" : {
                       "type" : "field",
-                      "value" : ["scalars", "tmp_6"]
+                      "value" : ["scalars", "tmp_2"]
                     }
                   }
                 },
                 {
                   "type" : "hexstr",
-                  "value" : "7"
+                  "value" : "6"
                 }
               ],
               "op" : "verify"
