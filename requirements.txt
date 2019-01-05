@@ -1,8 +1,8 @@
 enum34==1.1.6
 functools32==3.2.3.post2
 graphviz==0.8
-pytest==3.2.2
-scapy==2.3.3
+pytest==4.0.2
+scapy==2.4.0
 subprocess32==3.5.3
 thrift==0.11.0
-z3-solver==4.5.1.0.post2
+z3-solver==4.8.0.0.post1
