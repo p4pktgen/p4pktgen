@@ -5,7 +5,6 @@ from collections import defaultdict, OrderedDict
 import time
 from random import shuffle
 
-import matplotlib.pyplot as plt
 from graphviz import Digraph
 
 from p4_top import P4_Top
