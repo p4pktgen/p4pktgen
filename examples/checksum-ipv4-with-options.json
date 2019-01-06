@@ -146,15 +146,15 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 0],
-    ["PacketTooShort", 1],
-    ["NoMatch", 2],
-    ["StackOutOfBounds", 3],
-    ["HeaderTooShort", 4],
-    ["ParserTimeout", 5],
-    ["IPv4HeaderTooShort", 6],
-    ["IPv4IncorrectVersion", 7],
-    ["IPv4ChecksumError", 8]
+    ["NoError", 1],
+    ["PacketTooShort", 2],
+    ["NoMatch", 3],
+    ["StackOutOfBounds", 4],
+    ["HeaderTooShort", 5],
+    ["ParserTimeout", 6],
+    ["IPv4HeaderTooShort", 7],
+    ["IPv4IncorrectVersion", 8],
+    ["IPv4ChecksumError", 9]
   ],
   "enums" : [],
   "parsers" : [
@@ -470,7 +470,7 @@
                 },
                 {
                   "type" : "hexstr",
-                  "value" : "7"
+                  "value" : "8"
                 }
               ],
               "op" : "verify"
@@ -523,7 +523,7 @@
                 },
                 {
                   "type" : "hexstr",
-                  "value" : "6"
+                  "value" : "7"
                 }
               ],
               "op" : "verify"
