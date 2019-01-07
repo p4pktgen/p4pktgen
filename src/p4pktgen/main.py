@@ -450,6 +450,8 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         logging.info("Analyzing parser_path %d of %d: %s"
                      "" % (parser_path_num, len(parser_paths), parser_path))
         if not translator.generate_parser_constraints(parser_path):
+            logging.info("Could not find any packet to satisfy parser path: %s"
+                         "" % (parser_path))
             # Skip unsatisfiable parser paths
             continue
 
