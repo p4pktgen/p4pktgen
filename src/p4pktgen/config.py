@@ -14,6 +14,7 @@ class Config:
         self.record_statistics = False
         self.allow_unimplemented_primitives = False
         self.dump_test_case = False
+        self.show_parser_paths = False
         self.no_packet_length_errs = no_packet_length_errs
         self.run_simple_switch = run_simple_switch
         self.random_tlubf = False
@@ -64,6 +65,7 @@ class Config:
         self.record_statistics = args.record_statistics
         self.allow_unimplemented_primitives = args.allow_unimplemented_primitives
         self.dump_test_case = args.dump_test_case
+        self.show_parser_paths = args.show_parser_paths
         self.no_packet_length_errs = not args.enable_packet_length_errors
         self.run_simple_switch = args.run_simple_switch
         # TBD: Make the values below configurable via command line
@@ -99,6 +101,9 @@ class Config:
 
     def get_dump_test_case(self):
         return self.dump_test_case
+
+    def get_show_parser_paths(self):
+        return self.show_parser_paths
 
     def get_no_packet_length_errs(self):
         return self.no_packet_length_errs
