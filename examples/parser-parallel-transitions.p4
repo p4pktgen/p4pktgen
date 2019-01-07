@@ -64,16 +64,16 @@ parser ParserImpl(packet_in packet,
     state parse_ethernet {
         packet.extract(hdr.ethernet);
         transition select(hdr.ethernet.etherType) {
-            0x0800: parse_ipv4;
+            0x0800: parse_ipv4;             // transition 1
             // No, none of the below are correct ether type of IPv4
             // packets.  This program is only intended as a test case
             // for a current issue with p4pktgen, where it always
             // generates test cases for the first of several possible
             // transitions from parser state A to parser state B.
-            0x0900: parse_ipv4;
-            0xff00 &&& 0xff00: parse_ipv4;
-            0x0ff0 &&& 0x0ff0: parse_ipv4;
-            default: accept;
+            0x0900: parse_ipv4;             // transition 2
+            0xff00 &&& 0xff00: parse_ipv4;  // transition 3
+            0x0ff0 &&& 0x0ff0: parse_ipv4;  // transition 4
+            default: accept;                // transition 5
         }
     }
     state parse_ipv4 {
@@ -87,14 +87,14 @@ control ingress(inout headers hdr,
                 inout standard_metadata_t standard_metadata) {
 
     apply {
-        if (hdr.ethernet.etherType == 0x0800) {
-            meta.fwd_metadata.l2ptr = 1;
-        } else if (hdr.ethernet.etherType == 0x0900) {
-            meta.fwd_metadata.l2ptr = 2;
-        } else if (hdr.ethernet.etherType[11:8] == 0xf) {
-            meta.fwd_metadata.l2ptr = 3;
+        if (hdr.ethernet.etherType == 0x0800) {            // condition 6
+            meta.fwd_metadata.l2ptr = 1;    // node A
+        } else if (hdr.ethernet.etherType == 0x0900) {     // condition 7
+            meta.fwd_metadata.l2ptr = 2;    // node B
+        } else if (hdr.ethernet.etherType[11:8] == 0xf) {  // condition 8
+            meta.fwd_metadata.l2ptr = 3;    // node C
         } else {
-            meta.fwd_metadata.l2ptr = 4;
+            meta.fwd_metadata.l2ptr = 4;    // node D
         }
     }
 }
