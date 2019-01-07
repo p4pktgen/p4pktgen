@@ -631,7 +631,7 @@ class Translator:
 
     def parser_transition_key_constraint(self, sym_transition_keys, value,
                                          mask):
-        # value should be int
+        # value should be int or long
         # mask should be int, long, or None
 
         # In the JSON file, if there are multiple fields in the
@@ -644,7 +644,8 @@ class Translator:
         # See https://github.com/p4lang/behavioral-model/issues/441 for a
         # reference to the relevant part of the behavioral-model JSON
         # spec.
-        assert mask is None or isinstance(mask, int) or isinstance(mask, long)
+        assert isinstance(value, int) or isinstance(value, long)
+        assert isinstance(mask, int) or isinstance(mask, long) or mask is None
         assert len(sym_transition_keys) >= 1
         bitvecs = []
         sz_total = 0
