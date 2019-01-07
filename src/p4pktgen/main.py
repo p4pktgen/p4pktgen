@@ -352,16 +352,16 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
     logging.debug("graph has %d sources %s, %d sinks %s"
                   "" % (len(graph_sources), graph_sources, len(graph_sinks),
                         graph_sinks))
-    # tmp_time = time.time()
-    # graph_lcas = {}
-    # for v in graph.get_nodes():
-    #     graph_lcas[v] = graph.lowest_common_ancestor(v)
-    # lca_comp_time = time.time() - tmp_time
-    # logging.info("%.3f sec to compute lowest common ancestors for ingress",
-    #              lca_comp_time)
 
     # Graphviz visualization
     if generate_graphs:
+        graph_lcas = {}
+        #tmp_time = time.time()
+        #for v in graph.get_nodes():
+        #    graph_lcas[v] = graph.lowest_common_ancestor(v)
+        #lca_comp_time = time.time() - tmp_time
+        #logging.info("%.3f sec to compute lowest common ancestors for ingress",
+        #             lca_comp_time)
         generate_graphviz_graph(in_pipeline, graph, lcas=graph_lcas)
         eg_pipeline = hlir.pipelines['egress']
         eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
