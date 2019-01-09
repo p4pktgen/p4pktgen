@@ -208,6 +208,49 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    def check_parser_impossible_transitions(self):
+        Config().load_test_defaults()
+        # This test case has at least one parser path that is
+        # impossible to traverse, and several that are possible that,
+        # when taken, make certain paths through ingress impossible.
+        # Note that there are no test cases containing the state
+        # parse_unreachable_state in the parser paths.
+        results = process_json_file(
+            'examples/parser-impossible-transitions.json')
+        expected_results = {
+            ('start', 'parse_good', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_good', 'sink', (u'node_2', (True, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_3', (False, (u'parser-impossible-transitions.p4', 93, u'hdr.ethernet.etherType_lsb == 4')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_good', 'sink', (u'node_2', (True, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_3', (True, (u'parser-impossible-transitions.p4', 93, u'hdr.ethernet.etherType_lsb == 4'))), (u'tbl_act', u'act')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_bad4', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (False, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad4', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (True, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4'))), (u'tbl_act_1', u'act_1')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_bad4', 'sink', (u'node_2', (True, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad3', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (False, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad3', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (True, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4'))), (u'tbl_act_1', u'act_1')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_bad3', 'sink', (u'node_2', (True, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad2', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (False, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad2', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (True, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4'))), (u'tbl_act_1', u'act_1')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_bad2', 'sink', (u'node_2', (True, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad1', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (False, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_bad1', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0'))), (u'node_6', (True, (u'parser-impossible-transitions.p4', 99, u'meta.fwd_metadata.parse_status <= 4'))), (u'tbl_act_1', u'act_1')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_bad1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0')))):
+            TestPathResult.NO_PACKET_FOUND
+        }
+        assert results == expected_results
+
     # Fill in expected results for this test case, and change name to
     # have prefix 'check_' instead of 'xfail_', after p4pktgen has
     # been modified to generate correct results for it.  It generates
