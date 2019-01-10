@@ -17,7 +17,8 @@ for j in demo1b.p4 \
     demo1_rm_header.p4 \
     add-remove-header.p4 \
     checksum-ipv4-with-options.p4 \
-    parser-impossible-transitions.p4
+    parser-impossible-transitions.p4 \
+    parser-impossible-transitions2.p4
 do
     p4c --target bmv2 --arch v1model ${j}
 done
