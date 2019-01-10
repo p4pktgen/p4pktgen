@@ -1,0 +1,1064 @@
+{
+  "header_types" : [
+    {
+      "name" : "scalars_0",
+      "id" : 0,
+      "fields" : [
+        ["metadata._fwd_metadata_parse_status0", 8, false]
+      ]
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 1,
+      "fields" : [
+        ["ingress_port", 9, false],
+        ["egress_spec", 9, false],
+        ["egress_port", 9, false],
+        ["clone_spec", 32, false],
+        ["instance_type", 32, false],
+        ["drop", 1, false],
+        ["recirculate_port", 16, false],
+        ["packet_length", 32, false],
+        ["enq_timestamp", 32, false],
+        ["enq_qdepth", 19, false],
+        ["deq_timedelta", 32, false],
+        ["deq_qdepth", 19, false],
+        ["ingress_global_timestamp", 48, false],
+        ["egress_global_timestamp", 48, false],
+        ["lf_field_list", 32, false],
+        ["mcast_grp", 16, false],
+        ["resubmit_flag", 32, false],
+        ["egress_rid", 16, false],
+        ["checksum_error", 1, false],
+        ["recirculate_flag", 32, false],
+        ["parser_error", 32, false],
+        ["_padding", 5, false]
+      ]
+    },
+    {
+      "name" : "ethernet_t",
+      "id" : 2,
+      "fields" : [
+        ["dstAddr", 48, false],
+        ["srcAddr", 48, false],
+        ["etherType", 16, false]
+      ]
+    },
+    {
+      "name" : "h1_t",
+      "id" : 3,
+      "fields" : [
+        ["x", 16, false]
+      ]
+    },
+    {
+      "name" : "h2_t",
+      "id" : 4,
+      "fields" : [
+        ["x", 16, false]
+      ]
+    },
+    {
+      "name" : "h3_t",
+      "id" : 5,
+      "fields" : [
+        ["x", 16, false]
+      ]
+    },
+    {
+      "name" : "h4_t",
+      "id" : 6,
+      "fields" : [
+        ["x", 16, false]
+      ]
+    },
+    {
+      "name" : "h5_t",
+      "id" : 7,
+      "fields" : [
+        ["x", 16, false]
+      ]
+    }
+  ],
+  "headers" : [
+    {
+      "name" : "scalars",
+      "id" : 0,
+      "header_type" : "scalars_0",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "standard_metadata",
+      "id" : 1,
+      "header_type" : "standard_metadata",
+      "metadata" : true,
+      "pi_omit" : true
+    },
+    {
+      "name" : "ethernet",
+      "id" : 2,
+      "header_type" : "ethernet_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "h1",
+      "id" : 3,
+      "header_type" : "h1_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "h2",
+      "id" : 4,
+      "header_type" : "h2_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "h3",
+      "id" : 5,
+      "header_type" : "h3_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "h4",
+      "id" : 6,
+      "header_type" : "h4_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "h5",
+      "id" : 7,
+      "header_type" : "h5_t",
+      "metadata" : false,
+      "pi_omit" : true
+    }
+  ],
+  "header_stacks" : [],
+  "header_union_types" : [],
+  "header_unions" : [],
+  "header_union_stacks" : [],
+  "field_lists" : [],
+  "errors" : [
+    ["NoError", 1],
+    ["PacketTooShort", 2],
+    ["NoMatch", 3],
+    ["StackOutOfBounds", 4],
+    ["HeaderTooShort", 5],
+    ["ParserTimeout", 6]
+  ],
+  "enums" : [],
+  "parsers" : [
+    {
+      "name" : "parser",
+      "id" : 0,
+      "init_state" : "start",
+      "parse_states" : [
+        {
+          "name" : "start",
+          "id" : 0,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "metadata._fwd_metadata_parse_status0"]
+                },
+                {
+                  "type" : "hexstr",
+                  "value" : "0xff"
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "ethernet"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x0a00",
+              "mask" : "0x0f00",
+              "next_state" : "parse_h1"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0a50",
+              "mask" : "0x0ff0",
+              "next_state" : "parse_h2_unreachable"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0a03",
+              "mask" : "0x0f0f",
+              "next_state" : "parse_h3_unreachable"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x7a53",
+              "mask" : "0xffff",
+              "next_state" : "parse_h4_unreachable"
+            },
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : "parse_h5"
+            }
+          ],
+          "transition_key" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "etherType"]
+            }
+          ]
+        },
+        {
+          "name" : "parse_h1",
+          "id" : 1,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "h1"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_h2_unreachable",
+          "id" : 2,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "h2"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_h3_unreachable",
+          "id" : 3,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "h3"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_h4_unreachable",
+          "id" : 4,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "h4"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        },
+        {
+          "name" : "parse_h5",
+          "id" : 5,
+          "parser_ops" : [
+            {
+              "parameters" : [
+                {
+                  "type" : "regular",
+                  "value" : "h5"
+                }
+              ],
+              "op" : "extract"
+            }
+          ],
+          "transitions" : [
+            {
+              "value" : "default",
+              "mask" : null,
+              "next_state" : null
+            }
+          ],
+          "transition_key" : []
+        }
+      ]
+    }
+  ],
+  "parse_vsets" : [],
+  "deparsers" : [
+    {
+      "name" : "deparser",
+      "id" : 0,
+      "source_info" : {
+        "filename" : "parser-impossible-transitions2.p4",
+        "line" : 146,
+        "column" : 8,
+        "source_fragment" : "DeparserImpl"
+      },
+      "order" : ["ethernet", "h1", "h2", "h3", "h4", "h5"]
+    }
+  ],
+  "meter_arrays" : [],
+  "counter_arrays" : [],
+  "register_arrays" : [],
+  "calculations" : [],
+  "learn_lists" : [],
+  "actions" : [
+    {
+      "name" : "act",
+      "id" : 0,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000beef0001"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 113,
+            "column" : 16,
+            "source_fragment" : "hdr.ethernet.dstAddr = 0xbeef0001"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_0",
+      "id" : 1,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000beef0005"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 115,
+            "column" : 16,
+            "source_fragment" : "hdr.ethernet.dstAddr = 0xbeef0005"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_1",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000dead0002"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 119,
+            "column" : 20,
+            "source_fragment" : "hdr.ethernet.dstAddr = 0xdead0002"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_2",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000dead0003"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 121,
+            "column" : 20,
+            "source_fragment" : "hdr.ethernet.dstAddr = 0xdead0003"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_3",
+      "id" : 4,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000dead0004"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 123,
+            "column" : 20,
+            "source_fragment" : "hdr.ethernet.dstAddr = 0xdead0004"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_4",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "dstAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x0000ffffffff"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 111,
+            "column" : 12,
+            "source_fragment" : "hdr.ethernet.dstAddr = 0xffffffff"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_5",
+      "id" : 6,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "srcAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x000000000001"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 130,
+            "column" : 16,
+            "source_fragment" : "hdr.ethernet.srcAddr = 1"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "act_6",
+      "id" : 7,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["ethernet", "srcAddr"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x000000000000"
+            }
+          ],
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 132,
+            "column" : 16,
+            "source_fragment" : "hdr.ethernet.srcAddr = 0"
+          }
+        }
+      ]
+    }
+  ],
+  "pipelines" : [
+    {
+      "name" : "ingress",
+      "id" : 0,
+      "source_info" : {
+        "filename" : "parser-impossible-transitions2.p4",
+        "line" : 105,
+        "column" : 8,
+        "source_fragment" : "ingress"
+      },
+      "init_table" : "node_2",
+      "tables" : [
+        {
+          "name" : "tbl_act",
+          "id" : 0,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [5],
+          "actions" : ["act_4"],
+          "base_default_next" : "node_4",
+          "next_tables" : {
+            "act_4" : "node_4"
+          },
+          "default_entry" : {
+            "action_id" : 5,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_0",
+          "id" : 1,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [0],
+          "actions" : ["act"],
+          "base_default_next" : "node_15",
+          "next_tables" : {
+            "act" : "node_15"
+          },
+          "default_entry" : {
+            "action_id" : 0,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_1",
+          "id" : 2,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [1],
+          "actions" : ["act_0"],
+          "base_default_next" : "node_15",
+          "next_tables" : {
+            "act_0" : "node_15"
+          },
+          "default_entry" : {
+            "action_id" : 1,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_2",
+          "id" : 3,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [2],
+          "actions" : ["act_1"],
+          "base_default_next" : "node_15",
+          "next_tables" : {
+            "act_1" : "node_15"
+          },
+          "default_entry" : {
+            "action_id" : 2,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_3",
+          "id" : 4,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [3],
+          "actions" : ["act_2"],
+          "base_default_next" : "node_15",
+          "next_tables" : {
+            "act_2" : "node_15"
+          },
+          "default_entry" : {
+            "action_id" : 3,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_4",
+          "id" : 5,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [4],
+          "actions" : ["act_3"],
+          "base_default_next" : "node_15",
+          "next_tables" : {
+            "act_3" : "node_15"
+          },
+          "default_entry" : {
+            "action_id" : 4,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_5",
+          "id" : 6,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [6],
+          "actions" : ["act_5"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "act_5" : null
+          },
+          "default_entry" : {
+            "action_id" : 6,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_act_6",
+          "id" : 7,
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [7],
+          "actions" : ["act_6"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "act_6" : null
+          },
+          "default_entry" : {
+            "action_id" : 7,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        }
+      ],
+      "action_profiles" : [],
+      "conditionals" : [
+        {
+          "name" : "node_2",
+          "id" : 0,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 110,
+            "column" : 12,
+            "source_fragment" : "hdr.ethernet.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["ethernet", "$valid$"]
+              }
+            }
+          },
+          "false_next" : null,
+          "true_next" : "tbl_act"
+        },
+        {
+          "name" : "node_4",
+          "id" : 1,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 112,
+            "column" : 16,
+            "source_fragment" : "hdr.h1.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["h1", "$valid$"]
+              }
+            }
+          },
+          "true_next" : "tbl_act_0",
+          "false_next" : "node_6"
+        },
+        {
+          "name" : "node_6",
+          "id" : 2,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 114,
+            "column" : 23,
+            "source_fragment" : "hdr.h5.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["h5", "$valid$"]
+              }
+            }
+          },
+          "true_next" : "tbl_act_1",
+          "false_next" : "node_8"
+        },
+        {
+          "name" : "node_8",
+          "id" : 3,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 116,
+            "column" : 23,
+            "source_fragment" : "hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "or",
+              "left" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "or",
+                  "left" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
+                        "type" : "field",
+                        "value" : ["h2", "$valid$"]
+                      }
+                    }
+                  },
+                  "right" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "d2b",
+                      "left" : null,
+                      "right" : {
+                        "type" : "field",
+                        "value" : ["h3", "$valid$"]
+                      }
+                    }
+                  }
+                }
+              },
+              "right" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["h4", "$valid$"]
+                  }
+                }
+              }
+            }
+          },
+          "true_next" : "node_9",
+          "false_next" : "node_15"
+        },
+        {
+          "name" : "node_9",
+          "id" : 4,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 118,
+            "column" : 20,
+            "source_fragment" : "hdr.h2.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["h2", "$valid$"]
+              }
+            }
+          },
+          "true_next" : "tbl_act_2",
+          "false_next" : "node_11"
+        },
+        {
+          "name" : "node_11",
+          "id" : 5,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 120,
+            "column" : 27,
+            "source_fragment" : "hdr.h3.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["h3", "$valid$"]
+              }
+            }
+          },
+          "true_next" : "tbl_act_3",
+          "false_next" : "node_13"
+        },
+        {
+          "name" : "node_13",
+          "id" : 6,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 122,
+            "column" : 27,
+            "source_fragment" : "hdr.h4.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["h4", "$valid$"]
+              }
+            }
+          },
+          "true_next" : "tbl_act_4",
+          "false_next" : "node_15"
+        },
+        {
+          "name" : "node_15",
+          "id" : 7,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 126,
+            "column" : 16,
+            "source_fragment" : "hdr.ethernet.dstAddr == 0xffffffff"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "==",
+              "left" : {
+                "type" : "field",
+                "value" : ["ethernet", "dstAddr"]
+              },
+              "right" : {
+                "type" : "hexstr",
+                "value" : "0x0000ffffffff"
+              }
+            }
+          },
+          "true_next" : "tbl_act_5",
+          "false_next" : "tbl_act_6"
+        }
+      ]
+    },
+    {
+      "name" : "egress",
+      "id" : 1,
+      "source_info" : {
+        "filename" : "parser-impossible-transitions2.p4",
+        "line" : 138,
+        "column" : 8,
+        "source_fragment" : "egress"
+      },
+      "init_table" : null,
+      "tables" : [],
+      "action_profiles" : [],
+      "conditionals" : []
+    }
+  ],
+  "checksums" : [],
+  "force_arith" : [],
+  "extern_instances" : [],
+  "field_aliases" : [
+    [
+      "queueing_metadata.enq_timestamp",
+      ["standard_metadata", "enq_timestamp"]
+    ],
+    [
+      "queueing_metadata.enq_qdepth",
+      ["standard_metadata", "enq_qdepth"]
+    ],
+    [
+      "queueing_metadata.deq_timedelta",
+      ["standard_metadata", "deq_timedelta"]
+    ],
+    [
+      "queueing_metadata.deq_qdepth",
+      ["standard_metadata", "deq_qdepth"]
+    ],
+    [
+      "intrinsic_metadata.ingress_global_timestamp",
+      ["standard_metadata", "ingress_global_timestamp"]
+    ],
+    [
+      "intrinsic_metadata.egress_global_timestamp",
+      ["standard_metadata", "egress_global_timestamp"]
+    ],
+    [
+      "intrinsic_metadata.lf_field_list",
+      ["standard_metadata", "lf_field_list"]
+    ],
+    [
+      "intrinsic_metadata.mcast_grp",
+      ["standard_metadata", "mcast_grp"]
+    ],
+    [
+      "intrinsic_metadata.resubmit_flag",
+      ["standard_metadata", "resubmit_flag"]
+    ],
+    [
+      "intrinsic_metadata.egress_rid",
+      ["standard_metadata", "egress_rid"]
+    ],
+    [
+      "intrinsic_metadata.recirculate_flag",
+      ["standard_metadata", "recirculate_flag"]
+    ]
+  ],
+  "program" : "./parser-impossible-transitions2.p4i",
+  "__meta__" : {
+    "version" : [2, 18],
+    "compiler" : "https://github.com/p4lang/p4c"
+  }
+}

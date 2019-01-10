@@ -251,6 +251,58 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    def check_parser_impossible_transitions2_with_epl(self):
+        Config().load_test_defaults(no_packet_length_errs=False)
+        # Similar to the previous test case, this test case has
+        # several parser paths that are impossible to traverse, and
+        # several that are possible.
+        results = process_json_file(
+            'examples/parser-impossible-transitions2.json')
+        expected_results = {
+            ('start', 'sink', (u'node_2', (False, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()')))):
+            TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (False, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'node_8', (False, (u'parser-impossible-transitions2.p4', 116, u'hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()'))), (u'node_15', (False, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'node_8', (False, (u'parser-impossible-transitions2.p4', 116, u'hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()'))), (u'node_15', (True, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff'))), (u'tbl_act_5', u'act_5')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'node_8', (True, (u'parser-impossible-transitions2.p4', 116, u'hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (True, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (True, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (True, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'tbl_act_1', u'act_0'), (u'node_15', (False, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff'))), (u'tbl_act_6', u'act_6')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_h5', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (True, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'tbl_act_1', u'act_0'), (u'node_15', (True, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (False, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'node_8', (False, (u'parser-impossible-transitions2.p4', 116, u'hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()'))), (u'node_15', (False, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'node_8', (False, (u'parser-impossible-transitions2.p4', 116, u'hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()'))), (u'node_15', (True, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff'))), (u'tbl_act_5', u'act_5')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (False, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()'))), (u'node_8', (True, (u'parser-impossible-transitions2.p4', 116, u'hdr.h2.isValid() || hdr.h3.isValid() || hdr.h4.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'node_6', (True, (u'parser-impossible-transitions2.p4', 114, u'hdr.h5.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (True, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (False, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()')))):
+            TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (True, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'tbl_act_0', u'act'), (u'node_15', (False, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff'))), (u'tbl_act_6', u'act_6')):
+            TestPathResult.SUCCESS,
+            ('start', 'parse_h1', 'sink', (u'node_2', (True, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()'))), (u'tbl_act', u'act_4'), (u'node_4', (True, (u'parser-impossible-transitions2.p4', 112, u'hdr.h1.isValid()'))), (u'tbl_act_0', u'act'), (u'node_15', (True, (u'parser-impossible-transitions2.p4', 126, u'hdr.ethernet.dstAddr == 0xffffffff')))):
+            TestPathResult.NO_PACKET_FOUND
+        }
+        assert results == expected_results
+
+
     # Fill in expected results for this test case, and change name to
     # have prefix 'check_' instead of 'xfail_', after p4pktgen has
     # been modified to generate correct results for it.  It generates
