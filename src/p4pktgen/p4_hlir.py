@@ -655,11 +655,30 @@ class Table:
         assert self.default_entry is not None
         return (self.action_id_to_name[self.default_entry.action_id], self.default_entry.action_id)
 
-    def is_const(self):
+    # If the table has 'const entries' in the source code, they will
+    # be stored in table.entries.  The only thing that the control
+    # plane software might be able to change about the behavior of the
+    # table later is the default_action, but then only if it is not
+    # declared const.
+    #
+    # The latest p4c as of 2018-Oct-27 gives a compile time error if a
+    # table has 'const entries = { }' with an empty list of entries.
+    # Thus we can conclude from the BMv2 JSON file that if it
+    # table.entries empty, then there was no 'const entries' declared
+    # in the source code.
+    def has_const_entries(self):
         return len(self.entries) != 0
 
     def has_const_default_entry(self):
         return self.default_entry.action_const
+
+    # Tables with no key fields cannot ever achieve a 'hit' result,
+    # only a 'miss', because no table entries can be added to such a
+    # table.  The open source p4c compiler often creates such tables,
+    # even if they do not exist in the P4 program as written by the
+    # developer.
+    def is_keyless(self):
+        return len(self.key) == 0
 
     def __repr__(self):
         return 'Table {}'.format(self.name)
@@ -704,6 +723,31 @@ class Pipeline:
             conditional = Conditional(conditional_json)
             self.conditionals[conditional.name] = conditional
 
+    # Note 1:
+    # A table in BMv2 JSON file should have next_tables that contains
+    # either:
+    #
+    # (a) One element for each of the table's actions, with the keys
+    #     being exactly the same as the set of all action names/ids.
+    #
+    # or
+    #
+    # (b) Exactly two elements, one with 'action name' '__HIT__', and
+    #     the other with 'action name' '__MISS__'.  This occurs for
+    #     tables that have 'if (table_name.apply().hit)' in the P4
+    #     source code.
+    #
+    # Determine which of these two cases it is, printing an error and
+    # raising an exception if it is neither of these.
+
+    # Note 2:
+    # I have written some small test programs that attempt to have a
+    # non-empty 'const entries' for a table that has no key fields,
+    # and all gave a compilation error.  That is as I would expect.
+    # Raise an exception here if that combination occurs in a BMv2
+    # JSON file, because I don't think it makes any sense, and should
+    # be investigated as a possible bug.
+
     def generate_CFG(self):
         graph = Graph()
         queue = [self.init_table_name]
@@ -718,40 +762,13 @@ class Pipeline:
             queue = queue[1:]
 
             next_tables = []
+            logging.debug("[ --------------------------------------")
             if table_name in self.tables:
                 table = self.tables[table_name]
-
                 logging.debug("Begin generate_CFG processing for table '%s'",
                               table_name)
 
-                # Tables with no key fields cannot ever achieve a
-                # 'hit' result, only a 'miss', because no table
-                # entries can be added to such a table.  The open
-                # source p4c compiler often creates such tables, even
-                # if they do not exist in the P4 program as written by
-                # the developer.
-                empty_key = False
-                if len(table.key) == 0:
-                    empty_key = True
-
-                # A table in BMv2 JSON file should have next_tables
-                # that contains either:
-                #
-                # (a) One element for each of the table's actions,
-                #     with the keys being exactly the same as the set
-                #     of all action names/ids.
-                #
-                # or
-                #
-                # (b) Exactly two elements, one with 'action name'
-                #     '__HIT__', and the other with 'action name'
-                #     '__MISS__'.  This occurs for tables that have
-                #     'if (table_name.apply().hit)' in the P4 source
-                #     code.
-                #
-                # Determine which of these two cases it is, printing
-                # an error and raising an exception if it is neither
-                # of these.
+                # See Note 1 elsewhere in this file
                 action_set = set(table.action_names)
                 next_tables_key_set = set()
                 for action_name_id, next_table in table.next_tables.items():
@@ -765,9 +782,9 @@ class Pipeline:
                         logging.error(msg)
                         raise ValueError(msg)
                     next_tables_key_set.add(action_name)
-                hit_miss_table = False
+                hit_result_table = False
                 if next_tables_key_set == {'__HIT__', '__MISS__'}:
-                    hit_miss_table = True
+                    hit_result_table = True
                 elif next_tables_key_set == action_set:
                     pass
                 else:
@@ -778,35 +795,12 @@ class Pipeline:
                            "" % (table_name, action_set, next_tables_key_set))
                     logging.error(msg)
                     raise ValueError(msg)
-                logging.debug("empty_key=%s hit_miss_table=%s"
-                              " next_tables_key_set=%s",
-                              empty_key, hit_miss_table, next_tables_key_set)
 
-                # If the table has 'const entries' in the source code,
-                # they will be stored in table.entries.  The only
-                # thing that the control plane software might be able
-                # to change about the behavior of the table later is
-                # the default_action, but then only if it is not
-                # declared const.
-
-                # The latest p4c as of 2018-Oct-27 gives a compile
-                # time error if a table has 'const entries = { }' with
-                # an empty list of entries.  Thus we can conclude from
-                # the BMv2 JSON file that if it table.entries empty,
-                # then there was no 'const entries' declared in the
-                # source code.
-                table_has_const_entries = False
                 prev_const_entry = None
                 prev_transition = None
 
-                # I have written some small test programs that attempt
-                # to have a non-empty 'const entries' for a table that
-                # has no key fields, and all gave a compilation error.
-                # That is as I would expect.  Raise an exception here
-                # if that combination occurs in a BMv2 JSON file,
-                # because I don't think it makes any sense, and should
-                # be investigated as a possible bug.
-                if empty_key and len(table.entries) != 0:
+                if table.is_keyless() and table.has_const_entries():
+                    # See Note 2 elsewhere in this file
                     msg = ("Table '%s' has 0 key fields, but %d const entries."
                            "  This seems like it should be impossible."
                            "" % (table_name, len(table.entries)))
@@ -825,9 +819,8 @@ class Pipeline:
                             logging.error(msg)
                             raise ValueError(msg)
 
-                    table_has_const_entries = True
                     action = self.hlir.get_action_by_id(entry.get_action_id())
-                    if hit_miss_table:
+                    if hit_result_table:
                         # All execution paths matching any of the
                         # const entries will be treated as a hit, as
                         # far as determining what code to execute
@@ -847,7 +840,12 @@ class Pipeline:
                     prev_const_entry = entry
                     prev_transition = transition
 
-                if (not empty_key) and (not table_has_const_entries):
+                logging.debug("keyless_table=%s const_entries_table=%s",
+                              table.is_keyless(), table.has_const_entries())
+                logging.debug("hit_result_table=%s next_tables_key_set=%s",
+                              hit_result_table, next_tables_key_set)
+
+                if not (table.is_keyless() or table.has_const_entries()):
                     # then p4pktgen should try each action that is
                     # _not_ annotated with @defaultonly as a table hit
                     # action.
@@ -864,7 +862,7 @@ class Pipeline:
                                           " as a normal table hit action",
                                           hit_action_name_id)
                             continue
-                        if hit_miss_table:
+                        if hit_result_table:
                             tmp_act = '__HIT__'
                         else:
                             tmp_act = hit_action_name_id
@@ -909,7 +907,7 @@ class Pipeline:
                         if not action_is_tableonly:
                             possible_default_actions.append(miss_action_name_id)
                 for default_action in possible_default_actions:
-                    if hit_miss_table:
+                    if hit_result_table:
                         tmp_act = '__MISS__'
                     else:
                         tmp_act = default_action
@@ -949,6 +947,7 @@ class Pipeline:
                     graph.add_edge(table_name, next_name, transition)
                     next_tables.append(next_name)
 
+            logging.debug("] --------------------------------------")
             logging.debug("next_tables='%s'", next_tables)
             for next_table in next_tables:
                 if next_table not in visited and next_table is not None:

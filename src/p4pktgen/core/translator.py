@@ -949,7 +949,7 @@ class Translator:
             ) and transition.transition_type == TransitionType.ACTION_TRANSITION:
                 assert transition.src in self.pipeline.tables
                 table = self.pipeline.tables[transition.src]
-                assert not table.is_const()
+                assert not table.has_const_entries()
                 result = TestPathResult.SUCCESS
                 self.result_history[-2].append(result)
                 return (expected_path, result, None, None)
@@ -1080,7 +1080,7 @@ class Translator:
             # Print table configuration
             for table, action, values, key_data, params, priority in table_configs:
                 # XXX: inelegant
-                const_table = self.pipeline.tables[table].is_const()
+                const_table = self.pipeline.tables[table].has_const_entries()
 
                 params2 = []
                 param_vals = []
@@ -1261,7 +1261,7 @@ class Translator:
 
         for table, action, values, key_data, params, priority in table_configs:
             # XXX: inelegant
-            const_table = self.pipeline.tables[table].is_const()
+            const_table = self.pipeline.tables[table].has_const_entries()
 
             # Extract values of parameters, without the names
             param_vals = map(lambda x: x[1], params)
