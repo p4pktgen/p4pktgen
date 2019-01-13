@@ -680,6 +680,91 @@ class Table:
     def is_keyless(self):
         return len(self.key) == 0
 
+    # Note 1:
+    # A table in BMv2 JSON file should have next_tables that contains
+    # either:
+    #
+    # (a) One element for each of the table's actions, with the keys
+    #     being exactly the same as the set of all action names/ids.
+    #
+    # or
+    #
+    # (b) Exactly two elements, one with 'action name' '__HIT__', and
+    #     the other with 'action name' '__MISS__'.  This occurs for
+    #     tables that have 'if (table_name.apply().hit)' in the P4
+    #     source code.  We will call these a "hit result" table,
+    #     because whether the table had a hit or miss is part of the
+    #     result of applying the table that determines what happens
+    #     next in the program.
+    #
+    # Determine which of these two cases it is, printing an error and
+    # raising an exception if it is neither of these.
+
+    def is_hit_result(self, table_name):
+        # See Note 1 elsewhere in this file
+        action_set = set(self.action_names)
+        next_tables_key_set = set()
+        for action_name_id, next_table in self.next_tables.items():
+            logging.debug("action_name_id=%s next_table='%s'",
+                          action_name_id, next_table)
+            action_name, action_id = action_name_id
+            if action_name in next_tables_key_set:
+                msg = ("Found duplicate action name '%s'"
+                       " in 'next_tables' of table '%s'"
+                       "" % (action_name, table_name))
+                logging.error(msg)
+                raise ValueError(msg)
+            next_tables_key_set.add(action_name)
+        hit_result_table = False
+        if next_tables_key_set == {'__HIT__', '__MISS__'}:
+            hit_result_table = True
+        elif next_tables_key_set == action_set:
+            pass
+        else:
+            msg = ("Table '%s' has set of keys for 'next_tables'"
+                   " that is neither {'__HIT__', '__MISS__'} nor"
+                   " the set of action names %s.  Instead it is"
+                   " %s"
+                   "" % (table_name, action_set, next_tables_key_set))
+            logging.error(msg)
+            raise ValueError(msg)
+
+        logging.debug("keyless_table=%s const_entries_table=%s",
+                      self.is_keyless(), self.has_const_entries())
+        logging.debug("hit_result_table=%s next_tables_key_set=%s",
+                      hit_result_table, next_tables_key_set)
+        return hit_result_table
+
+    # Note 2:
+    # I have written some small test programs that attempt to have a
+    # non-empty 'const entries' for a table that has no key fields,
+    # and all gave a compilation error.  That is as I would expect.
+    # Raise an exception here if that combination occurs in a BMv2
+    # JSON file, because I don't think it makes any sense, and should
+    # be investigated as a possible bug.
+    def sanity_checks_set_1(self, table_name):
+        if self.is_keyless() and self.has_const_entries():
+            # See Note 2 elsewhere in this file
+            msg = ("Table '%s' has 0 key fields, but %d const entries."
+                   "  This seems like it should be impossible."
+                   "" % (table_name, len(self.entries)))
+            logging.error(msg)
+            raise ValueError(msg)
+
+        prev_const_entry = None
+        for entry in self.entries:
+            if prev_const_entry is not None:
+                if entry.priority != (prev_const_entry.priority + 1):
+                    msg = ("Expected const entry '%s' with priority %d"
+                           " to be one more than prev const entry '%s'"
+                           " but it has priority %d"
+                           "" % (entry, entry.priority,
+                                 prev_const_entry,
+                                 prev_const_entry.priority))
+                    logging.error(msg)
+                    raise ValueError(msg)
+            prev_const_entry = entry
+
     def __repr__(self):
         return 'Table {}'.format(self.name)
 
@@ -723,31 +808,6 @@ class Pipeline:
             conditional = Conditional(conditional_json)
             self.conditionals[conditional.name] = conditional
 
-    # Note 1:
-    # A table in BMv2 JSON file should have next_tables that contains
-    # either:
-    #
-    # (a) One element for each of the table's actions, with the keys
-    #     being exactly the same as the set of all action names/ids.
-    #
-    # or
-    #
-    # (b) Exactly two elements, one with 'action name' '__HIT__', and
-    #     the other with 'action name' '__MISS__'.  This occurs for
-    #     tables that have 'if (table_name.apply().hit)' in the P4
-    #     source code.
-    #
-    # Determine which of these two cases it is, printing an error and
-    # raising an exception if it is neither of these.
-
-    # Note 2:
-    # I have written some small test programs that attempt to have a
-    # non-empty 'const entries' for a table that has no key fields,
-    # and all gave a compilation error.  That is as I would expect.
-    # Raise an exception here if that combination occurs in a BMv2
-    # JSON file, because I don't think it makes any sense, and should
-    # be investigated as a possible bug.
-
     def generate_CFG(self):
         graph = Graph()
         queue = [self.init_table_name]
@@ -767,88 +827,41 @@ class Pipeline:
                 table = self.tables[table_name]
                 logging.debug("Begin generate_CFG processing for table '%s'",
                               table_name)
+                hit_result_table = table.is_hit_result(table_name)
+                table.sanity_checks_set_1(table_name)
 
-                # See Note 1 elsewhere in this file
-                action_set = set(table.action_names)
-                next_tables_key_set = set()
-                for action_name_id, next_table in table.next_tables.items():
-                    logging.debug("action_name_id=%s next_table='%s'",
-                                  action_name_id, next_table)
-                    action_name, action_id = action_name_id
-                    if action_name in next_tables_key_set:
-                        msg = ("Found duplicate action name '%s'"
-                               " in 'next_tables' of table '%s'"
-                               "" % (action_name, table_name))
-                        logging.error(msg)
-                        raise ValueError(msg)
-                    next_tables_key_set.add(action_name)
-                hit_result_table = False
-                if next_tables_key_set == {'__HIT__', '__MISS__'}:
-                    hit_result_table = True
-                elif next_tables_key_set == action_set:
-                    pass
+                # Add possible hit actions.
+                if table.is_keyless():
+                    logging.debug("keyless table, so NO hit actions")
+                elif table.has_const_entries():
+                    logging.debug("const entries table, so add %d hit actions"
+                                  " from P4 program", len(table.entries))
+                    prev_const_entry = None
+                    prev_transition = None
+                    for entry in table.entries:
+                        action = self.hlir.get_action_by_id(entry.get_action_id())
+                        if hit_result_table:
+                            # All execution paths matching any of the
+                            # const entries will be treated as a hit,
+                            # as far as determining what code to
+                            # execute next.
+                            next_table = table.next_tables['__HIT__']
+                        else:
+                            next_table = table.next_table_for_action(action)
+                        logging.debug("const entry='%s' action.name='%s'"
+                                      " action.id='%s' next_table='%s'",
+                                      entry, action.name, action.id, next_table)
+                        transition = ConstActionTransition(table_name, next_table,
+                                                           action,
+                                                           entry.get_action_data(),
+                                                           prev_transition)
+                        graph.add_edge(table_name, next_table, transition)
+                        next_tables.append(next_table)
+                        prev_const_entry = entry
+                        prev_transition = transition
                 else:
-                    msg = ("Table '%s' has set of keys for 'next_tables'"
-                           " that is neither {'__HIT__', '__MISS__'} nor"
-                           " the set of action names %s.  Instead it is"
-                           " %s"
-                           "" % (table_name, action_set, next_tables_key_set))
-                    logging.error(msg)
-                    raise ValueError(msg)
-
-                prev_const_entry = None
-                prev_transition = None
-
-                if table.is_keyless() and table.has_const_entries():
-                    # See Note 2 elsewhere in this file
-                    msg = ("Table '%s' has 0 key fields, but %d const entries."
-                           "  This seems like it should be impossible."
-                           "" % (table_name, len(table.entries)))
-                    logging.error(msg)
-                    raise ValueError(msg)
-
-                for entry in table.entries:
-                    if prev_const_entry is not None:
-                        if entry.priority != (prev_const_entry.priority + 1):
-                            msg = ("Expected const entry '%s' with priority %d"
-                                   " to be one more than prev const entry '%s'"
-                                   " but it has priority %d"
-                                   "" % (entry, entry.priority,
-                                         prev_const_entry,
-                                         prev_const_entry.priority))
-                            logging.error(msg)
-                            raise ValueError(msg)
-
-                    action = self.hlir.get_action_by_id(entry.get_action_id())
-                    if hit_result_table:
-                        # All execution paths matching any of the
-                        # const entries will be treated as a hit, as
-                        # far as determining what code to execute
-                        # next.
-                        next_table = table.next_tables['__HIT__']
-                    else:
-                        next_table = table.next_table_for_action(action)
-                    logging.debug("const entry='%s' action.name='%s'"
-                                  " action.id='%s' next_table='%s'",
-                                  entry, action.name, action.id, next_table)
-                    transition = ConstActionTransition(table_name, next_table,
-                                                       action,
-                                                       entry.get_action_data(),
-                                                       prev_transition)
-                    graph.add_edge(table_name, next_table, transition)
-                    next_tables.append(next_table)
-                    prev_const_entry = entry
-                    prev_transition = transition
-
-                logging.debug("keyless_table=%s const_entries_table=%s",
-                              table.is_keyless(), table.has_const_entries())
-                logging.debug("hit_result_table=%s next_tables_key_set=%s",
-                              hit_result_table, next_tables_key_set)
-
-                if not (table.is_keyless() or table.has_const_entries()):
-                    # then p4pktgen should try each action that is
-                    # _not_ annotated with @defaultonly as a table hit
-                    # action.
+                    # Try each action that is _not_ annotated with
+                    # @defaultonly as a table hit action.
                     for hit_action_name_id in zip(table.action_names,
                                                   table.action_ids):
                         # TBD: Get the info about which actions are
@@ -857,9 +870,8 @@ class Pipeline:
                         # them are annotated that way.
                         action_is_defaultonly = False
                         if action_is_defaultonly:
-                            logging.debug("hit_action_name_id='%s'"
-                                          " is defaultonly, thus not adding it"
-                                          " as a normal table hit action",
+                            logging.debug("action='%s' is defaultonly."
+                                          " Do NOT add as a hit action",
                                           hit_action_name_id)
                             continue
                         if hit_result_table:
@@ -867,10 +879,8 @@ class Pipeline:
                         else:
                             tmp_act = hit_action_name_id
                         next_table = table.next_tables[tmp_act]
-                        logging.debug("hit_action_name_id='%s'"
-                                      " not defaultonly, thus adding it"
-                                      " as a normal table hit action"
-                                      " with next table '%s'",
+                        logging.debug("action='%s' not defaultonly. Add"
+                                      " as a hit action with next '%s'",
                                       hit_action_name_id, next_table)
                         transition = ActionTransition(
                             table_name, next_table,
@@ -878,8 +888,7 @@ class Pipeline:
                         graph.add_edge(table_name, next_table, transition)
                         next_tables.append(next_table)
 
-                # Now add possible default actions.
-
+                # Add possible default (i.e. miss) actions.
                 possible_default_actions = []
                 if table.has_const_default_entry():
                     # If the P4 code declared a 'const
@@ -887,6 +896,11 @@ class Pipeline:
                     # possible.
                     possible_default_actions.append(
                         table.get_default_action_name_id())
+                    # TBD: Consider adding warning here about any
+                    # other actions annotated as @defaultonly, but are
+                    # effectively "dead actions" for this table
+                    # beacuse the control plane is not permitted to
+                    # change the table's default action to those.
                 else:
                     # If the table's default_action is not declared
                     # with the 'const' modifier, then no matter what
@@ -894,9 +908,9 @@ class Pipeline:
                     # source code, the control plane is allowed to
                     # change it to any action that is not annotated
                     # with @tableonly.
-                    logging.debug("table has non-const default_action,"
-                                  " thus adding all actions not annotated"
-                                  " @tableonly as possible miss actions")
+                    logging.debug("table has non-const default_action."
+                                  " Add all non-tableonly actions "
+                                  " as miss actions")
                     for miss_action_name_id in zip(table.action_names,
                                                    table.action_ids):
                         # TBD: Get the info about which actions are
@@ -912,10 +926,8 @@ class Pipeline:
                     else:
                         tmp_act = default_action
                     next_table = table.next_tables[tmp_act]
-                    logging.debug("default_action='%s'"
-                                  " is not tableonly, thus adding it"
-                                  " as a miss table action"
-                                  " with next table '%s'",
+                    logging.debug("action='%s' not tableonly. Add"
+                                  " as a miss action with next '%s'",
                                   default_action, next_table)
                     # TBD: I suspect that maybe the last parameter
                     # that is 'None' below should sometimes have a
