@@ -278,7 +278,8 @@ def check_expr_op_types(expr):
             arg2info = check_expr_op_types(expr['right'])
             check_one_type(arg2info, 'bitvec', 'right', expr)
             return {'type': 'bitvec'}
-        if op in ['&', '|', '^', '+', '-', '*', '<<', '>>', 'two_comp_mod']:
+        if op in ['&', '|', '^', '+', '-', '*', '<<', '>>', 'two_comp_mod',
+                  'usat_cast', 'sat_cast']:
             arg1info = check_expr_op_types(expr['left'])
             check_one_type(arg1info, 'bitvec', 'left', expr)
             arg2info = check_expr_op_types(expr['right'])
@@ -297,6 +298,11 @@ def check_expr_op_types(expr):
             arg2info = check_expr_op_types(expr['right'])
             check_one_type(arg2info, arg1info['type'], 'right', expr)
             return {'type': arg1info['type']}
+        if op == 'last_stack_index':
+            assert expr['left'] is None
+            arg2info = check_expr_op_types(expr['right'])
+            check_one_type(arg2info, 'header_stack', 'right', expr)
+            return {'type': 'bitvec'}
         raise ValueError("Unknown epxression op '%s'"
                          "" % (op))
     assert 'type' in expr
@@ -309,6 +315,8 @@ def check_expr_op_types(expr):
         return {'type': 'header'}
     if t == 'header_union':
         return {'type': 'header_union'}
+    if t == 'header_stack':
+        return {'type': 'header_stack'}
     if t in ['hexstr', 'field', 'local', 'lookahead', 'stack_field']:
         # TBD: field, local are always a bit-vector type, yes?
         return {'type': 'bitvec'}
