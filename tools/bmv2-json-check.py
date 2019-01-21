@@ -513,16 +513,23 @@ def is_bmv2_json_header_type(x, debug=False):
             assert isinstance(field_name, str)
             assert isinstance(field_bitwidth, int)
             assert field_bitwidth > 0
-            # I have seen the following assert fail on several BMv2
-            # JSON files produced from test P4_16 programs in
-            # directory testdata/p4_16_samples of the p4lang/p4c
-            # repository.  They all seem to have one thing in common:
-            # the P4_16 source file has a field of type 'bool' in a
-            # header or struct.  They also all seem to have the
-            # integer value 0 in the 3rd element of the list, instead
-            # of a boolean true or false value like bit vectors do.
-            # Filed issue https://github.com/p4lang/p4c/issues/1685 to
-            # find out if this is intentional or a bug.
+
+            # Here is the code in the latest version of
+            # p4lang/behavioral-model as of 2019-Jan-21 that shows
+            # calling the method asBool() on the value read from the
+            # BMv2 JSON file:
+            # https://github.com/p4lang/behavioral-model/blob/master/src/bm_sim/P4Objects.cpp#L723
+
+            # And here is the case in the implementation of method
+            # asBool() that shows it converting an integer into a
+            # Boolean using the C convention of 0->false, all other
+            # integer values->true:
+            # https://github.com/p4lang/behavioral-model/blob/master/third_party/jsoncpp/src/jsoncpp.cpp#L3276-L3277
+            if isinstance(field_is_signed, int):
+                if field_is_signed == 0:
+                    field_is_signed = False
+                else:
+                    field_is_signed = True
             assert isinstance(field_is_signed, bool)
             if debug:
                 print("   field name='%s' bitwidth=%d is_signed=%s"
