@@ -547,14 +547,21 @@ class MatchKey:
         # XXX: parse key
         self.key = json_obj['key']
 
+    def __repr__(self):
+        return 'MatchKey {} key={}'.format(
+            self.match_type, self.key)
+
 
 class ActionEntry:
     def __init__(self, json_obj):
         self.action_id = json_obj['action_id']
         assert isinstance(self.action_id, int)
-
         # XXX: parse data
         self.action_data = json_obj['action_data']
+
+    def __repr__(self):
+        return 'ActionEntry action_id={} params={}'.format(
+            self.action_id, self.action_data)
 
 
 class TableEntry:
@@ -655,15 +662,15 @@ class Table:
         assert self.default_entry is not None
         return (self.action_id_to_name[self.default_entry.action_id], self.default_entry.action_id)
 
-    # If the table has 'const entries' in the source code, they will
-    # be stored in table.entries.  The only thing that the control
-    # plane software might be able to change about the behavior of the
-    # table later is the default_action, but then only if it is not
-    # declared const.
+    # If the table has 'const entries = { ... }' in the source code,
+    # they will be stored in table.entries.  The only thing that the
+    # control plane software might be able to change about the
+    # behavior of the table later is the default_action, but then only
+    # if it is not declared const.
     #
     # The latest p4c as of 2018-Oct-27 gives a compile time error if a
     # table has 'const entries = { }' with an empty list of entries.
-    # Thus we can conclude from the BMv2 JSON file that if it
+    # Thus we can conclude from the BMv2 JSON file that if
     # table.entries empty, then there was no 'const entries' declared
     # in the source code.
     def has_const_entries(self):
@@ -672,15 +679,31 @@ class Table:
     def has_const_default_entry(self):
         return self.default_entry.action_const
 
-    # Tables with no key fields cannot ever achieve a 'hit' result,
-    # only a 'miss', because no table entries can be added to such a
-    # table.  The open source p4c compiler often creates such tables,
-    # even if they do not exist in the P4 program as written by the
-    # developer.
+    # If a P4 table is defined without any fields in its search key,
+    # we call it a keyless table.
+    #
+    # In P4_14, there is no "reads { ... }" expression in the table
+    # definition.  In P4_16, there is no "key = { ... }" table
+    # property defined.
+    #
+    # Keyless tables cannot ever achieve a 'hit' result, only a
+    # 'miss', because no table entries can be added to such a table.
+    # The open source p4c compiler often creates such tables, even if
+    # they do not exist in the P4 program as written by the developer.
     def is_keyless(self):
         return len(self.key) == 0
 
-    # Note 1:
+    # We call a table a "hit result" table if it is applied via P4
+    # code like this:
+    #
+    #     if (table_name.apply().hit) ...
+    #
+    # The name "hit result" is because an implementation of such a
+    # table must "remember" the 1-bit result whether the table was a
+    # hit or miss, for at least a brief time after apply operation is
+    # done, in order to determine which branch of the "if" statement
+    # to execute.
+    #
     # A table in BMv2 JSON file should have next_tables that contains
     # either:
     #
@@ -690,18 +713,12 @@ class Table:
     # or
     #
     # (b) Exactly two elements, one with 'action name' '__HIT__', and
-    #     the other with 'action name' '__MISS__'.  This occurs for
-    #     tables that have 'if (table_name.apply().hit)' in the P4
-    #     source code.  We will call these a "hit result" table,
-    #     because whether the table had a hit or miss is part of the
-    #     result of applying the table that determines what happens
-    #     next in the program.
+    #     the other with 'action name' '__MISS__'.  This occurs if and
+    #     only if the table is a hit result table.
     #
     # Determine which of these two cases it is, printing an error and
     # raising an exception if it is neither of these.
-
     def is_hit_result(self, table_name):
-        # See Note 1 elsewhere in this file
         action_set = set(self.action_names)
         next_tables_key_set = set()
         for action_name_id, next_table in self.next_tables.items():
@@ -735,16 +752,16 @@ class Table:
                       hit_result_table, next_tables_key_set)
         return hit_result_table
 
-    # Note 2:
-    # I have written some small test programs that attempt to have a
-    # non-empty 'const entries' for a table that has no key fields,
-    # and all gave a compilation error.  That is as I would expect.
-    # Raise an exception here if that combination occurs in a BMv2
-    # JSON file, because I don't think it makes any sense, and should
-    # be investigated as a possible bug.
     def sanity_checks_set_1(self, table_name):
+        # I have written some small test programs that attempt to have
+        # a non-empty 'const entries' table property value for a
+        # keyless table, and all gave a compilation error.  That is as
+        # I would expect.
+        #
+        # Raise an exception here if that combination occurs in a BMv2
+        # JSON file, because I don't think it makes any sense, and
+        # should be investigated as a possible bug.
         if self.is_keyless() and self.has_const_entries():
-            # See Note 2 elsewhere in this file
             msg = ("Table '%s' has 0 key fields, but %d const entries."
                    "  This seems like it should be impossible."
                    "" % (table_name, len(self.entries)))
@@ -836,7 +853,6 @@ class Pipeline:
                 elif table.has_const_entries():
                     logging.debug("const entries table, so add %d hit actions"
                                   " from P4 program", len(table.entries))
-                    prev_const_entry = None
                     prev_transition = None
                     for entry in table.entries:
                         action = self.hlir.get_action_by_id(entry.get_action_id())
@@ -848,17 +864,18 @@ class Pipeline:
                             next_table = table.next_tables['__HIT__']
                         else:
                             next_table = table.next_table_for_action(action)
-                        logging.debug("const entry='%s' action.name='%s'"
-                                      " action.id='%s' next_table='%s'",
-                                      entry, action.name, action.id, next_table)
-                        transition = ConstActionTransition(table_name, next_table,
-                                                           action,
-                                                           entry.get_action_data(),
-                                                           prev_transition)
+                        logging.debug("const entry='%s' match_keys='%s'"
+                                      " action='%s' action.name='%s'"
+                                      " next_table='%s'",
+                                      entry, entry.match_keys,
+                                      entry.action_entry,
+                                      action.name, next_table)
+                        assert entry.action_entry.action_id == action.id
+                        transition = ConstActionTransition(
+                            table_name, next_table, action,
+                            entry.get_action_data(), prev_transition)
                         graph.add_edge(table_name, next_table, transition)
                         next_tables.append(next_table)
-                        prev_const_entry = entry
-                        prev_transition = transition
                 else:
                     # Try each action that is _not_ annotated with
                     # @defaultonly as a table hit action.
@@ -882,9 +899,11 @@ class Pipeline:
                         logging.debug("action='%s' not defaultonly. Add"
                                       " as a hit action with next '%s'",
                                       hit_action_name_id, next_table)
+                        is_default_entry = False
                         transition = ActionTransition(
                             table_name, next_table,
-                            self.hlir.actions[hit_action_name_id], False, None)
+                            self.hlir.actions[hit_action_name_id],
+                            is_default_entry, None)
                         graph.add_edge(table_name, next_table, transition)
                         next_tables.append(next_table)
 
@@ -909,7 +928,7 @@ class Pipeline:
                     # change it to any action that is not annotated
                     # with @tableonly.
                     logging.debug("table has non-const default_action."
-                                  " Add all non-tableonly actions "
+                                  " Add all non-tableonly actions"
                                   " as miss actions")
                     for miss_action_name_id in zip(table.action_names,
                                                    table.action_ids):
@@ -935,10 +954,11 @@ class Pipeline:
                     # action parameters.  Should write a test P4_16
                     # program that tries to cause that to happen and
                     # see what the BMv2 JSON file looks like.
+                    is_default_entry = True
                     transition = ActionTransition(
                         table_name, next_table,
                         self.hlir.actions[default_action],
-                        True, None)
+                        is_default_entry, None)
                     graph.add_edge(table_name, next_table, transition)
                     next_tables.append(next_table)
 
