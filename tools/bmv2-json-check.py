@@ -469,5 +469,305 @@ for pipe in jsondat['pipelines']:
         print("Checked %d conditional expressions in pipeline '%s'"
               "" % (num_conditionals, pipe['name']))
 
+# Check for suspicious looking things inside of field_lists.
+
+# If a field_list id is used as the argument of a recirculate,
+# resubmit, or clone3 primitive operation, then I believe it should
+# contain only elements with type "field", where the field is one
+# named explicitly in the P4 source program as a user-defined or
+# standard/intrinsic metadata field.  It should not be: a constant, a
+# header field, or a temporary metadata field name created by the
+# compiler.
+
+# There have been bugs found in p4c where one of the former was
+# replaced at compile time with a constant or a temporary metadata
+# field name created by the compiler.
+#
+# + https://github.com/p4lang/p4c/issues/1479
+# + https://github.com/p4lang/p4c/issues/1669
+
+# The P4_14 specification v1.0.5 says that such fields should be
+# metadata fields, not packet header fields.
+
+def is_hexstr(s):
+    assert isinstance(s, str)
+    return re.match(r'^0x[0-9a-fA-F]+$', s)
+
+def is_bmv2_json_header_type(x, debug=False):
+    assert 'name' in x
+    assert isinstance(x['name'], str)
+    assert 'id' in x
+    assert isinstance(x['id'], int)
+    assert 'fields' in x
+    assert isinstance(x['fields'], list)
+    if debug:
+        print("header_type: id=%d name='%s' # fields=%d"
+              "" % (x['id'], x['name'], len(x['fields'])))
+    for field in x['fields']:
+        assert isinstance(field, list)
+        assert len(field) == 2 or len(field) == 3
+        if len(field) == 3:
+            field_name = field[0]
+            field_bitwidth = field[1]
+            field_is_signed = field[2]
+            assert isinstance(field_name, str)
+            assert isinstance(field_bitwidth, int)
+            assert field_bitwidth > 0
+            # I have seen the following assert fail on several BMv2
+            # JSON files produced from test P4_16 programs in
+            # directory testdata/p4_16_samples of the p4lang/p4c
+            # repository.  They all seem to have one thing in common:
+            # the P4_16 source file has a field of type 'bool' in a
+            # header or struct.  They also all seem to have the
+            # integer value 0 in the 3rd element of the list, instead
+            # of a boolean true or false value like bit vectors do.
+            # Filed issue https://github.com/p4lang/p4c/issues/1685 to
+            # find out if this is intentional or a bug.
+            assert isinstance(field_is_signed, bool)
+            if debug:
+                print("   field name='%s' bitwidth=%d is_signed=%s"
+                      "" % (field_name, field_bitwidth, field_is_signed))
+        elif len(field) == 2:
+            field_name = field[0]
+            varbit_indicator = field[1]
+            assert isinstance(field_name, str)
+            assert isinstance(varbit_indicator, str)
+            assert varbit_indicator == '*'
+            if debug:
+                print("   field name='%s' varbit_indicator=%s"
+                      "" % (field_name, varbit_indicator))
+    return True
+
+def is_bmv2_json_header(x, header_type_name_to_info, debug=False):
+    assert 'name' in x
+    assert isinstance(x['name'], str)
+    assert 'id' in x
+    assert isinstance(x['id'], int)
+    assert 'header_type' in x
+    assert isinstance(x['header_type'], str)
+    header_type_name = x['header_type']
+    assert header_type_name in header_type_name_to_info
+    assert 'metadata' in x
+    assert isinstance(x['metadata'], bool)
+    assert 'pi_omit' in x
+    assert isinstance(x['pi_omit'], bool)
+    if debug:
+        print("header: id=%d name='%s' header_type='%s' metadata=%s pi_omit=%s"
+              "" % (x['id'], x['name'], x['header_type'], x['metadata'],
+                    x['pi_omit']))
+    return True
+
+def field_name_maybe_compiler_temp(header_name, field_name):
+    assert isinstance(header_name, str)
+    if re.match(r'^scalars.*$', header_name) and re.match(r'^tmp.*$', field_name):
+        return True
+    return False
+
+def is_bmv2_json_field_list(x, header_type_name_to_info, header_name_to_info,
+                            debug=False):
+    assert 'id' in x
+    assert 'name' in x
+    assert 'elements' in x
+    assert isinstance(x['elements'], list)
+    if debug:
+        print("dbg0: id=%d name='%s' # elements=%d"
+              "" % (x['id'], x['name'],
+                    len(x['elements'])))
+    for element in x['elements']:
+        assert 'type' in element
+        assert 'value' in element
+        assert element['type'] in ['field', 'hexstr']
+        assert (isinstance(element['value'], str) or
+                isinstance(element['value'], list))
+        if element['type'] == 'field':
+            value = element['value']
+            assert isinstance(value, list)
+            assert len(value) == 2
+            header_name = value[0]
+            field_name = value[1]
+            assert isinstance(header_name, str)
+            assert isinstance(field_name, str)
+            assert header_name in header_name_to_info
+            header_type_name = header_name_to_info[header_name]['header_type']
+            assert header_type_name in header_type_name_to_info
+            header_type = header_type_name_to_info[header_type_name]
+            # Check that the field_name is one of the field names in
+            # the header_type.
+            field_found = None
+            for field in header_type['fields']:
+                if field[0] == field_name:
+                    field_found = field
+                    break
+            assert field_found is not None
+        if debug:
+            print("   type='%s' value='%s'"
+                  "" % (element['type'], element['value']))
+    return True
+
+def check_bmv2_json_rrcp_field_list_id(x, id_to_field_list, header_name_to_info,
+                                       action_name, action_id,
+                                       op, primitive, debug=False):
+    assert 'type' in x
+    assert x['type'] == 'hexstr'
+    assert 'value' in x
+    assert is_hexstr(x['value'])
+    field_list_id = int(x['value'], 16)
+    assert field_list_id in id_to_field_list
+    field_list = id_to_field_list[field_list_id]
+    if debug:
+        print("rrcp_field_list_id: action_id=%d action_name='%s' primitive="
+              "" % (action_id, action_name))
+        pp.pprint(primitive)
+        print("    field_list_id=%s"
+              "" % (field_list_id))
+        print("    field_list info:")
+        pp.pprint(field_list)
+    # Divide up the fields in the field list into different kinds of
+    # issues they seem to have.
+    type_is_not_field = []
+    not_metadata_field = []
+    metadata_field_maybe_compiler_temporary = []
+    field_ok = []
+    for element in field_list['elements']:
+        if element['type'] == 'field':
+            header_name = element['value'][0]
+            field_name = element['value'][1]
+            assert header_name in header_name_to_info
+            header = header_name_to_info[header_name]
+            if header['metadata']:
+                if field_name_maybe_compiler_temp(header_name, field_name):
+                    metadata_field_maybe_compiler_temporary.append(element)
+                else:
+                    field_ok.append(element)
+            else:
+                not_metadata_field.append(element)
+        else:
+            type_is_not_field.append(element)
+    if ((len(type_is_not_field) != 0) or (len(not_metadata_field) != 0) or
+        (len(metadata_field_maybe_compiler_temporary) != 0)):
+        print("")
+        print("----------")
+        print("The action named '%s' (id %d) contains primitive op '%s'"
+              "" % (action_name, action_id, primitive['op']))
+        print("""The field lists for resubmit, recirculate, or clone3 operations should
+contain only metadata field names, but the wrong or suspicious-looking
+field list elements below were found:""")
+        if len(type_is_not_field) != 0:
+            print("")
+            print("Field list element has type other than 'field':")
+            pp.pprint(type_is_not_field)
+        if len(not_metadata_field) != 0:
+            print("")
+            print("Field is part of a packet header:")
+            pp.pprint(not_metadata_field)
+        if len(metadata_field_maybe_compiler_temporary) != 0:
+            print("")
+            print("""Field is metadata, but its name looks like it may be a compiler-
+generated temporary, not one that the user wrote in their program:""")
+            pp.pprint(metadata_field_maybe_compiler_temporary)
+        
+        print("")
+        print("The BMv2 JSON data details below may be useful to developers:")
+        pp.pprint(primitive)
+        print("field_list id=%d info:"
+              "" % (field_list_id))
+        pp.pprint(field_list)
+        return True
+
+    return False
+
+
+assert 'header_types' in jsondat
+assert isinstance(jsondat['header_types'], list)
+header_type_name_to_info = {}
+for header_type in jsondat['header_types']:
+    assert is_bmv2_json_header_type(header_type, debug=False)
+    header_type_name_to_info[header_type['name']] = header_type
+
+
+assert 'headers' in jsondat
+assert isinstance(jsondat['headers'], list)
+header_name_to_info = {}
+for header in jsondat['headers']:
+    assert is_bmv2_json_header(header, header_type_name_to_info, debug=False)
+    header_name_to_info[header['name']] = header
+
+
+assert 'field_lists' in jsondat
+assert isinstance(jsondat['field_lists'], list)
+# Note: Earlier code already checked that all id values in the
+# elements of field_lists are unique.  Assume that they are unique
+# here, even though the earlier code does not cause this program to
+# exit if there are duplicate ids.  The error message will have been
+# printed to the user already.
+id_to_field_list = {}
+for field_list in jsondat['field_lists']:
+    assert is_bmv2_json_field_list(field_list, header_type_name_to_info,
+                                   header_name_to_info)
+    id_to_field_list[field_list['id']] = field_list
+
+
+# rrcp is an abbreviation for "recirculate/resubmit/clone primitive"
+assert 'actions' in jsondat
+rrcp_actions = []
+for action in jsondat['actions']:
+    assert 'id' in action
+    assert isinstance(action['id'], int)
+    assert 'name' in action
+    assert isinstance(action['name'], str)
+    assert 'runtime_data' in action
+    assert isinstance(action['runtime_data'], list)
+    assert 'primitives' in action
+    assert isinstance(action['primitives'], list)
+    action_id = action['id']
+    action_name = action['name']
+    for primitive in action['primitives']:
+        assert 'op' in primitive
+        assert isinstance(primitive['op'], str)
+        assert 'parameters' in primitive
+        assert isinstance(primitive['parameters'], list)
+        op = primitive['op']
+        params = primitive['parameters']
+        problems_found = False
+        if op in ['resubmit', 'recirculate']:
+            #print("    dbg1: action=")
+            #pp.pprint(primitive)
+            assert len(params) == 1
+            param0 = params[0]
+            problems_found = check_bmv2_json_rrcp_field_list_id(
+                param0, id_to_field_list, header_name_to_info,
+                action_name, action_id, op, primitive, debug=False)
+
+        elif op in ['clone_ingress_pkt_to_egress', 'clone_egress_pkt_to_egress']:
+            #print("    dbg2: action=")
+            #pp.pprint(primitive)
+            assert len(params) == 2
+
+            # param0 specifies a numeric value, which is the
+            # clone/mirror session id to use.  It can be a constant
+            # hexstr, but it can also have type runtime_data (an
+            # action parameter numeric id), and could probably also be
+            # a packet header or metadata field value.  I won't do any
+            # checking on it here other than that it has a 'type' and
+            # 'value' key.
+            
+            # param0 should be a constant numeric value, which
+            # indicates the clone/mirror session id to use.
+            param0 = params[0]
+            assert 'type' in param0
+            assert isinstance(param0['type'], str)
+            assert 'value' in param0
+
+            # param1 should be a field_list id
+            param1 = params[1]
+            problems_found = check_bmv2_json_rrcp_field_list_id(
+                param1, id_to_field_list, header_name_to_info,
+                action_name, action_id, op, primitive, debug=False)
+
+        if problems_found:
+            total_errors += 1
+
+
 if total_errors > 0:
+    print("%d total errors" % (total_errors))
     assert False
