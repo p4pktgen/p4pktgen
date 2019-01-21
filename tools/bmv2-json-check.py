@@ -716,6 +716,9 @@ for field_list in jsondat['field_lists']:
 
 # rrcp is an abbreviation for "recirculate/resubmit/clone primitive"
 assert 'actions' in jsondat
+assert isinstance(jsondat['actions'], list)
+num_rrcp_primitives = collections.defaultdict(int)
+num_bad_rrcp_primitives = collections.defaultdict(int)
 rrcp_actions = []
 for action in jsondat['actions']:
     assert 'id' in action
@@ -739,15 +742,19 @@ for action in jsondat['actions']:
         if op in ['resubmit', 'recirculate']:
             #print("    dbg1: action=")
             #pp.pprint(primitive)
+            num_rrcp_primitives[op] += 1
             assert len(params) == 1
             param0 = params[0]
             problems_found = check_bmv2_json_rrcp_field_list_id(
                 param0, id_to_field_list, header_name_to_info,
                 action_name, action_id, op, primitive, debug=False)
+            if problems_found:
+                num_bad_rrcp_primitives[op] += 1
 
         elif op in ['clone_ingress_pkt_to_egress', 'clone_egress_pkt_to_egress']:
             #print("    dbg2: action=")
             #pp.pprint(primitive)
+            num_rrcp_primitives[op] += 1
             assert len(params) == 2
 
             # param0 specifies a numeric value, which is the
@@ -770,10 +777,29 @@ for action in jsondat['actions']:
             problems_found = check_bmv2_json_rrcp_field_list_id(
                 param1, id_to_field_list, header_name_to_info,
                 action_name, action_id, op, primitive, debug=False)
+            if problems_found:
+                num_bad_rrcp_primitives[op] += 1
 
         if problems_found:
             total_errors += 1
 
+rrcp_primitive_names = ['resubmit', 'recirculate',
+                        'clone_ingress_pkt_to_egress',
+                        'clone_egress_pkt_to_egress']
+n1 = 0
+n2 = 0
+for p in rrcp_primitive_names:
+    n1 += num_rrcp_primitives[p]
+    n2 += num_bad_rrcp_primitives[p]
+if n1 > 0:
+    print("  #")
+    print("found # bad Primitive operation name")
+    print("----- ----- ------------------------")
+    for p in rrcp_primitive_names:
+        print("%5d %5d %s"
+              "" % (num_rrcp_primitives[p], num_bad_rrcp_primitives[p], p))
+    print("----- ----- ------------------------")
+    print("%5d %5d Total" % (n1, n2))
 
 if total_errors > 0:
     print("%d total errors" % (total_errors))
