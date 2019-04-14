@@ -801,6 +801,43 @@ if n1 > 0:
     print("----- ----- ------------------------")
     print("%5d %5d Total" % (n1, n2))
 
+
+# Check for action id/name mismatches in table objects.  We have
+# already verified earlier that there are no duplicate action ids, so
+# built a dict from ids to names here.
+action_id_to_name = {}
+for action in jsondat['actions']:
+    assert 'name' in action
+    assert 'id' in action
+    action_id_to_name[action['id']] = action['name']
+action_name_to_id_set = collections.defaultdict(set)
+for id in action_id_to_name:
+    action_name = action_id_to_name[id]
+    action_name_to_id_set[action_name].add(id)
+
+for pipeline in jsondat['pipelines']:
+    if verbosity >= 1:
+        print("Checking action id/names in pipeline '%s'" % (pipeline['name']))
+    for x in pipeline['tables']:
+        table_id = x['id']
+        table_name = x['name']
+        table_action_ids = x['action_ids']
+        table_actions = x['actions']
+        assert isinstance(table_action_ids, list)
+        assert isinstance(table_actions, list)
+        assert len(table_action_ids) == len(table_actions)
+        for j in range(len(table_action_ids)):
+            action_id = table_action_ids[j]
+            action_name = table_actions[j]
+            assert isinstance(action_id, int)
+            assert isinstance(action_name, str)
+            if action_id_to_name[action_id] != action_name:
+                print("Table '%s' (id %d) has action with id %d and name '%s', but the only action ids associated with that name are: %s"
+                      "" % (table_name, table_id, action_id, action_name,
+                            ' '.join(map(str,
+                                         sorted(list(action_name_to_id_set[action_name]))))))
+
+
 if total_errors > 0:
     print("%d total errors" % (total_errors))
     assert False
