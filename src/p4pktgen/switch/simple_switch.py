@@ -340,6 +340,7 @@ class SimpleSwitch:
         extracted_path = []
         prev_match = None
         table_name = None
+        logging.debug("Starting to scan simple_switch log for lines indicating actual execution path taken while processing the packet")
         for b_line in iter(self.proc.stdout.readline, b''):
             line = str(b_line)
             logging.debug("Line from simple_switch log: %s", line.strip())

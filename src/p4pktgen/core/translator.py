@@ -501,11 +501,13 @@ class Translator:
                         value = Extract(dest_size - 1, 0, value)
                 context.set_field_value(field.header_name, field.header_field,
                                         value)
-            elif primitive.op == 'drop':
+            elif primitive.op == 'drop' or primitive.op == 'mark_to_drop':
                 # Dropping the packet does not modify the context. However we
                 # should eventually adapt the expected path.
                 context.set_field_value('standard_metadata', 'egress_spec',
                                         BitVecVal(511, 9))
+                context.set_field_value('standard_metadata', 'mcast_grp',
+                                        BitVecVal(0, 16))
                 pass
             elif primitive.op == 'add_header':
                 header_name = primitive.parameters[0].header_name
