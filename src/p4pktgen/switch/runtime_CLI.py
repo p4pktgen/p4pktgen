@@ -768,6 +768,21 @@ class RuntimeAPI(cmd.Cmd):
             return res
         return [r for r in res if r.startswith(text)]
 
+    # CHANGE_FROM_ORIGINAL: The @handle_bad_input decorator that was
+    # just before 'def do_show_tables' modifies the behavior of
+    # do_show_tables (and any other method it decorates) by handling
+    # various kinds of exceptions it can raise, printing a message,
+    # and preventing the exception from being raised to the caller.
+
+    # This makes sense in the context of calling these methods from
+    # the simple_switch_CLI program, where clearer error messages, and
+    # avoiding simple_switch_CLI from exiting due to a raised
+    # exception, are desirable.
+
+    # In the context of calling these methods from a set of automated
+    # tests, it is far more useful for the exception to be 'passed on'
+    # to the caller, because it makes mistakes in calling these
+    # methods far more obvious.
     #@handle_bad_input
     def do_show_tables(self, line):
         "List tables defined in the P4 program: show_tables"
@@ -926,6 +941,7 @@ class RuntimeAPI(cmd.Cmd):
         table = self.get_res("table", table_name, TABLES)
 
         print self.client.bm_mt_get_num_entries(0, table_name)
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return self.client.bm_mt_get_num_entries(0, table_name)
 
     def complete_table_num_entries(self, text, line, start_index, end_index):
@@ -946,21 +962,6 @@ class RuntimeAPI(cmd.Cmd):
     def complete_table_clear(self, text, line, start_index, end_index):
         return self._complete_tables(text)
 
-    # CHANGE_FROM_ORIGINAL: The @handle_bad_input decorator that was
-    # just before 'def do_table_add' modifies the behavior of
-    # do_table_add (and any other method it decorates) by handling
-    # various kinds of exceptions it can raise, printing a message,
-    # and preventing the exception from being raised to the caller.
-
-    # This makes sense in the context of calling these methods from
-    # the simple_switch_CLI program, where clearer error messages, and
-    # avoiding simple_switch_CLI from exiting due to a raised
-    # exception, are desirable.
-
-    # In the context of calling these methods from a set of automated
-    # tests, it is far more useful for the exception to be 'passed on'
-    # to the caller, because it makes mistakes in calling these
-    # methods far more obvious.
     #@handle_bad_input
     def do_table_add(self, line):
         "Add entry to a match table: table_add <table name> <action name> <match fields> => <action parameters> [priority]"
@@ -1013,6 +1014,7 @@ class RuntimeAPI(cmd.Cmd):
         )
 
         print "Entry has been added with handle", entry_handle
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return entry_handle
 
     def complete_table_add(self, text, line, start_index, end_index):
@@ -1084,7 +1086,7 @@ class RuntimeAPI(cmd.Cmd):
     def complete_table_modify(self, text, line, start_index, end_index):
         return self._complete_table_and_action(text, line)
 
-    ##@handle_bad_input
+    #@handle_bad_input
     def do_table_delete(self, line):
         "Delete entry from a match table: table_delete <table name> <entry handle>"
         args = line.split()
@@ -1143,6 +1145,7 @@ class RuntimeAPI(cmd.Cmd):
             0, act_prof_name, action_name, runtime_data)
 
         print "Member has been created with handle", mbr_handle
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return mbr_handle
 
     def complete_act_prof_create_member(self, text, line, start_index, end_index):
@@ -1277,6 +1280,7 @@ class RuntimeAPI(cmd.Cmd):
         )
 
         print "Entry has been added with handle", entry_handle
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return entry_handle
 
     def complete_table_indirect_add(self, text, line, start_index, end_index):
@@ -1293,6 +1297,7 @@ class RuntimeAPI(cmd.Cmd):
         )
 
         print "Entry has been added with handle", entry_handle
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return entry_handle
 
     def complete_table_indirect_add_with_group(self, text, line, start_index, end_index):
@@ -1363,7 +1368,7 @@ class RuntimeAPI(cmd.Cmd):
     def complete_table_indirect_set_default_with_group(self, text, line, start_index, end_index):
         return self._complete_tables(text)
 
-    ##@handle_bad_input
+    #@handle_bad_input
     def do_act_prof_create_group(self, line):
         "Add a group to an action pofile: act_prof_create_group <action profile name>"
         args = line.split()
@@ -1378,6 +1383,7 @@ class RuntimeAPI(cmd.Cmd):
         grp_handle = self.client.bm_mt_act_prof_create_group(0, act_prof_name)
 
         print "Group has been created with handle", grp_handle
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return grp_handle
 
     def complete_act_prof_create_group(self, text, line, start_index, end_index):
@@ -1840,6 +1846,7 @@ class RuntimeAPI(cmd.Cmd):
         else:
             value = self.client.bm_counter_read(0, counter_name, index)
         print "%s[%d]= " % (counter_name, index), value
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return value
 
     def complete_counter_read(self, text, line, start_index, end_index):
@@ -2134,6 +2141,7 @@ class RuntimeAPI(cmd.Cmd):
         self.dump_action_entry(default_entry)
 
         print "=========="
+        # CHANGE_FROM_ORIGINAL: added the following return statement
         return {'table': table, 'entries': entries}
 
     def complete_table_dump(self, text, line, start_index, end_index):
