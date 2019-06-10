@@ -40,15 +40,15 @@ class CheckSystem:
         expected_results = {
             ('start', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'sink', (u'ingress.ipv4_da_lpm', u'my_drop1')):
+            ('start', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.my_drop1')):
             TestPathResult.UNINITIALIZED_READ,
             ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'ingress.mac_da', u'my_drop2')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'ingress.mac_da', u'ingress.my_drop2')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'my_drop1'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.my_drop1'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'my_drop1'), (u'ingress.mac_da', u'my_drop2')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.my_drop1'), (u'ingress.mac_da', u'ingress.my_drop2')):
             TestPathResult.UNINITIALIZED_READ
         }
         assert results == expected_results
@@ -124,19 +124,19 @@ class CheckSystem:
         expected_results = {
             ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'my_drop')):
+            ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.SUCCESS,
             ('start', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'my_drop')):
+            ('start', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.UNINITIALIZED_READ,
             ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.SUCCESS,
             ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'ingress.switch_config_params', u'NoAction'), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.UNINITIALIZED_READ
         }
         assert results == expected_results
@@ -158,27 +158,27 @@ class CheckSystem:
         results = process_json_file(
             'examples/add-remove-header.json')
         expected_results = {
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (False, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (False, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_4', (True, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'my_drop'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'my_drop')):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_4', (True, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.my_drop')):
             TestPathResult.UNINITIALIZED_READ,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'my_drop'), (u'node_4', (False, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_4', (False, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.add_outer_ipv4'), (u'node_4', (True, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.add_outer_ipv4'), (u'node_4', (True, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.add_outer_ipv4'), (u'node_4', (False, (u'add-remove-header.p4', 146, u'!hdr.outer_ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.add_outer_ipv4'), (u'node_4', (False, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()')))):
             TestPathResult.SUCCESS,
-            ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', 'parse_ipv4', 'sink', (u'node_2', (False, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-            ('start', 'sink', (u'node_2', (False, (u'add-remove-header.p4', 144, u'hdr.ipv4.isValid()')))):
+            ('start', 'sink', (u'node_2', (False, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()')))):
             TestPathResult.SUCCESS
         }
         assert results == expected_results

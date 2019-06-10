@@ -30,10 +30,11 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
         ["recirculate_flag", 32, false],
+        ["checksum_error", 1, false],
         ["parser_error", 32, false],
-        ["_padding", 5, false]
+        ["priority", 3, false],
+        ["_padding", 2, false]
       ]
     },
     {
@@ -105,7 +106,8 @@
     ["NoMatch", 3],
     ["StackOutOfBounds", 4],
     ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["ParserTimeout", 6],
+    ["ParserInvalidArgument", 7]
   ],
   "enums" : [],
   "parsers" : [
@@ -181,7 +183,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 160,
+        "line" : 152,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
@@ -197,7 +199,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 187,
+        "line" : 179,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -254,7 +256,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 169,
+        "line" : 161,
         "column" : 8,
         "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -310,42 +312,8 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "my_drop1",
-      "id" : 0,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 64,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "my_drop2",
-      "id" : 1,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 67,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
       "name" : "ingress.set_l2ptr",
-      "id" : 2,
+      "id" : 0,
       "runtime_data" : [
         {
           "name" : "l2ptr",
@@ -367,7 +335,7 @@
           ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 101,
+            "line" : 84,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
           }
@@ -375,8 +343,30 @@
       ]
     },
     {
+      "name" : "ingress.my_drop1",
+      "id" : 1,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "demo1-action-names-uniquified.p4_16.p4",
+            "line" : 87,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
+          }
+        }
+      ]
+    },
+    {
       "name" : "ingress.set_bd_dmac_intf",
-      "id" : 3,
+      "id" : 2,
       "runtime_data" : [
         {
           "name" : "bd",
@@ -406,7 +396,7 @@
           ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 115,
+            "line" : 101,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
           }
@@ -425,7 +415,7 @@
           ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 116,
+            "line" : 102,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
           }
@@ -444,7 +434,7 @@
           ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 117,
+            "line" : 103,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
           }
@@ -486,7 +476,7 @@
           ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 118,
+            "line" : 104,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -494,25 +484,30 @@
       ]
     },
     {
-      "name" : "my_drop3",
-      "id" : 4,
+      "name" : "ingress.my_drop2",
+      "id" : 3,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "drop",
-          "parameters" : [],
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 70,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
+            "line" : 107,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
           }
         }
       ]
     },
     {
       "name" : "egress.rewrite_mac",
-      "id" : 5,
+      "id" : 4,
       "runtime_data" : [
         {
           "name" : "smac",
@@ -534,9 +529,31 @@
           ],
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 142,
+            "line" : 131,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "egress.my_drop3",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "demo1-action-names-uniquified.p4_16.p4",
+            "line" : 134,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
           }
         }
       ]
@@ -548,7 +565,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 96,
+        "line" : 79,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -559,7 +576,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 103,
+            "line" : 89,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
           },
@@ -577,15 +594,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2, 0],
-          "actions" : ["ingress.set_l2ptr", "my_drop1"],
+          "action_ids" : [0, 1],
+          "actions" : ["ingress.set_l2ptr", "ingress.my_drop1"],
           "base_default_next" : "ingress.mac_da",
           "next_tables" : {
             "ingress.set_l2ptr" : "ingress.mac_da",
-            "my_drop1" : "ingress.mac_da"
+            "ingress.my_drop1" : "ingress.mac_da"
           },
           "default_entry" : {
-            "action_id" : 0,
+            "action_id" : 1,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -596,7 +613,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 120,
+            "line" : 109,
             "column" : 10,
             "source_fragment" : "mac_da"
           },
@@ -614,15 +631,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [3, 1],
-          "actions" : ["ingress.set_bd_dmac_intf", "my_drop2"],
+          "action_ids" : [2, 3],
+          "actions" : ["ingress.set_bd_dmac_intf", "ingress.my_drop2"],
           "base_default_next" : null,
           "next_tables" : {
             "ingress.set_bd_dmac_intf" : null,
-            "my_drop2" : null
+            "ingress.my_drop2" : null
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 3,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -637,7 +654,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 137,
+        "line" : 126,
         "column" : 8,
         "source_fragment" : "egress"
       },
@@ -648,7 +665,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "demo1-action-names-uniquified.p4_16.p4",
-            "line" : 144,
+            "line" : 136,
             "column" : 10,
             "source_fragment" : "send_frame"
           },
@@ -666,15 +683,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [5, 4],
-          "actions" : ["egress.rewrite_mac", "my_drop3"],
+          "action_ids" : [4, 5],
+          "actions" : ["egress.rewrite_mac", "egress.my_drop3"],
           "base_default_next" : null,
           "next_tables" : {
             "egress.rewrite_mac" : null,
-            "my_drop3" : null
+            "egress.my_drop3" : null
           },
           "default_entry" : {
-            "action_id" : 4,
+            "action_id" : 5,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -691,7 +708,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 187,
+        "line" : 179,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -720,7 +737,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "demo1-action-names-uniquified.p4_16.p4",
-        "line" : 169,
+        "line" : 161,
         "column" : 8,
         "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -791,6 +808,10 @@
     [
       "intrinsic_metadata.recirculate_flag",
       ["standard_metadata", "recirculate_flag"]
+    ],
+    [
+      "intrinsic_metadata.priority",
+      ["standard_metadata", "priority"]
     ]
   ],
   "program" : "./demo1-action-names-uniquified.p4_16.p4i",

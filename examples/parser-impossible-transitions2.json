@@ -29,10 +29,11 @@
         ["mcast_grp", 16, false],
         ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
-        ["checksum_error", 1, false],
         ["recirculate_flag", 32, false],
+        ["checksum_error", 1, false],
         ["parser_error", 32, false],
-        ["_padding", 5, false]
+        ["priority", 3, false],
+        ["_padding", 2, false]
       ]
     },
     {
@@ -149,7 +150,8 @@
     ["NoMatch", 3],
     ["StackOutOfBounds", 4],
     ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["ParserTimeout", 6],
+    ["ParserInvalidArgument", 7]
   ],
   "enums" : [],
   "parsers" : [
@@ -585,6 +587,12 @@
         {
           "name" : "tbl_act",
           "id" : 0,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 111,
+            "column" : 33,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -608,6 +616,12 @@
         {
           "name" : "tbl_act_0",
           "id" : 1,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 113,
+            "column" : 37,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -631,6 +645,12 @@
         {
           "name" : "tbl_act_1",
           "id" : 2,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 115,
+            "column" : 37,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -654,6 +674,12 @@
         {
           "name" : "tbl_act_2",
           "id" : 3,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 119,
+            "column" : 41,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -677,6 +703,12 @@
         {
           "name" : "tbl_act_3",
           "id" : 4,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 121,
+            "column" : 41,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -700,6 +732,12 @@
         {
           "name" : "tbl_act_4",
           "id" : 5,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 123,
+            "column" : 41,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -723,6 +761,12 @@
         {
           "name" : "tbl_act_5",
           "id" : 6,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 130,
+            "column" : 37,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -746,6 +790,12 @@
         {
           "name" : "tbl_act_6",
           "id" : 7,
+          "source_info" : {
+            "filename" : "parser-impossible-transitions2.p4",
+            "line" : 132,
+            "column" : 37,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -1054,6 +1104,10 @@
     [
       "intrinsic_metadata.recirculate_flag",
       ["standard_metadata", "recirculate_flag"]
+    ],
+    [
+      "intrinsic_metadata.priority",
+      ["standard_metadata", "priority"]
     ]
   ],
   "program" : "./parser-impossible-transitions2.p4i",
