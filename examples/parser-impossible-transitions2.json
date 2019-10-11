@@ -14,10 +14,7 @@
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
         ["egress_port", 9, false],
-        ["clone_spec", 32, false],
         ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
         ["packet_length", 32, false],
         ["enq_timestamp", 32, false],
         ["enq_qdepth", 19, false],
@@ -25,15 +22,12 @@
         ["deq_qdepth", 19, false],
         ["ingress_global_timestamp", 48, false],
         ["egress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
         ["mcast_grp", 16, false],
-        ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
-        ["recirculate_flag", 32, false],
         ["checksum_error", 1, false],
         ["parser_error", 32, false],
         ["priority", 3, false],
-        ["_padding", 2, false]
+        ["_padding", 3, false]
       ]
     },
     {
@@ -145,13 +139,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6],
-    ["ParserInvalidArgument", 7]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["ParserInvalidArgument", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -354,7 +348,8 @@
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
-      "order" : ["ethernet", "h1", "h2", "h3", "h4", "h5"]
+      "order" : ["ethernet", "h1", "h2", "h3", "h4", "h5"],
+      "primitives" : []
     }
   ],
   "meter_arrays" : [],
@@ -364,7 +359,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "act",
+      "name" : "parserimpossibletransitions2l113",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
@@ -390,7 +385,7 @@
       ]
     },
     {
-      "name" : "act_0",
+      "name" : "parserimpossibletransitions2l115",
       "id" : 1,
       "runtime_data" : [],
       "primitives" : [
@@ -416,7 +411,7 @@
       ]
     },
     {
-      "name" : "act_1",
+      "name" : "parserimpossibletransitions2l119",
       "id" : 2,
       "runtime_data" : [],
       "primitives" : [
@@ -442,7 +437,7 @@
       ]
     },
     {
-      "name" : "act_2",
+      "name" : "parserimpossibletransitions2l121",
       "id" : 3,
       "runtime_data" : [],
       "primitives" : [
@@ -468,7 +463,7 @@
       ]
     },
     {
-      "name" : "act_3",
+      "name" : "parserimpossibletransitions2l123",
       "id" : 4,
       "runtime_data" : [],
       "primitives" : [
@@ -494,7 +489,7 @@
       ]
     },
     {
-      "name" : "act_4",
+      "name" : "parserimpossibletransitions2l111",
       "id" : 5,
       "runtime_data" : [],
       "primitives" : [
@@ -520,7 +515,7 @@
       ]
     },
     {
-      "name" : "act_5",
+      "name" : "parserimpossibletransitions2l130",
       "id" : 6,
       "runtime_data" : [],
       "primitives" : [
@@ -546,7 +541,7 @@
       ]
     },
     {
-      "name" : "act_6",
+      "name" : "parserimpossibletransitions2l132",
       "id" : 7,
       "runtime_data" : [],
       "primitives" : [
@@ -585,7 +580,7 @@
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_act",
+          "name" : "tbl_parserimpossibletransitions2l111",
           "id" : 0,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -601,10 +596,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [5],
-          "actions" : ["act_4"],
+          "actions" : ["parserimpossibletransitions2l111"],
           "base_default_next" : "node_4",
           "next_tables" : {
-            "act_4" : "node_4"
+            "parserimpossibletransitions2l111" : "node_4"
           },
           "default_entry" : {
             "action_id" : 5,
@@ -614,7 +609,7 @@
           }
         },
         {
-          "name" : "tbl_act_0",
+          "name" : "tbl_parserimpossibletransitions2l113",
           "id" : 1,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -630,10 +625,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0],
-          "actions" : ["act"],
+          "actions" : ["parserimpossibletransitions2l113"],
           "base_default_next" : "node_15",
           "next_tables" : {
-            "act" : "node_15"
+            "parserimpossibletransitions2l113" : "node_15"
           },
           "default_entry" : {
             "action_id" : 0,
@@ -643,7 +638,7 @@
           }
         },
         {
-          "name" : "tbl_act_1",
+          "name" : "tbl_parserimpossibletransitions2l115",
           "id" : 2,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -659,10 +654,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [1],
-          "actions" : ["act_0"],
+          "actions" : ["parserimpossibletransitions2l115"],
           "base_default_next" : "node_15",
           "next_tables" : {
-            "act_0" : "node_15"
+            "parserimpossibletransitions2l115" : "node_15"
           },
           "default_entry" : {
             "action_id" : 1,
@@ -672,7 +667,7 @@
           }
         },
         {
-          "name" : "tbl_act_2",
+          "name" : "tbl_parserimpossibletransitions2l119",
           "id" : 3,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -688,10 +683,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [2],
-          "actions" : ["act_1"],
+          "actions" : ["parserimpossibletransitions2l119"],
           "base_default_next" : "node_15",
           "next_tables" : {
-            "act_1" : "node_15"
+            "parserimpossibletransitions2l119" : "node_15"
           },
           "default_entry" : {
             "action_id" : 2,
@@ -701,7 +696,7 @@
           }
         },
         {
-          "name" : "tbl_act_3",
+          "name" : "tbl_parserimpossibletransitions2l121",
           "id" : 4,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -717,10 +712,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [3],
-          "actions" : ["act_2"],
+          "actions" : ["parserimpossibletransitions2l121"],
           "base_default_next" : "node_15",
           "next_tables" : {
-            "act_2" : "node_15"
+            "parserimpossibletransitions2l121" : "node_15"
           },
           "default_entry" : {
             "action_id" : 3,
@@ -730,7 +725,7 @@
           }
         },
         {
-          "name" : "tbl_act_4",
+          "name" : "tbl_parserimpossibletransitions2l123",
           "id" : 5,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -746,10 +741,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [4],
-          "actions" : ["act_3"],
+          "actions" : ["parserimpossibletransitions2l123"],
           "base_default_next" : "node_15",
           "next_tables" : {
-            "act_3" : "node_15"
+            "parserimpossibletransitions2l123" : "node_15"
           },
           "default_entry" : {
             "action_id" : 4,
@@ -759,7 +754,7 @@
           }
         },
         {
-          "name" : "tbl_act_5",
+          "name" : "tbl_parserimpossibletransitions2l130",
           "id" : 6,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -775,10 +770,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [6],
-          "actions" : ["act_5"],
+          "actions" : ["parserimpossibletransitions2l130"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_5" : null
+            "parserimpossibletransitions2l130" : null
           },
           "default_entry" : {
             "action_id" : 6,
@@ -788,7 +783,7 @@
           }
         },
         {
-          "name" : "tbl_act_6",
+          "name" : "tbl_parserimpossibletransitions2l132",
           "id" : 7,
           "source_info" : {
             "filename" : "parser-impossible-transitions2.p4",
@@ -804,10 +799,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [7],
-          "actions" : ["act_6"],
+          "actions" : ["parserimpossibletransitions2l132"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_6" : null
+            "parserimpossibletransitions2l132" : null
           },
           "default_entry" : {
             "action_id" : 7,
@@ -840,7 +835,7 @@
             }
           },
           "false_next" : null,
-          "true_next" : "tbl_act"
+          "true_next" : "tbl_parserimpossibletransitions2l111"
         },
         {
           "name" : "node_4",
@@ -862,7 +857,7 @@
               }
             }
           },
-          "true_next" : "tbl_act_0",
+          "true_next" : "tbl_parserimpossibletransitions2l113",
           "false_next" : "node_6"
         },
         {
@@ -885,7 +880,7 @@
               }
             }
           },
-          "true_next" : "tbl_act_1",
+          "true_next" : "tbl_parserimpossibletransitions2l115",
           "false_next" : "node_8"
         },
         {
@@ -965,7 +960,7 @@
               }
             }
           },
-          "true_next" : "tbl_act_2",
+          "true_next" : "tbl_parserimpossibletransitions2l119",
           "false_next" : "node_11"
         },
         {
@@ -988,7 +983,7 @@
               }
             }
           },
-          "true_next" : "tbl_act_3",
+          "true_next" : "tbl_parserimpossibletransitions2l121",
           "false_next" : "node_13"
         },
         {
@@ -1011,7 +1006,7 @@
               }
             }
           },
-          "true_next" : "tbl_act_4",
+          "true_next" : "tbl_parserimpossibletransitions2l123",
           "false_next" : "node_15"
         },
         {
@@ -1037,8 +1032,8 @@
               }
             }
           },
-          "true_next" : "tbl_act_5",
-          "false_next" : "tbl_act_6"
+          "true_next" : "tbl_parserimpossibletransitions2l130",
+          "false_next" : "tbl_parserimpossibletransitions2l132"
         }
       ]
     },
@@ -1086,24 +1081,12 @@
       ["standard_metadata", "egress_global_timestamp"]
     ],
     [
-      "intrinsic_metadata.lf_field_list",
-      ["standard_metadata", "lf_field_list"]
-    ],
-    [
       "intrinsic_metadata.mcast_grp",
       ["standard_metadata", "mcast_grp"]
     ],
     [
-      "intrinsic_metadata.resubmit_flag",
-      ["standard_metadata", "resubmit_flag"]
-    ],
-    [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
-    ],
-    [
-      "intrinsic_metadata.recirculate_flag",
-      ["standard_metadata", "recirculate_flag"]
     ],
     [
       "intrinsic_metadata.priority",

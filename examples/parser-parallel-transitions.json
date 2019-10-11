@@ -15,10 +15,7 @@
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
         ["egress_port", 9, false],
-        ["clone_spec", 32, false],
         ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
         ["packet_length", 32, false],
         ["enq_timestamp", 32, false],
         ["enq_qdepth", 19, false],
@@ -26,14 +23,12 @@
         ["deq_qdepth", 19, false],
         ["ingress_global_timestamp", 48, false],
         ["egress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
         ["mcast_grp", 16, false],
-        ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
         ["checksum_error", 1, false],
-        ["recirculate_flag", 32, false],
         ["parser_error", 32, false],
-        ["_padding", 5, false]
+        ["priority", 3, false],
+        ["_padding", 3, false]
       ]
     },
     {
@@ -100,12 +95,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["ParserInvalidArgument", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -203,7 +199,8 @@
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
-      "order" : ["ethernet", "ipv4"]
+      "order" : ["ethernet", "ipv4"],
+      "primitives" : []
     }
   ],
   "meter_arrays" : [],
@@ -213,7 +210,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "act",
+      "name" : "parserparalleltransitions91",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
@@ -239,7 +236,7 @@
       ]
     },
     {
-      "name" : "act_0",
+      "name" : "parserparalleltransitions93",
       "id" : 1,
       "runtime_data" : [],
       "primitives" : [
@@ -265,7 +262,7 @@
       ]
     },
     {
-      "name" : "act_1",
+      "name" : "parserparalleltransitions95",
       "id" : 2,
       "runtime_data" : [],
       "primitives" : [
@@ -291,7 +288,7 @@
       ]
     },
     {
-      "name" : "act_2",
+      "name" : "parserparalleltransitions97",
       "id" : 3,
       "runtime_data" : [],
       "primitives" : [
@@ -330,8 +327,14 @@
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_act",
+          "name" : "tbl_parserparalleltransitions91",
           "id" : 0,
+          "source_info" : {
+            "filename" : "parser-parallel-transitions.p4",
+            "line" : 91,
+            "column" : 36,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -340,10 +343,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0],
-          "actions" : ["act"],
+          "actions" : ["parserparalleltransitions91"],
           "base_default_next" : null,
           "next_tables" : {
-            "act" : null
+            "parserparalleltransitions91" : null
           },
           "default_entry" : {
             "action_id" : 0,
@@ -353,8 +356,14 @@
           }
         },
         {
-          "name" : "tbl_act_0",
+          "name" : "tbl_parserparalleltransitions93",
           "id" : 1,
+          "source_info" : {
+            "filename" : "parser-parallel-transitions.p4",
+            "line" : 93,
+            "column" : 36,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -363,10 +372,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [1],
-          "actions" : ["act_0"],
+          "actions" : ["parserparalleltransitions93"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_0" : null
+            "parserparalleltransitions93" : null
           },
           "default_entry" : {
             "action_id" : 1,
@@ -376,8 +385,14 @@
           }
         },
         {
-          "name" : "tbl_act_1",
+          "name" : "tbl_parserparalleltransitions95",
           "id" : 2,
+          "source_info" : {
+            "filename" : "parser-parallel-transitions.p4",
+            "line" : 95,
+            "column" : 36,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -386,10 +401,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [2],
-          "actions" : ["act_1"],
+          "actions" : ["parserparalleltransitions95"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_1" : null
+            "parserparalleltransitions95" : null
           },
           "default_entry" : {
             "action_id" : 2,
@@ -399,8 +414,14 @@
           }
         },
         {
-          "name" : "tbl_act_2",
+          "name" : "tbl_parserparalleltransitions97",
           "id" : 3,
+          "source_info" : {
+            "filename" : "parser-parallel-transitions.p4",
+            "line" : 97,
+            "column" : 36,
+            "source_fragment" : "="
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -409,10 +430,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [3],
-          "actions" : ["act_2"],
+          "actions" : ["parserparalleltransitions97"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_2" : null
+            "parserparalleltransitions97" : null
           },
           "default_entry" : {
             "action_id" : 3,
@@ -447,7 +468,7 @@
               }
             }
           },
-          "true_next" : "tbl_act",
+          "true_next" : "tbl_parserparalleltransitions91",
           "false_next" : "node_4"
         },
         {
@@ -473,7 +494,7 @@
               }
             }
           },
-          "true_next" : "tbl_act_0",
+          "true_next" : "tbl_parserparalleltransitions93",
           "false_next" : "node_6"
         },
         {
@@ -500,20 +521,30 @@
                       "left" : {
                         "type" : "expression",
                         "value" : {
-                          "op" : ">>",
+                          "op" : "&",
                           "left" : {
-                            "type" : "field",
-                            "value" : ["ethernet", "etherType"]
+                            "type" : "expression",
+                            "value" : {
+                              "op" : ">>",
+                              "left" : {
+                                "type" : "field",
+                                "value" : ["ethernet", "etherType"]
+                              },
+                              "right" : {
+                                "type" : "hexstr",
+                                "value" : "0x8"
+                              }
+                            }
                           },
                           "right" : {
                             "type" : "hexstr",
-                            "value" : "0x8"
+                            "value" : "0xffff"
                           }
                         }
                       },
                       "right" : {
                         "type" : "hexstr",
-                        "value" : "0xffff"
+                        "value" : "0x0f"
                       }
                     }
                   },
@@ -529,8 +560,8 @@
               }
             }
           },
-          "true_next" : "tbl_act_1",
-          "false_next" : "tbl_act_2"
+          "true_next" : "tbl_parserparalleltransitions95",
+          "false_next" : "tbl_parserparalleltransitions97"
         }
       ]
     },
@@ -578,24 +609,16 @@
       ["standard_metadata", "egress_global_timestamp"]
     ],
     [
-      "intrinsic_metadata.lf_field_list",
-      ["standard_metadata", "lf_field_list"]
-    ],
-    [
       "intrinsic_metadata.mcast_grp",
       ["standard_metadata", "mcast_grp"]
-    ],
-    [
-      "intrinsic_metadata.resubmit_flag",
-      ["standard_metadata", "resubmit_flag"]
     ],
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
     ],
     [
-      "intrinsic_metadata.recirculate_flag",
-      ["standard_metadata", "recirculate_flag"]
+      "intrinsic_metadata.priority",
+      ["standard_metadata", "priority"]
     ]
   ],
   "program" : "./parser-parallel-transitions.p4i",
