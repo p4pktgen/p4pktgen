@@ -6,10 +6,12 @@ class Config:
 
     def load_test_defaults(self,
                            no_packet_length_errs=True,
-                           run_simple_switch=True):
+                           run_simple_switch=True,
+                           solve_for_metadata=False):
         self.debug = False
         self.silent = False
         self.allow_uninitialized_reads = False
+        self.solve_for_metadata = solve_for_metadata
         self.allow_invalid_header_writes = False
         self.record_statistics = False
         self.allow_unimplemented_primitives = False
@@ -61,6 +63,7 @@ class Config:
         self.debug = args.debug
         self.silent = args.silent
         self.allow_uninitialized_reads = args.allow_uninitialized_reads
+        self.solve_for_metadata = args.solve_for_metadata
         self.allow_invalid_header_writes = args.allow_invalid_header_writes
         self.record_statistics = args.record_statistics
         self.allow_unimplemented_primitives = args.allow_unimplemented_primitives
@@ -89,6 +92,9 @@ class Config:
 
     def get_allow_uninitialized_reads(self):
         return self.allow_uninitialized_reads
+
+    def get_solve_for_metadata(self):
+        return self.solve_for_metadata
 
     def get_allow_invalid_header_writes(self):
         return self.allow_invalid_header_writes

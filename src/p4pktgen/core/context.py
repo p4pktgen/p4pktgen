@@ -45,6 +45,7 @@ class Context:
         self.invalid_header_writes = []
         self.runtime_data = []
         self.table_values = {}
+        self.input_metadata = {}
         self.source_info = None
 
         self.parsed_stacks = defaultdict(int)
@@ -60,6 +61,7 @@ class Context:
         context_copy.var_to_smt_val = dict.copy(self.var_to_smt_val)
         context_copy.runtime_data = list(self.runtime_data)
         context_copy.table_values = dict.copy(self.table_values)
+        context_copy.input_metadata = dict.copy(self.input_metadata)
         return context_copy
 
     def set_source_info(self, source_info):
@@ -171,16 +173,25 @@ class Context:
 
     def get_var(self, var_name):
         if var_name not in self.var_to_smt_var:
-            if Config().get_allow_uninitialized_reads():
-                return BitVecVal(0, self.fields[var_name].size)
+            # The variable that we're reading has not been set by the program.
+            field = self.fields[var_name]
+            new_var = BitVec(self.fresh_var(var_name), field.size)
+            if field.hdr.metadata and Config().get_solve_for_metadata():
+                # We're solving for metadata.  Set the field to an
+                # unconstrained value.
+                self.set_field_value(var_name[0], var_name[1], new_var)
+                self.input_metadata[var_name] = new_var
+            elif Config().get_allow_uninitialized_reads():
+                # Read the uninitialized value as zero.
+                return BitVecVal(0, field.size)
             else:
-                # If the header field has not been initialized, return a fresh
-                # variable for each read access
+                # If the header field has not been initialized, return a
+                # fresh variable for each read access
                 self.uninitialized_reads.append((var_name, self.source_info))
-                return BitVec(
-                    self.fresh_var(var_name), self.fields[var_name].size)
-        else:
-            return self.var_to_smt_var[var_name]
+                return new_var
+
+        assert var_name in self.var_to_smt_var
+        return self.var_to_smt_var[var_name]
 
     def get_name_constraints(self):
         var_constraints = []
