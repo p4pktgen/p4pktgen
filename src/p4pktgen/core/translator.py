@@ -1194,12 +1194,20 @@ class Translator:
         if packet_hexstr is None:
             input_packets = []
         else:
-            # TBD: Currently we always send packets into port 0.
-            # Should generalize that later.
+            input_metadata = {
+                '.'.join(var_name):
+                    model.eval(value, model_completion=True).as_long()
+                for (var_name, value) in context.input_metadata.iteritems()
+            }
             input_packets = [
-                OrderedDict([("port", 0), ("packet_len_bytes",
-                                           packet_len_bytes), ("packet_hexstr",
-                                                               packet_hexstr)])
+                OrderedDict([
+                    # TBD: Currently we always send packets into port 0.
+                    # Should generalize that later.
+                    ("port", 0),
+                    ("packet_len_bytes", packet_len_bytes),
+                    ("packet_hexstr", packet_hexstr),
+                    ("input_metadata", input_metadata),
+                ])
             ]
 
         # TBD: Would be nice to get rid of u in front of strings on

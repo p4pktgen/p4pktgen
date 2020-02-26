@@ -65,6 +65,13 @@ def main():
         """After reading BMv2 JSON file, print all parser paths, sorted by path length."""
     )
     parser.add_argument(
+        '-sm',
+        '--solve-for-metadata',
+        dest='solve_for_metadata',
+        action='store_true',
+        default=False,
+        help='Solve for initial values of standard and user metadata')
+    parser.add_argument(
         '-au',
         '--allow-uninitialized-reads',
         dest='allow_uninitialized_reads',
