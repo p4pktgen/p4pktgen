@@ -325,6 +325,18 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    def check_header_stack_variable_length(self):
+        # This test case checks that we can perform variable-length extractions
+        # into header stacks.
+
+        Config().load_test_defaults()
+
+        results = process_json_file('examples/header-stack-variable-length.json')
+        expected_results = {
+            ('start', 'sink', (u'tbl_headerstackvariablelength45', u'headerstackvariablelength45')):
+            TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
 
     # Fill in expected results for this test case, and change name to
     # have prefix 'check_' instead of 'xfail_', after p4pktgen has
