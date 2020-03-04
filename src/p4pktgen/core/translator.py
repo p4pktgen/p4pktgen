@@ -96,7 +96,7 @@ class Translator:
         else:
             self.json_file = None
 
-        self.solver = Solver()
+        self.solver = SolverFor('QF_UFBV')
         self.solver.push()
         self.hlir = hlir
         self.pipeline = pipeline
