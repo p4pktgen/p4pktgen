@@ -356,7 +356,9 @@ class Translator:
             return new_pos
         elif op == p4_parser_ops_enum.extract_VL:
             assert len(parser_op.value) == 2
-            assert isinstance(parser_op.value[0], TypeValueRegular)
+            assert isinstance(parser_op.value[0],
+                              TypeValueRegular) or isinstance(
+                                  parser_op.value[0], TypeValueStack)
 
             # XXX: Take sym_size into account
             sym_size = self.type_value_to_smt(context, parser_op.value[1],
@@ -366,13 +368,20 @@ class Translator:
             constraints.append(
                 sym_size & BitVecVal(0x7, sym_size.size()) == BitVecVal(
                     0x0, sym_size.size()))
-            extract_header = self.hlir.headers[parser_op.value[0].header_name]
+
+            header_name = parser_op.value[0].header_name
+            if isinstance(parser_op.value[0], TypeValueRegular):
+                header_type = self.hlir.headers[header_name].header_type
+            else:
+                type_name = self.hlir.header_stacks[
+                    header_name].header_type_name
+                header_type = self.hlir.get_header_type(type_name)
             extract_offset = BitVecVal(0, 32)
 
             if fail == 'PacketTooShort':
                 # XXX: Merge size calculation
                 header_size = BitVecVal(0, 32)
-                for name, field in extract_header.fields.items():
+                for name, field in header_type.fields.items():
                     # XXX: deal with valid flags
                     if field.name != '$valid$':
                         if field.var_length:
@@ -385,7 +394,7 @@ class Translator:
                 return new_pos
             elif fail == 'HeaderTooShort':
                 header_size = BitVecVal(0, 32)
-                for name, field in extract_header.fields.items():
+                for name, field in header_type.fields.items():
                     if field.var_length:
                         field_size_c = BitVecVal(field.size, sym_size.size())
 
@@ -406,7 +415,19 @@ class Translator:
                         header_size += BitVecVal(field.size, 32)
                 assert False
 
-            for name, field in extract_header.fields.items():
+            if isinstance(parser_op.value[0], TypeValueStack):
+                base_header_name = header_name
+                header_name = '{}[{}]'.format(
+                    header_name, context.parsed_stacks[header_name])
+                context.parsed_stacks[base_header_name] += 1
+
+            if isinstance(parser_op.value[0], TypeValueStack) or (
+                    isinstance(parser_op.value[0], TypeValueRegular)
+                    and not self.hlir.headers[header_name].metadata):
+                context.set_field_value(header_name, '$valid$',
+                                        BitVecVal(1, 1))
+
+            for field_name, field in header_type.fields.items():
                 # XXX: deal with valid flags
                 if field.name != '$valid$':
                     if field.var_length:
@@ -418,16 +439,16 @@ class Translator:
                         field_size_c = BitVecVal(field.size, sym_size.size())
                         ones, shift_bits = self.equalize_bv_size(
                             [ones, field_size_c - sym_size])
-                        context.insert(field,
-                                       field_val & (LShR(ones, shift_bits)))
+                        context.set_field_value(header_name, field_name,
+                                                field_val & (LShR(ones, shift_bits)))
                         constraints.append(ULE(sym_size, field_size_c))
 
                         extract_offset += sym_size
                     else:
-                        context.insert(field,
-                                       sym_packet.extract(
-                                           new_pos + extract_offset,
-                                           field.size))
+                        context.set_field_value(header_name, field_name,
+                                                sym_packet.extract(
+                                                    new_pos + extract_offset,
+                                                    field.size))
                         extract_offset += BitVecVal(field.size, 32)
                 else:
                     # Even though the P4_16 isValid() method
@@ -438,7 +459,8 @@ class Translator:
                     # vector value of 1 with the == operator, thus
                     # effectively treating the "ipv4.$valid$" as
                     # if it is a bit<1> type.
-                    context.insert(field, BitVecVal(1, 1))
+                    context.set_field_value(header_name, field_name,
+                                            BitVecVal(1, 1))
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.verify:

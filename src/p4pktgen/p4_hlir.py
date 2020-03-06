@@ -350,7 +350,9 @@ class P4_HLIR(object):
                         for pair in k['parameters']:
                             parser_op.value.append(parse_type_value(pair))
 
-                    if parser_op.op == p4_parser_ops_enum.extract and isinstance(parser_op.value[0], TypeValueStack):
+                    if (parser_op.op == p4_parser_ops_enum.extract or
+                        parser_op.op == p4_parser_ops_enum.extract_VL) \
+                            and isinstance(parser_op.value[0], TypeValueStack):
                         p4ps.header_stack_extracts.append(parser_op.value[0].header_name)
 
                     if parser_op.op == p4_parser_ops_enum.verify:
