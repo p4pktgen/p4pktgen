@@ -154,6 +154,34 @@ class Translator:
             raise Exception('Transition value type not supported: {}'.format(
                 value.__class__))
 
+    def stack_next_header_name(self, context, header_name):
+        name = '{}[{}]'.format(header_name, context.parsed_stacks[header_name])
+        context.parsed_stacks[header_name] += 1
+        return name
+
+    def set_valid_field(self, context, header_name):
+        # Even though the P4_16 isValid() method
+        # returns a boolean value, it appears that
+        # when p4c-bm2-ss compiles expressions like
+        # "if (ipv4.isValid())" into a JSON file, it
+        # compares the "ipv4.$valid$" field to a bit
+        # vector value of 1 with the == operator, thus
+        # effectively treating the "ipv4.$valid$" as
+        # if it is a bit<1> type.
+        context.set_field_value(header_name, '$valid$',
+                                BitVecVal(1, 1))
+
+    def value_header_name_and_type(self, value):
+        header_name = value.header_name
+        if isinstance(value, TypeValueRegular):
+            header_type = self.hlir.headers[header_name].header_type
+        else:
+            assert isinstance(value, TypeValueStack)
+            type_name = self.hlir.header_stacks[
+                header_name].header_type_name
+            header_type = self.hlir.get_header_type(type_name)
+        return header_name, header_type
+
     def type_value_to_smt(self, context, type_value, sym_packet=None,
                           pos=None):
         if isinstance(type_value, TypeValueHexstr):
@@ -288,14 +316,7 @@ class Translator:
                               TypeValueRegular) or isinstance(
                                   parser_op.value[0], TypeValueStack)
 
-            header_name = parser_op.value[0].header_name
-            header_type = None
-            if isinstance(parser_op.value[0], TypeValueRegular):
-                header_type = self.hlir.headers[header_name].header_type
-            else:
-                type_name = self.hlir.header_stacks[
-                    header_name].header_type_name
-                header_type = self.hlir.get_header_type(type_name)
+            header_name, header_type = self.value_header_name_and_type(parser_op.value[0])
 
             if fail == 'PacketTooShort':
                 # XXX: precalculate extract_offset in HLIR
@@ -308,24 +329,12 @@ class Translator:
                 return new_pos
 
             if isinstance(parser_op.value[0], TypeValueStack):
-                base_header_name = header_name
-                header_name = '{}[{}]'.format(
-                    header_name, context.parsed_stacks[header_name])
-                context.parsed_stacks[base_header_name] += 1
+                header_name = self.stack_next_header_name(context, header_name)
 
             if isinstance(parser_op.value[0], TypeValueStack) or (
                     isinstance(parser_op.value[0], TypeValueRegular)
                     and not self.hlir.headers[header_name].metadata):
-                # Even though the P4_16 isValid() method
-                # returns a boolean value, it appears that
-                # when p4c-bm2-ss compiles expressions like
-                # "if (ipv4.isValid())" into a JSON file, it
-                # compares the "ipv4.$valid$" field to a bit
-                # vector value of 1 with the == operator, thus
-                # effectively treating the "ipv4.$valid$" as
-                # if it is a bit<1> type.
-                context.set_field_value(header_name, '$valid$', BitVecVal(
-                    1, 1))
+                self.set_valid_field(context, header_name)
 
             # Map bits from packet to context
             extract_offset = BitVecVal(0, 32)
@@ -369,14 +378,7 @@ class Translator:
                 sym_size & BitVecVal(0x7, sym_size.size()) == BitVecVal(
                     0x0, sym_size.size()))
 
-            header_name = parser_op.value[0].header_name
-            if isinstance(parser_op.value[0], TypeValueRegular):
-                header_type = self.hlir.headers[header_name].header_type
-            else:
-                type_name = self.hlir.header_stacks[
-                    header_name].header_type_name
-                header_type = self.hlir.get_header_type(type_name)
-            extract_offset = BitVecVal(0, 32)
+            header_name, header_type = self.value_header_name_and_type(parser_op.value[0])
 
             if fail == 'PacketTooShort':
                 # XXX: Merge size calculation
@@ -416,20 +418,17 @@ class Translator:
                 assert False
 
             if isinstance(parser_op.value[0], TypeValueStack):
-                base_header_name = header_name
-                header_name = '{}[{}]'.format(
-                    header_name, context.parsed_stacks[header_name])
-                context.parsed_stacks[base_header_name] += 1
+                header_name = self.stack_next_header_name(context, header_name)
 
             if isinstance(parser_op.value[0], TypeValueStack) or (
                     isinstance(parser_op.value[0], TypeValueRegular)
                     and not self.hlir.headers[header_name].metadata):
-                context.set_field_value(header_name, '$valid$',
-                                        BitVecVal(1, 1))
+                self.set_valid_field(context, header_name)
 
+            extract_offset = BitVecVal(0, 32)
             for field_name, field in header_type.fields.items():
                 # XXX: deal with valid flags
-                if field.name != '$valid$':
+                if field_name != '$valid$':
                     if field.var_length:
                         # This messes up the packet size somewhat
                         field_val = sym_packet.extract(
@@ -451,16 +450,7 @@ class Translator:
                                                     field.size))
                         extract_offset += BitVecVal(field.size, 32)
                 else:
-                    # Even though the P4_16 isValid() method
-                    # returns a boolean value, it appears that
-                    # when p4c-bm2-ss compiles expressions like
-                    # "if (ipv4.isValid())" into a JSON file, it
-                    # compares the "ipv4.$valid$" field to a bit
-                    # vector value of 1 with the == operator, thus
-                    # effectively treating the "ipv4.$valid$" as
-                    # if it is a bit<1> type.
-                    context.set_field_value(header_name, field_name,
-                                            BitVecVal(1, 1))
+                    self.set_valid_field(context, header_name)
 
             return new_pos + extract_offset
         elif op == p4_parser_ops_enum.verify:
