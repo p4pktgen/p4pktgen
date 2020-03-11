@@ -1,11 +1,7 @@
 from __future__ import print_function
 import argparse
-import collections
 import logging
 from collections import defaultdict, OrderedDict
-import sys
-import time
-from random import shuffle
 
 from graphviz import Digraph
 
@@ -13,8 +9,8 @@ from p4_top import P4_Top
 from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
-from p4pktgen.core.strategy import *
-from p4pktgen.core.translator import TestPathResult
+from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
+from p4pktgen.core.strategy import EdgeLabels, TLUBFParserVisitor, LeastUsedPaths, EdgeCoverageGraphVisitor
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.hlir.transition import TransitionType, BoolTransition
@@ -409,12 +405,6 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
                                  graph_visitor)
     parser_paths = graph_visitor.all_paths
 
-    num_parser_paths = len(parser_paths)
-    num_parser_path_nodes = 0
-    #num_parser_paths, num_parser_path_nodes, num_parser_path_edges = \
-    #    parser_graph.count_all_paths('start')
-    # print('\n'.join([str(p) for p in parser_paths]))
-
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))
@@ -437,25 +427,19 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
     logging.info("Counted %d paths, %d nodes, %d edges"
                  " in parser + ingress control flow graph"
-                 "" % (len(parser_paths) * num_control_paths, num_parser_path_nodes + num_control_path_nodes,
+                 "" % (len(parser_paths) * num_control_paths, num_control_path_nodes,
                        num_parser_path_edges + num_control_path_edges))
-
-    # The only reason first_time is a list is so we can mutate the
-    # global value inside of a sub-method.
-    first_time = [True]
-    parser_path_num = 0
 
     # XXX: move
     path_count = defaultdict(int)
 
-    for parser_path in parser_paths:
+    for i_path, parser_path in enumerate(parser_paths):
         for e in parser_path:
             if path_count[e] == 0:
                 Statistics().num_covered_edges += 1
             path_count[e] += 1
-        parser_path_num += 1
         logging.info("Analyzing parser_path %d of %d: %s"
-                     "" % (parser_path_num, len(parser_paths), parser_path))
+                     "" % (i_path, len(parser_paths), parser_path))
         if not translator.generate_parser_constraints(parser_path):
             logging.info("Could not find any packet to satisfy parser path: %s"
                          "" % (parser_path))
