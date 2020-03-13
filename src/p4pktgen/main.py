@@ -213,6 +213,24 @@ def generate_visualizations(input_file):
     generate_graphviz_graph(top.eg_pipeline, top.eg_graph)
 
 
+def print_parser_paths(parser_paths):
+    parser_paths_with_len = {}
+    for p in parser_paths:
+        parser_paths_with_len.setdefault(len(p), []).append(p)
+    for plen in sorted(parser_paths_with_len.keys()):
+        logging.info("%6d parser paths with len %2d"
+                     "" % (len(parser_paths_with_len[plen]), plen))
+    for plen in sorted(parser_paths_with_len.keys()):
+        logging.info("Contents of %6d parser paths with len %2d:"
+                     "" % (len(parser_paths_with_len[plen]), plen))
+        i = 0
+        for p in parser_paths_with_len[plen]:
+            i += 1
+            logging.info("Path %d of %d with len %d:"
+                         "" % (i, len(parser_paths_with_len[plen]), plen))
+            print(p)
+
+
 def generate_test_cases(input_file, debug=False):
     top = P4_Top(debug)
     top.load_json_file(input_file)
@@ -249,21 +267,7 @@ def generate_test_cases(input_file, debug=False):
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))
     if Config().get_show_parser_paths():
-        parser_paths_with_len = collections.defaultdict(list)
-        for p in parser_paths:
-            parser_paths_with_len[len(p)].append(p)
-        for plen in sorted(parser_paths_with_len.keys()):
-            logging.info("%6d parser paths with len %2d"
-                         "" % (len(parser_paths_with_len[plen]), plen))
-        for plen in sorted(parser_paths_with_len.keys()):
-            logging.info("Contents of %6d parser paths with len %2d:"
-                         "" % (len(parser_paths_with_len[plen]), plen))
-            i = 0
-            for p in parser_paths_with_len[plen]:
-                i += 1
-                logging.info("Path %d of %d with len %d:"
-                             "" % (i, len(parser_paths_with_len[plen]), plen))
-                print(p)
+        print_parser_paths(parser_paths)
 
     logging.info("Counted %d paths, %d nodes, %d edges"
                  " in parser + ingress control flow graph"
