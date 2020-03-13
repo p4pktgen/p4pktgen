@@ -459,7 +459,7 @@ class P4_HLIR(object):
         return self.id_to_action[i]
 
     # Creates a graph that represents the parser
-    def get_parser_graph(self):
+    def build_parser_graph(self):
         graph = Graph()
 
         # Add all the transitions as edges to the graph

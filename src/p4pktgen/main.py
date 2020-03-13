@@ -6,7 +6,6 @@ from collections import defaultdict, OrderedDict
 from graphviz import Digraph
 
 from p4_top import P4_Top
-from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
 from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
@@ -344,27 +343,11 @@ def generate_graphviz_graph(pipeline, graph, lcas={}):
 
 def process_json_file(input_file, debug=False, generate_graphs=False):
     top = P4_Top(debug)
-    top.build_from_json(input_file)
-
-    # Get the parser graph
-    hlir = P4_HLIR(debug, top.json_obj)
-    parser_graph = hlir.get_parser_graph()
-    # parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
-    # logging.debug("parser_graph has %d sources %s, %d sinks %s"
-    #               "" % (len(parser_sources), parser_sources, len(parser_sinks),
-    #                     parser_sinks))
-
-    assert 'ingress' in hlir.pipelines
-    in_pipeline = hlir.pipelines['ingress']
-    graph, source_info_to_node_name = in_pipeline.generate_CFG()
-    logging.debug(graph)
-    graph_sources, graph_sinks = graph.get_sources_and_sinks()
-    logging.debug("graph has %d sources %s, %d sinks %s"
-                  "" % (len(graph_sources), graph_sources, len(graph_sinks),
-                        graph_sinks))
+    top.load_json_file(input_file)
 
     # Graphviz visualization
     if generate_graphs:
+        top.build_graph(egress=True)
         graph_lcas = {}
         #tmp_time = time.time()
         #for v in graph.get_nodes():
@@ -372,34 +355,36 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
         #lca_comp_time = time.time() - tmp_time
         #logging.info("%.3f sec to compute lowest common ancestors for ingress",
         #             lca_comp_time)
-        generate_graphviz_graph(in_pipeline, graph, lcas=graph_lcas)
-        eg_pipeline = hlir.pipelines['egress']
-        eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
-        generate_graphviz_graph(eg_pipeline, eg_graph)
+        generate_graphviz_graph(top.in_pipeline, top.in_graph, lcas=graph_lcas)
+        generate_graphviz_graph(top.eg_pipeline, top.eg_graph)
         return
 
+    top.build_graph()
     Statistics().init()
+
     # XXX: move
     labels = defaultdict(lambda: EdgeLabels.UNVISITED)
-    translator = Translator(input_file, hlir, in_pipeline)
+    translator = Translator(input_file, top.hlir, top.in_pipeline)
     results = OrderedDict()
+
     # TBD: Make this filename specifiable via command line option
     test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
 
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
-        graph.count_all_paths(in_pipeline.init_table_name)
-    num_parser_path_edges = parser_graph.num_edges()
-    Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges 
+        top.in_graph.count_all_paths(top.in_pipeline.init_table_name)
+    num_parser_path_edges = top.parser_graph.num_edges()
+    Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges
 
     if Config().get_try_least_used_branches_first():
-        p_visitor = TLUBFParserVisitor(graph, labels, translator, source_info_to_node_name, results, test_case_writer, in_pipeline)
-        lup = LeastUsedPaths(hlir, parser_graph, hlir.parsers['parser'].init_state, p_visitor)
+        p_visitor = TLUBFParserVisitor(top.in_graph, labels, translator, top.in_source_info_to_node_name, results,
+                                       test_case_writer, top.in_pipeline)
+        lup = LeastUsedPaths(top.hlir, top.parser_graph, top.hlir.parsers['parser'].init_state, p_visitor)
         lup.visit()
         exit(0)
 
-    graph_visitor = ParserGraphVisitor(hlir)
-    parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink',
-                                 graph_visitor)
+    graph_visitor = ParserGraphVisitor(top.hlir)
+    top.parser_graph.visit_all_paths(top.hlir.parsers['parser'].init_state, 'sink',
+                                     graph_visitor)
     parser_paths = graph_visitor.all_paths
 
     max_path_len = max([len(p) for p in parser_paths])
@@ -445,15 +430,15 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
         graph_visitor = None
         if Config().get_try_least_used_branches_first():
-            graph_visitor = EdgeCoverageGraphVisitor(graph, labels, translator, parser_path,
-                                                     source_info_to_node_name,
+            graph_visitor = EdgeCoverageGraphVisitor(top.in_graph, labels, translator, parser_path,
+                                                     top.in_source_info_to_node_name,
                                                      results, test_case_writer)
         else:
             graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
-                                                     source_info_to_node_name,
+                                                     top.in_source_info_to_node_name,
                                                      results, test_case_writer)
 
-        graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
+        top.in_graph.visit_all_paths(top.in_pipeline.init_table_name, None, graph_visitor)
 
         # Check if we generated enough test cases
         if Statistics().num_test_cases == Config().get_num_test_cases():
