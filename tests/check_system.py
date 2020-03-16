@@ -3,9 +3,65 @@ from p4pktgen.config import Config
 from p4pktgen.core.translator import TestPathResult
 
 
+def load_test_config(no_packet_length_errs=True,
+                     run_simple_switch=True,
+                     solve_for_metadata=False):
+    config = Config()
+    config.debug = False
+    config.silent = False
+    config.allow_uninitialized_reads = False
+    config.solve_for_metadata = solve_for_metadata
+    config.allow_invalid_header_writes = False
+    config.record_statistics = False
+    config.allow_unimplemented_primitives = False
+    config.dump_test_case = False
+    config.show_parser_paths = False
+    config.no_packet_length_errs = no_packet_length_errs
+    config.run_simple_switch = run_simple_switch
+    config.random_tlubf = False
+
+    # Physical Ethernet ports have a minimum frame size of 64
+    # bytes, which is 14 bytes of header, 46 bytes of payload,
+    # and 4 bytes of CRC (p4pktgen and simple_switch don't
+    # deal with the CRC).
+
+    # It appears that virtual Ethernet interfaces allow
+    # frames as short as 14 bytes, and perhaps shorter.
+
+    # Scapy's Ether() method does not support packets shorter than
+    # 6 bytes, but we no longer call Ether() on packets that
+    # p4pktgen creates, so it is not a problem to generate shorter
+    # packets.
+
+    # TBD exactly what sizes of packets are supported to be sent
+    # through a Linux virtual Ethernet interface.  It might be 60
+    # bytes, because of the minimum Ethernet frame size.
+
+    # The Ethernet minimum size does not seem to apply for packets
+    # sent to simple_switch via pcap files.
+
+    # TBD: Create the necessary constraints to use the values
+    # below as their names would imply.
+    config.min_packet_len_generated = 1
+    # TBD: Use this value in SMT variable creation to limit the
+    # size of the packet BitVec variable.
+    config.max_packet_len_generated = 1536
+
+    # None means no limit on the number of packets generated per
+    # parser path, other than the number of paths in the ingress
+    # control block.
+    config.max_paths_per_parser_path = None
+    config.num_test_cases = None
+    config.try_least_used_branches_first = False
+    config.hybrid_input = True
+    config.conditional_opt = True
+    config.table_opt = True
+    config.incremental = True
+
+
 class CheckSystem:
     def check_demo1b(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases('examples/demo1b.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
@@ -34,7 +90,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo1(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases(
             'examples/demo1-action-names-uniquified.p4_16.json')
         expected_results = {
@@ -54,7 +110,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo1_no_uninit_reads(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases(
             'examples/demo1-no-uninit-reads.p4_16.json')
         expected_results = {
@@ -78,7 +134,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo9b(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases('examples/demo9b.json')
         expected_results = {
             ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
@@ -119,7 +175,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_config_table(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases('examples/config-table.json')
         expected_results = {
             ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
@@ -142,7 +198,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_demo1_rm_header(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases(
             'examples/demo1_rm_header.json')
         expected_results = {
@@ -154,7 +210,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_add_remove_header(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases(
             'examples/add-remove-header.json')
         expected_results = {
@@ -184,7 +240,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_checksum_ipv4_with_options(self):
-        Config().load_test_defaults()
+        load_test_config()
         # This test case exercises variable-length extract, lookahead,
         # and verify statements in the parser.
         results = generate_test_cases(
@@ -209,7 +265,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_parser_impossible_transitions(self):
-        Config().load_test_defaults()
+        load_test_config()
         # This test case has at least one parser path that is
         # impossible to traverse, and several that are possible that,
         # when taken, make certain paths through ingress impossible.
@@ -252,7 +308,7 @@ class CheckSystem:
         assert results == expected_results
 
     def check_parser_impossible_transitions2_with_epl(self):
-        Config().load_test_defaults(no_packet_length_errs=False)
+        load_test_config(no_packet_length_errs=False)
         # Similar to the previous test case, this test case has
         # several parser paths that are impossible to traverse, and
         # several that are possible.
@@ -308,8 +364,8 @@ class CheckSystem:
 
         # There's no plumbing from the solved metadata to simple_switch, so
         # disable it.
-        Config().load_test_defaults(solve_for_metadata=True,
-                                    run_simple_switch=False)
+        load_test_config(solve_for_metadata=True,
+                         run_simple_switch=False)
 
         results = generate_test_cases('examples/user-metadata.json')
         expected_results = {
@@ -329,7 +385,7 @@ class CheckSystem:
         # This test case checks that we can perform variable-length extractions
         # into header stacks.
 
-        Config().load_test_defaults()
+        load_test_config()
 
         results = generate_test_cases('examples/header-stack-variable-length.json')
         expected_results = {
@@ -342,7 +398,7 @@ class CheckSystem:
         # This test case checks that we do not attempt to advance beyond the
         # last element of a header stack.
 
-        Config().load_test_defaults()
+        load_test_config()
 
         results = generate_test_cases('examples/parser-cycle.json')
         expected_results = {
@@ -362,7 +418,7 @@ class CheckSystem:
     # not correctly handle multiple possible transitions from parser
     # state A to parser state B.
     def xfail_parser_parallel_paths(self):
-        Config().load_test_defaults()
+        load_test_config()
         results = generate_test_cases('examples/parser-parallel-paths.json')
         expected_results = {
         }
