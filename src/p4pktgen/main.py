@@ -244,7 +244,10 @@ def generate_test_cases(input_file, debug=False):
     results = OrderedDict()
 
     # TBD: Make this filename specifiable via command line option
-    test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
+    test_case_writer = TestCaseWriter(
+        Config().get_output_json_path(),
+        Config().get_output_pcap_path()
+    )
 
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
         top.in_graph.count_all_paths(top.in_pipeline.init_table_name)

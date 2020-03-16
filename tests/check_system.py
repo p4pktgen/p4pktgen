@@ -57,6 +57,7 @@ def load_test_config(no_packet_length_errs=True,
     config.conditional_opt = True
     config.table_opt = True
     config.incremental = True
+    config.output_path = './test-case'
 
 
 class CheckSystem:

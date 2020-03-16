@@ -28,6 +28,7 @@ class Config:
         self.table_opt = args.table_opt
         self.incremental = args.incremental
         self.random_tlubf = args.random_tlubf
+        self.output_path = './test-case'
 
     def get_debug(self):
         return self.debug
@@ -91,3 +92,9 @@ class Config:
 
     def get_random_tlubf(self):
         return self.random_tlubf
+
+    def get_output_json_path(self):
+        return self.output_path + '.json'
+
+    def get_output_pcap_path(self):
+        return self.output_path + '.pcap'
