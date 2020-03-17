@@ -18,9 +18,8 @@ def log_graph(name, graph):
 class P4_Top():
     """Top-level for P4_16 API. Takes input P4 JSON"""
 
-    def __init__(self, debug):
+    def __init__(self):
         # Set class variables
-        self.debug = debug
         self.json_file = None
         self.json_obj = None
 
@@ -43,7 +42,7 @@ class P4_Top():
 
     def build_graph(self, ingress=True, egress=False):
         # Get the parser graph
-        self.hlir = P4_HLIR(self.debug, self.json_obj)
+        self.hlir = P4_HLIR(self.json_obj)
         self.parser_graph = self.hlir.build_parser_graph()
 
         if ingress:

@@ -277,13 +277,12 @@ class P4_HLIR(object):
             # Create parse_states dict
             self.parse_states = OrderedDict()
 
-    def __init__(self, debug, json_obj):
+    def __init__(self, json_obj):
         """
         The order in which these objects are intialized is not arbitrary
         There is a dependence between these objects and therefore order 
         must be preserved
         """
-        self.debug = debug
         self.json_obj = json_obj
 
         # Build the IR objects as class members variables.

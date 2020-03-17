@@ -188,9 +188,9 @@ def main():
     #    format='%(levelname)s: [%(filename)s:%(lineno)s] %(message)s', level=logging.INFO)
     logging.basicConfig(
         format='%(levelname)s: %(message)s', level=logging.INFO)
-    if args.debug:
+    if Config().get_debug():
         logging.getLogger().setLevel(logging.DEBUG)
-    elif args.silent:
+    elif Config().get_silent():
         logging.getLogger().setLevel(logging.ERROR)
 
     assert args.format == 'json', 'Only json input format is currently supported'
@@ -201,11 +201,11 @@ def main():
         return
 
     # Build the IR
-    generate_test_cases(args.input_file, debug=args.debug)
+    generate_test_cases(args.input_file)
 
 
 def generate_visualizations(input_file):
-    top = P4_Top(debug=False)
+    top = P4_Top()
     top.load_json_file(input_file)
     top.build_graph(ingress=True, egress=True)
     graph_lcas = {}
@@ -231,8 +231,8 @@ def print_parser_paths(parser_paths):
             print(p)
 
 
-def generate_test_cases(input_file, debug=False):
-    top = P4_Top(debug)
+def generate_test_cases(input_file):
+    top = P4_Top()
     top.load_json_file(input_file)
 
     top.build_graph()
