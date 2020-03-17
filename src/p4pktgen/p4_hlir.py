@@ -5,7 +5,7 @@ import logging
 from pprint import pprint
 from collections import defaultdict, OrderedDict
 
-from p4_utils import p4_parser_ops_enum
+from p4_utils import P4ParserOpsEnum
 from p4pktgen.hlir.type_value import *
 from p4pktgen.hlir.transition import *
 from p4pktgen.util.graph import Graph, Edge
@@ -171,18 +171,18 @@ class HLIR_Parser_Ops(object):
     def __init__(self, json_op):
         # I wish there was a neater way to do the following mapping
         if json_op['op'] == 'extract':
-            self.op = p4_parser_ops_enum.extract
+            self.op = P4ParserOpsEnum.extract
         elif json_op['op'] == 'extract_VL':
-            self.op = p4_parser_ops_enum.extract_VL
+            self.op = P4ParserOpsEnum.extract_VL
             # TODO: Needs the expression class
         elif json_op['op'] == 'set':
-            self.op = p4_parser_ops_enum.set
+            self.op = P4ParserOpsEnum.set
         elif json_op['op'] == 'verify':
-            self.op = p4_parser_ops_enum.verify
+            self.op = P4ParserOpsEnum.verify
         elif json_op['op'] == 'shift':
-            self.op = p4_parser_ops_enum.shift
+            self.op = P4ParserOpsEnum.shift
         elif json_op['op'] == 'primitive':
-            self.op = p4_parser_ops_enum.primitive
+            self.op = P4ParserOpsEnum.primitive
         else:
             raise Exception(
                 'Unexpected op: {}'.format(json_op['op']))
@@ -348,32 +348,32 @@ class P4_HLIR(object):
                 for i, k in enumerate(parse_state['parser_ops']):
                     parser_op = HLIR_Parser_Ops(k)
 
-                    if parser_op.op == p4_parser_ops_enum.primitive:
+                    if parser_op.op == P4ParserOpsEnum.primitive:
                         parser_op.value = [PrimitiveCall(k['parameters'][0])]
                     else:
                         parser_op.value = []
                         for pair in k['parameters']:
                             parser_op.value.append(parse_type_value(pair))
 
-                    if (parser_op.op == p4_parser_ops_enum.extract or
-                        parser_op.op == p4_parser_ops_enum.extract_VL) \
+                    if (parser_op.op == P4ParserOpsEnum.extract or
+                        parser_op.op == P4ParserOpsEnum.extract_VL) \
                             and isinstance(parser_op.value[0], TypeValueStack):
                         p4ps.header_stack_extracts.append(parser_op.value[0].header_name)
 
-                    if parser_op.op == p4_parser_ops_enum.verify:
+                    if parser_op.op == P4ParserOpsEnum.verify:
                         error_str = self.id_to_errors[parser_op.value[1].value]
                         p4ps.parser_ops_transitions.append([
                             ParserOpTransition(p4ps.name, parser_op, i, 'sink',
                                                error_str)
                         ])
                     elif not (Config().get_no_packet_length_errs()
-                              ) and parser_op.op == p4_parser_ops_enum.extract:
+                              ) and parser_op.op == P4ParserOpsEnum.extract:
                         p4ps.parser_ops_transitions.append([
                             ParserOpTransition(p4ps.name, parser_op, i, 'sink',
                                                'PacketTooShort')
                         ])
                     elif not (Config().get_no_packet_length_errs(
-                    )) and parser_op.op == p4_parser_ops_enum.extract_VL:
+                    )) and parser_op.op == P4ParserOpsEnum.extract_VL:
                         p4ps.parser_ops_transitions.append([
                             ParserOpTransition(p4ps.name, parser_op, i, 'sink',
                                                'PacketTooShort')

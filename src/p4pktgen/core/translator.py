@@ -309,7 +309,7 @@ class Translator:
     def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos,
                          new_pos, constraints):
         op = parser_op.op
-        if op == p4_parser_ops_enum.extract:
+        if op == P4ParserOpsEnum.extract:
             # Extract expects one parameter
             assert len(parser_op.value) == 1
             assert isinstance(parser_op.value[0],
@@ -346,7 +346,7 @@ class Translator:
                 extract_offset += BitVecVal(field.size, 32)
 
             return new_pos + extract_offset
-        elif op == p4_parser_ops_enum.set:
+        elif op == P4ParserOpsEnum.set:
             assert len(parser_op.value) == 2
             assert isinstance(parser_op.value[0], TypeValueField)
             dest_field = self.hlir.get_field(parser_op.value[0])
@@ -363,7 +363,7 @@ class Translator:
                     rhs_expr = Extract(dest_size - 1, 0, rhs_expr)
             context.insert(dest_field, rhs_expr)
             return new_pos
-        elif op == p4_parser_ops_enum.extract_VL:
+        elif op == P4ParserOpsEnum.extract_VL:
             assert len(parser_op.value) == 2
             assert isinstance(parser_op.value[0],
                               TypeValueRegular) or isinstance(
@@ -453,13 +453,13 @@ class Translator:
                     self.set_valid_field(context, header_name)
 
             return new_pos + extract_offset
-        elif op == p4_parser_ops_enum.verify:
+        elif op == P4ParserOpsEnum.verify:
             expected_result = BoolVal(False) if fail != '' else BoolVal(True)
             sym_cond = self.type_value_to_smt(context, parser_op.value[0],
                                               sym_packet, pos)
             constraints.append(sym_cond == expected_result)
             return new_pos
-        elif op == p4_parser_ops_enum.primitive:
+        elif op == P4ParserOpsEnum.primitive:
             primitive = parser_op.value[0]
             # XXX: merge with action_to_smt
             if primitive.op == 'add_header':
