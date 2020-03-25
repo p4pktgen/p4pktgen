@@ -429,3 +429,18 @@ class CheckSystem:
         expected_results = {
         }
         assert results == expected_results
+
+    def check_header_stack_too_many_extracts(self):
+        # This test case checks that parser paths that would result in
+        # overfilling of header stacks are not followed.
+        load_test_config()
+        results = run_test('examples/header-stack-too-many-extracts.json')
+        expected_results = {
+            ('start', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
+            TestPathResult.SUCCESS,
+            ('start', 'extract_const', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
+            TestPathResult.SUCCESS,
+            ('start', 'extract_vl', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
+            TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
