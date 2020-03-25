@@ -1,4 +1,4 @@
-from p4pktgen.main import generate_test_cases
+from p4pktgen.main import generate_test_cases, path_tuple
 from p4pktgen.config import Config
 from p4pktgen.core.translator import TestPathResult
 
@@ -60,10 +60,18 @@ def load_test_config(no_packet_length_errs=True,
     config.output_path = './test-case'
 
 
+def run_test(json_filename):
+    return {
+        path_tuple(parser_path, control_path): result
+        for ((parser_path, control_path), result) in
+            generate_test_cases(json_filename).iteritems()
+    }
+
+
 class CheckSystem:
     def check_demo1b(self):
         load_test_config()
-        results = generate_test_cases('examples/demo1b.json')
+        results = run_test('examples/demo1b.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
@@ -92,7 +100,7 @@ class CheckSystem:
 
     def check_demo1(self):
         load_test_config()
-        results = generate_test_cases(
+        results = run_test(
             'examples/demo1-action-names-uniquified.p4_16.json')
         expected_results = {
             ('start', 'sink', (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr')):
@@ -112,7 +120,7 @@ class CheckSystem:
 
     def check_demo1_no_uninit_reads(self):
         load_test_config()
-        results = generate_test_cases(
+        results = run_test(
             'examples/demo1-no-uninit-reads.p4_16.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'tbl_demo1nouninitreads120', u'demo1nouninitreads120'), (u'node_3', (True, (u'demo1-no-uninit-reads.p4_16.p4', 121, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.my_drop'), (u'node_5', (True, (u'demo1-no-uninit-reads.p4_16.p4', 123, u'!meta.fwd_metadata.dropped')))):
@@ -136,7 +144,7 @@ class CheckSystem:
 
     def check_demo9b(self):
         load_test_config()
-        results = generate_test_cases('examples/demo9b.json')
+        results = run_test('examples/demo9b.json')
         expected_results = {
             ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
             TestPathResult.UNINITIALIZED_READ,
@@ -177,7 +185,7 @@ class CheckSystem:
 
     def check_config_table(self):
         load_test_config()
-        results = generate_test_cases('examples/config-table.json')
+        results = run_test('examples/config-table.json')
         expected_results = {
             ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
             TestPathResult.UNINITIALIZED_READ,
@@ -200,7 +208,7 @@ class CheckSystem:
 
     def check_demo1_rm_header(self):
         load_test_config()
-        results = generate_test_cases(
+        results = run_test(
             'examples/demo1_rm_header.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'tbl_demo1_rm_header83', u'demo1_rm_header83')):
@@ -212,7 +220,7 @@ class CheckSystem:
 
     def check_add_remove_header(self):
         load_test_config()
-        results = generate_test_cases(
+        results = run_test(
             'examples/add-remove-header.json')
         expected_results = {
             ('start', 'parse_ipv4', 'sink', (u'node_2', (True, (u'add-remove-header.p4', 136, u'hdr.ipv4.isValid()'))), (u'ingress.ipv4_da_lpm', u'ingress.set_l2ptr'), (u'node_4', (True, (u'add-remove-header.p4', 138, u'!hdr.outer_ipv4.isValid()'))), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
@@ -244,8 +252,7 @@ class CheckSystem:
         load_test_config()
         # This test case exercises variable-length extract, lookahead,
         # and verify statements in the parser.
-        results = generate_test_cases(
-            'examples/checksum-ipv4-with-options.json')
+        results = run_test('examples/checksum-ipv4-with-options.json')
         expected_results = {
             ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (True, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()'))), (u'node_3', (True, (u'checksum-ipv4-with-options.p4', 130, u'hdr.ipv4.ihl == 14')))):
             TestPathResult.SUCCESS,
@@ -253,7 +260,6 @@ class CheckSystem:
             TestPathResult.SUCCESS,
             ('start', u'parse_ipv4', u'parse_tcp', 'sink', (u'node_2', (False, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
-
             ('start', u'parse_ipv4', 'sink', (u'node_2', (True, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
             TestPathResult.NO_PACKET_FOUND,
             ('start', u'parse_ipv4', 'sink', (u'node_2', (False, (u'checksum-ipv4-with-options.p4', 125, u'hdr.ipv4.isValid() && hdr.tcp.isValid()')))):
@@ -272,7 +278,7 @@ class CheckSystem:
         # when taken, make certain paths through ingress impossible.
         # Note that there are no test cases containing the state
         # parse_unreachable_state in the parser paths.
-        results = generate_test_cases(
+        results = run_test(
             'examples/parser-impossible-transitions.json')
         expected_results = {
             ('start', 'parse_good', 'sink', (u'node_2', (False, (u'parser-impossible-transitions.p4', 92, u'meta.fwd_metadata.parse_status == 0')))):
@@ -313,7 +319,7 @@ class CheckSystem:
         # Similar to the previous test case, this test case has
         # several parser paths that are impossible to traverse, and
         # several that are possible.
-        results = generate_test_cases(
+        results = run_test(
             'examples/parser-impossible-transitions2.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (False, (u'parser-impossible-transitions2.p4', 110, u'hdr.ethernet.isValid()')))):
@@ -368,7 +374,7 @@ class CheckSystem:
         load_test_config(solve_for_metadata=True,
                          run_simple_switch=False)
 
-        results = generate_test_cases('examples/user-metadata.json')
+        results = run_test('examples/user-metadata.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'node_4', (False, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui')))):
             TestPathResult.SUCCESS,
@@ -388,7 +394,7 @@ class CheckSystem:
 
         load_test_config()
 
-        results = generate_test_cases('examples/header-stack-variable-length.json')
+        results = run_test('examples/header-stack-variable-length.json')
         expected_results = {
             ('start', 'sink', (u'tbl_headerstackvariablelength45', u'headerstackvariablelength45')):
             TestPathResult.SUCCESS,
@@ -401,7 +407,7 @@ class CheckSystem:
 
         load_test_config()
 
-        results = generate_test_cases('examples/parser-cycle.json')
+        results = run_test('examples/parser-cycle.json')
         expected_results = {
             ('start', 'sink', (u'tbl_parsercycle37', u'parsercycle37')):
             TestPathResult.SUCCESS,
@@ -420,7 +426,7 @@ class CheckSystem:
     # state A to parser state B.
     def xfail_parser_parallel_paths(self):
         load_test_config()
-        results = generate_test_cases('examples/parser-parallel-paths.json')
+        results = run_test('examples/parser-parallel-paths.json')
         expected_results = {
         }
         assert results == expected_results

@@ -231,6 +231,17 @@ def print_parser_paths(parser_paths):
             print(p)
 
 
+def path_tuple(parser_path, control_path):
+    """Returns a tuple structure of strings and Transition objects representing
+    the vertices traversed by a path.  Note that the mapping is not injective,
+    because a pair of vertices may be joined by multiple edges."""
+    return tuple(
+        [n.src for n in parser_path] +
+        ['sink'] +
+        [(n.src, n) for n in control_path]
+    )
+
+
 def generate_test_cases(input_file):
     top = P4_Top()
     top.load_json_file(input_file)
@@ -323,8 +334,9 @@ def generate_test_cases(input_file):
 
     if Config().get_dump_test_case():
         str_items = []
-        for k, v in results.items():
-            str_items.append('{}: {}'.format(k, v))
+        for (parser_path, control_path), v in results.items():
+            str_items.append('{}: {}'.format(path_tuple(parser_path,
+                                                        control_path), v))
         print('{{ {} }}'.format(', '.join(str_items)))
 
     return results

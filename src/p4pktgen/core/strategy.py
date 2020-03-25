@@ -79,7 +79,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
     def visit(self, control_path, is_complete_control_path):
         self.path_count += 1
         self.translator.push()
-        expected_path, result, test_case, packet_lst = \
+        _, result, test_case, packet_lst = \
             self.translator.generate_constraints(
                 self.parser_path, control_path,
                 self.source_info_to_node_name, self.path_count, is_complete_control_path)
@@ -108,17 +108,15 @@ class PathCoverageGraphVisitor(GraphVisitor):
             # the user kills before it completes, e.g. because it
             # takes too long to complete.
             self.test_case_writer.write(test_case, packet_lst)
-            result_path = [n.src for n in self.parser_path
-                           ] + ['sink'] + [(n.src, n) for n in control_path]
-            result_path_tuple = tuple(expected_path)
-            if result_path_tuple in self.results and self.results[result_path_tuple] != result:
+            path = (tuple(self.parser_path), tuple(control_path))
+            if path in self.results and self.results[path] != result:
                 logging.error("result_path %s with result %s"
                               " is already recorded in results"
                               " while trying to record different result %s"
-                              "" % (result_path,
-                                    self.results[result_path_tuple], result))
+                              "" % (path,
+                                    self.results[path], result))
                 #assert False
-            self.results[tuple(result_path)] = result
+            self.results[path] = result
             if result == TestPathResult.SUCCESS and is_complete_control_path:
                 for x in control_path:
                     Statistics().stats_per_control_path_edge[x] += 1
