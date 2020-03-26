@@ -260,13 +260,13 @@ class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
 
         return visit_result
 
-class LeastUsedPaths:
+class LeastUsedPaths(ParserGraphVisitor):
     def __init__(self, hlir, graph, start, visitor):
+        super(LeastUsedPaths, self).__init__(hlir)
         self.graph = graph
         self.path_count = defaultdict(int)
         self.start = start
         self.visitor = visitor
-        self.hlir = hlir
 
     def choose_edge(self, edges):
         if Config().get_random_tlubf():
@@ -275,39 +275,6 @@ class LeastUsedPaths:
         edge_counts = [self.path_count[e] for e in edges]
         min_index, min_value = min(enumerate(edge_counts), key=operator.itemgetter(1))
         return edges[min_index]
-
-    def count(self, stack_counts, state_name):
-        if state_name != 'sink':
-            state = self.hlir.get_parser_state(state_name)
-            for extract in state.header_stack_extracts:
-                stack_counts[extract] += 1
-
-    def preprocess_edges(self, path, edges):
-        filtered_edges = []
-        for edge in edges:
-            if edge.dst != 'sink' and isinstance(edge, ParserTransition):
-                state = self.hlir.get_parser_state(edge.dst)
-                if state.has_header_stack_extracts():
-                    stack_counts = defaultdict(int)
-
-                    if len(path) > 0:
-                        self.count(stack_counts, path[0].src)
-                        for e in path:
-                            self.count(stack_counts, e.dst)
-                        self.count(stack_counts, edge.dst)
-
-                        # If one of the header stacks is overful, remove the edge
-                        valid = True
-                        for stack, count in stack_counts.items():
-                            if self.hlir.get_header_stack(stack).size < count:
-                                valid = False
-                                break
-                        if not valid:
-                            continue
-
-            filtered_edges.append(edge)
-
-        return filtered_edges
 
     def visit(self):
         while Statistics().num_covered_edges < Statistics().num_control_path_edges:
