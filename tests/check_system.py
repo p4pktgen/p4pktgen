@@ -338,6 +338,23 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    def check_parser_cycle(self):
+        # This test case checks that we do not attempt to advance beyond the
+        # last element of a header stack.
+
+        Config().load_test_defaults()
+
+        results = process_json_file('examples/parser-cycle.json')
+        expected_results = {
+            ('start', 'sink', (u'tbl_parsercycle37', u'parsercycle37')):
+            TestPathResult.SUCCESS,
+            ('start', 'start', 'sink', (u'tbl_parsercycle37', u'parsercycle37')):
+            TestPathResult.SUCCESS,
+            ('start', 'start', 'start', 'sink', (u'tbl_parsercycle37', u'parsercycle37')):
+            TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
+
     # Fill in expected results for this test case, and change name to
     # have prefix 'check_' instead of 'xfail_', after p4pktgen has
     # been modified to generate correct results for it.  It generates
