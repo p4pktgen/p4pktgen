@@ -38,16 +38,16 @@ class ParserGraphVisitor(GraphVisitor):
                         self.count(stack_counts, path[0].src)
                         for e in path:
                             self.count(stack_counts, e.dst)
-                        self.count(stack_counts, edge.dst)
+                    self.count(stack_counts, edge.dst)
 
-                        # If one of the header stacks is overful, remove the edge
-                        valid = True
-                        for stack, count in stack_counts.items():
-                            if self.hlir.get_header_stack(stack).size < count:
-                                valid = False
-                                break
-                        if not valid:
-                            continue
+                    # If one of the header stacks is overful, remove the edge
+                    valid = True
+                    for stack, count in stack_counts.items():
+                        if self.hlir.get_header_stack(stack).size < count:
+                            valid = False
+                            break
+                    if not valid:
+                        continue
 
             filtered_edges.append(edge)
 
