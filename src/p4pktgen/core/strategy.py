@@ -102,39 +102,54 @@ class PathCoverageGraphVisitor(GraphVisitor):
             logging.info("Path trivially found to be satisfiable and not complete.")
             logging.info("END   %s" % logging_str)
             return result, record_result
+        results = []
+        for _ in range(Config().get_max_test_cases_per_path()):
+            smt_result = self.translator.solve_path()
+            time4 = time.time()
 
-        smt_result = self.translator.solve_path()
-        time4 = time.time()
+            result, test_case, packet_list = self.translator.generate_test_case(
+                smt_result=smt_result,
+                expected_path=expected_path,
+                parser_path=self.parser_path,
+                control_path=control_path,
+                is_complete_control_path=is_complete_control_path,
+                source_info_to_node_name=self.source_info_to_node_name,
+                count=self.path_count,
+            )
+            time5 = time.time()
 
-        result, test_case, packet_list = self.translator.generate_test_case(
-            smt_result=smt_result,
-            expected_path=expected_path,
-            parser_path=self.parser_path,
-            control_path=control_path,
-            is_complete_control_path=is_complete_control_path,
-            source_info_to_node_name=self.source_info_to_node_name,
-            count=self.path_count,
-        )
-        time5 = time.time()
-
-        record_result = (is_complete_control_path
-                         or (result != TestPathResult.SUCCESS))
-        if record_result:
+            record_result = (is_complete_control_path
+                             or (result != TestPathResult.SUCCESS))
+            results.append((result, record_result))
+            # If this result wouldn't be recorded, subsequent ones won't be
+            # either, so move on.
+            if not record_result:
+                break
             test_case["time_sec_generate_ingress_constraints"] = time3 - time2
             test_case["time_sec_solve"] = time4 - time3
             test_case["time_sec_simulate_packet"] = time5 - time4
+
             # Doing file writing here enables getting at least
             # some test case output data for p4pktgen runs that
             # the user kills before it completes, e.g. because it
             # takes too long to complete.
             self.test_case_writer.write(test_case, packet_list)
             Statistics().num_test_cases += 1
+            logging.info("Generated %d test cases for path" % len(results))
+
+            # If we have produced enough test cases overall, or have
+            # exhausted possible packets for this path, move on.
+            if Statistics().num_test_cases == Config().get_num_test_cases() \
+                    or result == TestPathResult.NO_PACKET_FOUND:
+                break
+
+        # Take result of first loop.
+        result, record_result = results[0]
+
+        if not Config().get_incremental():
+            self.translator.solver.reset()
 
         logging.info("END   %s: %s" % (logging_str, result) )
-        logging.info("%.3f sec = %.3f gen ingress constraints"
-                     " + %.3f solve + %.3f gen pkt, table entries, sim packet" %
-                     (time5 - time2, time3 - time2,
-                      time4 - time3, time5 - time4))
         return result, record_result
 
     def visit(self, control_path, is_complete_control_path):

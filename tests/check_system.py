@@ -51,6 +51,7 @@ def load_test_config(no_packet_length_errs=True,
     # parser path, other than the number of paths in the ingress
     # control block.
     config.max_paths_per_parser_path = None
+    config.max_test_cases_per_path = 1
     config.num_test_cases = None
     config.try_least_used_branches_first = False
     config.hybrid_input = True

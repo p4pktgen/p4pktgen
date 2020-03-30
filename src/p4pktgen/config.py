@@ -21,6 +21,7 @@ class Config:
         self.min_packet_len_generated = 1
         self.max_packet_len_generated = 1536
         self.max_paths_per_parser_path = args.max_paths_per_parser_path
+        self.max_test_cases_per_path = args.max_test_cases_per_path
         self.num_test_cases = args.num_test_cases
         self.try_least_used_branches_first = args.try_least_used_branches_first
         self.hybrid_input = args.hybrid_input
@@ -71,6 +72,9 @@ class Config:
 
     def get_max_paths_per_parser_path(self):
         return self.max_paths_per_parser_path
+
+    def get_max_test_cases_per_path(self):
+        return self.max_test_cases_per_path
 
     def get_num_test_cases(self):
         return self.num_test_cases
