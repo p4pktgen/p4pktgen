@@ -143,7 +143,16 @@ def main():
         type=int,
         default=None,
         help=
-        """With this option specified, generate at most the specified number of control paths for each parser path.  This can be useful for programs with more control paths than you wish to enumerate, or simply for reducing the number of test cases generated.  Without this option specified, the default behavior is to generate test cases for all control paths."""
+        """With this option specified, generate at most the specified number of control paths for each parser path.  This can be useful for programs with more control paths than you wish to enumerate, or simply for reducing the number of test cases generated.  Without this option specified, the default behavior is to process all control paths."""
+    )
+    parser.add_argument(
+        '-mtp',
+        '--max-test-cases-per-path',
+        dest='max_test_cases_per_path',
+        type=int,
+        default=1,
+        help=
+        """With this option specified, generate at most the specified number of test cases for each control paths generated.  Without this option specified, the default behavior is to generate one test case for every control path."""
     )
     parser.add_argument(
         '-c',

@@ -1262,9 +1262,6 @@ class Translator:
         if payload:
             payloads.append(payload)
 
-        if not Config().get_incremental():
-            self.solver.reset()
-
         self.result_history[-2].append(result)
         return (result, test_case, payloads)
 
