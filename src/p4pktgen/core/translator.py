@@ -907,32 +907,23 @@ class Translator:
         context.unset_source_info()
         return constraints
 
-    def generate_constraints(self, path, control_path,
-                             source_info_to_node_name, count,
-                             is_complete_control_path):
-        # XXX: This is very hacky right now
+    def expected_path(self, parser_path, control_path):
         expected_path = [
             n.src if not isinstance(n, ParserOpTransition) else
-            self.parser_op_trans_to_str(n) for n in path
+            self.parser_op_trans_to_str(n) for n in parser_path
         ] + ['sink'] + [(n.src, n) for n in control_path]
-        logging.info("")
-        logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s" %
-                     (count, len(path), len(control_path),
-                      len(path) + len(control_path),
-                      is_complete_control_path, expected_path))
+        return expected_path
 
+    def add_path_constraints(self, control_path):
         assert len(control_path) == len(self.context_history_lens) \
                or not Config().get_incremental()
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
         constraints = []
 
-        time2 = time.time()
-
         # XXX: very ugly to split parsing/control like that, need better solution
         logging.info('control_path = {}'.format(control_path))
 
-        transition = None
         if len(control_path) > 0:
             transition = control_path[-1]
             constraints.extend(
@@ -958,13 +949,17 @@ class Translator:
         # logging.debug(And(constraints))
         self.solver.add(And(constraints))
 
+    def try_quick_solve(self, control_path, is_complete_control_path):
+        context = self.current_context()
         # If the last part of the path is a table with no const entries
         # and the prefix of the current path is satisfiable, so is the new
         # path
-        if transition is not None \
+        result = None
+        if len(control_path) > 0 \
                 and not is_complete_control_path \
                 and len(context.uninitialized_reads) == 0 \
                 and len(context.invalid_header_writes) == 0:
+            transition = control_path[-1]
             if Config().get_table_opt() \
                     and transition.transition_type == TransitionType.ACTION_TRANSITION:
                 assert transition.src in self.pipeline.tables
@@ -972,7 +967,6 @@ class Translator:
                 assert not table.has_const_entries()
                 result = TestPathResult.SUCCESS
                 self.result_history[-2].append(result)
-                return (expected_path, result, None, None)
             elif Config().get_conditional_opt() \
                     and transition.transition_type == TransitionType.BOOL_TRANSITION:
                 cond_history = self.result_history[-2]
@@ -981,15 +975,18 @@ class Translator:
                     assert len(cond_history) == 1
                     result = TestPathResult.SUCCESS
                     self.result_history[-2].append(result)
-                    return (expected_path, result, None, None)
+        return result
 
-        time3 = time.time()
+    def solve_path(self):
         Statistics().solver_time.start()
         smt_result = self.solver.check()
         Statistics().num_solver_calls += 1
         Statistics().solver_time.stop()
-        time4 = time.time()
+        return smt_result
 
+    def generate_test_case(self, smt_result, expected_path,
+                           parser_path, control_path, is_complete_control_path,
+                           source_info_to_node_name, count):
         packet_hexstr = None
         payload = None
         ss_cli_setup_cmds = []
@@ -998,6 +995,9 @@ class Translator:
         invalid_header_write_data = None
         actual_path_data = None
         result = None
+
+        context = self.current_context()
+        start_time = time.time()
         if smt_result != unsat:
             model = self.solver.model()
             if not Config().get_silent():
@@ -1193,18 +1193,7 @@ class Translator:
                 'Unable to find packet for path: {}'.format(expected_path))
             result = TestPathResult.NO_PACKET_FOUND
 
-        time5 = time.time()
-        self.total_switch_time += time5 - time4
-
-        logging.info("END   %d Exp path (len %d+%d=%d)"
-                     " complete_path %s %s: %s" %
-                     (count, len(path), len(control_path),
-                      len(path) + len(control_path),
-                      is_complete_control_path, result, expected_path))
-        logging.info("%.3f sec = %.3f gen ingress constraints"
-                     " + %.3f solve + %.3f gen pkt, table entries, sim packet" %
-                     (time5 - time2, time3 - time2,
-                      time4 - time3, time5 - time4))
+        self.total_switch_time += time.time() - start_time
 
         if packet_hexstr is None:
             input_packets = []
@@ -1245,7 +1234,7 @@ class Translator:
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
             #("expected_output_packets", TBD),
-            ("parser_path_len", len(path)),
+            ("parser_path_len", len(parser_path)),
             ("ingress_path_len", len(control_path)),
         ])
         if uninitialized_read_data:
@@ -1259,10 +1248,13 @@ class Translator:
         # especialy long ones.  This makes the shorter and/or more
         # essential information like that above come first, and
         # together.
-        test_case["time_sec_generate_ingress_constraints"] = time3 - time2
-        test_case["time_sec_solve"] = time4 - time3
-        test_case["time_sec_simulate_packet"] = time5 - time4
-        test_case["parser_path"] = map(str, path)
+
+        # Should be filled in by calling function, order will be maintained.
+        test_case["time_sec_generate_ingress_constraints"] = None
+        test_case["time_sec_solve"] = None
+        test_case["time_sec_simulate_packet"] = None
+
+        test_case["parser_path"] = map(str, parser_path)
         test_case["ingress_path"] = map(str, control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data
 
@@ -1274,7 +1266,7 @@ class Translator:
             self.solver.reset()
 
         self.result_history[-2].append(result)
-        return (expected_path, result, test_case, payloads)
+        return (result, test_case, payloads)
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):
         """This function starts simple_switch, sends a packet to the switch and

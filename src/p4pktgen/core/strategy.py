@@ -76,23 +76,70 @@ class PathCoverageGraphVisitor(GraphVisitor):
     def preprocess_edges(self, path, edges):
         return edges
 
-    def visit(self, control_path, is_complete_control_path):
+    def generate_test_case(self, control_path, is_complete_control_path):
         self.path_count += 1
         self.translator.push()
-        _, result, test_case, packet_lst = \
-            self.translator.generate_constraints(
-                self.parser_path, control_path,
-                self.source_info_to_node_name, self.path_count, is_complete_control_path)
+
+        expected_path = self.translator.expected_path(self.parser_path, control_path)
+
+        logging_str = "%d Exp path (len %d+%d=%d) complete_path %s: %s" % \
+            (self.path_count, len(self.parser_path), len(control_path),
+             len(self.parser_path) + len(control_path),
+             is_complete_control_path, expected_path)
+        logging.info("")
+        logging.info("BEGIN %s" % logging_str)
+
+        time2 = time.time()
+        self.translator.add_path_constraints(control_path)
+        time3 = time.time()
+
+        result = self.translator.try_quick_solve(control_path, is_complete_control_path)
+        if result == TestPathResult.SUCCESS:
+            assert not is_complete_control_path
+            # Path trivially found to be satisfiable and not complete.
+            # No test cases required.
+            record_result = False
+            logging.info("Path trivially found to be satisfiable and not complete.")
+            logging.info("END   %s" % logging_str)
+            return result, record_result
+
+        smt_result = self.translator.solve_path()
+        time4 = time.time()
+
+        result, test_case, packet_list = self.translator.generate_test_case(
+            smt_result=smt_result,
+            expected_path=expected_path,
+            parser_path=self.parser_path,
+            control_path=control_path,
+            is_complete_control_path=is_complete_control_path,
+            source_info_to_node_name=self.source_info_to_node_name,
+            count=self.path_count,
+        )
+        time5 = time.time()
 
         record_result = (is_complete_control_path
                          or (result != TestPathResult.SUCCESS))
         if record_result:
+            test_case["time_sec_generate_ingress_constraints"] = time3 - time2
+            test_case["time_sec_solve"] = time4 - time3
+            test_case["time_sec_simulate_packet"] = time5 - time4
             # Doing file writing here enables getting at least
             # some test case output data for p4pktgen runs that
             # the user kills before it completes, e.g. because it
             # takes too long to complete.
-            self.test_case_writer.write(test_case, packet_lst)
+            self.test_case_writer.write(test_case, packet_list)
             Statistics().num_test_cases += 1
+
+        logging.info("END   %s: %s" % (logging_str, result) )
+        logging.info("%.3f sec = %.3f gen ingress constraints"
+                     " + %.3f solve + %.3f gen pkt, table entries, sim packet" %
+                     (time5 - time2, time3 - time2,
+                      time4 - time3, time5 - time4))
+        return result, record_result
+
+    def visit(self, control_path, is_complete_control_path):
+        result, record_result = \
+            self.generate_test_case(control_path, is_complete_control_path)
 
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
