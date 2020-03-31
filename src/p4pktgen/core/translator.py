@@ -916,13 +916,13 @@ class Translator:
             self.parser_op_trans_to_str(n) for n in path
         ] + ['sink'] + [(n.src, n) for n in control_path]
         logging.info("")
-        logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s"
-                     "" % (count, len(path), len(control_path),
-                           len(path) + len(control_path),
-                           is_complete_control_path, expected_path))
+        logging.info("BEGIN %d Exp path (len %d+%d=%d) complete_path %s: %s" %
+                     (count, len(path), len(control_path),
+                      len(path) + len(control_path),
+                      is_complete_control_path, expected_path))
 
-        assert len(control_path) == len(
-            self.context_history_lens) or not Config().get_incremental()
+        assert len(control_path) == len(self.context_history_lens) \
+               or not Config().get_incremental()
         self.context_history.append(copy.copy(self.current_context()))
         context = self.current_context()
         constraints = []
@@ -942,7 +942,12 @@ class Translator:
 
         constraints.extend(context.get_name_constraints())
         # XXX: Workaround for simple_switch issue
-        constraints.append(Or(ULT(context.get_header_field('standard_metadata', 'egress_spec'), 256), context.get_header_field('standard_metadata', 'egress_spec') == 511))
+        constraints.append(
+            Or(
+                ULT(context.get_header_field('standard_metadata', 'egress_spec'), 256),
+                context.get_header_field('standard_metadata', 'egress_spec') == 511
+            )
+        )
 
         if not Config().get_incremental():
             for cs in self.constraints:
@@ -956,23 +961,23 @@ class Translator:
         # If the last part of the path is a table with no const entries
         # and the prefix of the current path is satisfiable, so is the new
         # path
-        if transition is not None and not is_complete_control_path and len(
-                context.uninitialized_reads) == 0 and len(
-                    context.invalid_header_writes) == 0:
-            if Config().get_table_opt(
-            ) and transition.transition_type == TransitionType.ACTION_TRANSITION:
+        if transition is not None \
+                and not is_complete_control_path \
+                and len(context.uninitialized_reads) == 0 \
+                and len(context.invalid_header_writes) == 0:
+            if Config().get_table_opt() \
+                    and transition.transition_type == TransitionType.ACTION_TRANSITION:
                 assert transition.src in self.pipeline.tables
                 table = self.pipeline.tables[transition.src]
                 assert not table.has_const_entries()
                 result = TestPathResult.SUCCESS
                 self.result_history[-2].append(result)
                 return (expected_path, result, None, None)
-            elif Config().get_conditional_opt(
-            ) and transition.transition_type == TransitionType.BOOL_TRANSITION:
+            elif Config().get_conditional_opt() \
+                    and transition.transition_type == TransitionType.BOOL_TRANSITION:
                 cond_history = self.result_history[-2]
-                if len(
-                        cond_history
-                ) > 0 and cond_history[0] == TestPathResult.NO_PACKET_FOUND:
+                if len(cond_history) > 0 \
+                        and cond_history[0] == TestPathResult.NO_PACKET_FOUND:
                     assert len(cond_history) == 1
                     result = TestPathResult.SUCCESS
                     self.result_history[-2].append(result)
@@ -1004,8 +1009,8 @@ class Translator:
             for t in control_path:
                 table_name = t.src
                 transition = t
-                if table_name in self.pipeline.tables and context.has_table_values(
-                        table_name):
+                if table_name in self.pipeline.tables \
+                        and context.has_table_values(table_name):
                     runtime_data_values = []
                     for i, runtime_param in enumerate(
                             transition.action.runtime_data):
@@ -1076,9 +1081,9 @@ class Translator:
                                             format(table_key.match_type))
 
                     logging.debug("table_name %s"
-                                  " table.default_entry.action_const %s"
-                                  "" % (table_name,
-                                        table.default_entry.action_const))
+                                  " table.default_entry.action_const %s" %
+                                  (table_name,
+                                   table.default_entry.action_const))
                     if (len(table_values_strs) == 0
                             and table.default_entry.action_const):
                         # Then we cannot change the default action for the
@@ -1154,8 +1159,8 @@ class Translator:
                         OrderedDict([("variable_name", var_name), (
                             "source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
-                if Config().get_run_simple_switch(
-                ) and is_complete_control_path:
+                if Config().get_run_simple_switch() \
+                        and is_complete_control_path:
                     extracted_path = self.test_packet(payload, table_configs,
                                                       source_info_to_node_name)
 
@@ -1175,16 +1180,14 @@ class Translator:
                     logging.error('Expected and actual path differ')
                     logging.error('Expected: {}'.format(expected_path))
                     logging.error('Actual:   {}'.format(extracted_path))
-                    actual_path_data = extracted_path
                     result = TestPathResult.TEST_FAILED
                     assert False
             else:
                 result = TestPathResult.PACKET_SHORTER_THAN_MIN
-                result = TestPathResult.SUCCESS
                 logging.warning('Packet not sent (%d bytes is shorter than'
-                                ' minimum %d supported)'
-                                '' % (len(payload),
-                                      Config().get_min_packet_len_generated()))
+                                ' minimum %d supported)' %
+                                (len(payload),
+                                 Config().get_min_packet_len_generated()))
         else:
             logging.info(
                 'Unable to find packet for path: {}'.format(expected_path))
@@ -1194,14 +1197,14 @@ class Translator:
         self.total_switch_time += time5 - time4
 
         logging.info("END   %d Exp path (len %d+%d=%d)"
-                     " complete_path %s %s: %s"
-                     "" % (count, len(path), len(control_path),
-                           len(path) + len(control_path),
-                           is_complete_control_path, result, expected_path))
+                     " complete_path %s %s: %s" %
+                     (count, len(path), len(control_path),
+                      len(path) + len(control_path),
+                      is_complete_control_path, result, expected_path))
         logging.info("%.3f sec = %.3f gen ingress constraints"
-                     " + %.3f solve + %.3f gen pkt, table entries, sim packet"
-                     "" % (time5 - time2, time3 - time2, time4 - time3,
-                           time5 - time4))
+                     " + %.3f solve + %.3f gen pkt, table entries, sim packet" %
+                     (time5 - time2, time3 - time2,
+                      time4 - time3, time5 - time4))
 
         if packet_hexstr is None:
             input_packets = []
