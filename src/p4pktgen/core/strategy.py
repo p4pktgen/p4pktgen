@@ -84,6 +84,16 @@ class PathCoverageGraphVisitor(GraphVisitor):
                 self.parser_path, control_path,
                 self.source_info_to_node_name, self.path_count, is_complete_control_path)
 
+        record_result = (is_complete_control_path
+                         or (result != TestPathResult.SUCCESS))
+        if record_result:
+            # Doing file writing here enables getting at least
+            # some test case output data for p4pktgen runs that
+            # the user kills before it completes, e.g. because it
+            # takes too long to complete.
+            self.test_case_writer.write(test_case, packet_lst)
+            Statistics().num_test_cases += 1
+
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
                 len(self.parser_path + control_path))
@@ -100,14 +110,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
         if Config().get_record_statistics():
             Statistics().record(result, is_complete_control_path, self.translator)
 
-        record_result = (is_complete_control_path
-                         or (result != TestPathResult.SUCCESS))
         if record_result:
-            # Doing file writing here enables getting at least
-            # some test case output data for p4pktgen runs that
-            # the user kills before it completes, e.g. because it
-            # takes too long to complete.
-            self.test_case_writer.write(test_case, packet_lst)
             path = (tuple(self.parser_path), tuple(control_path))
             if path in self.results and self.results[path] != result:
                 logging.error("result_path %s with result %s"
@@ -145,10 +148,8 @@ class PathCoverageGraphVisitor(GraphVisitor):
         else:
             visit_result = VisitResult.CONTINUE if result == TestPathResult.SUCCESS else VisitResult.BACKTRACK
 
-        if is_complete_control_path and result == TestPathResult.SUCCESS:
-            Statistics().num_test_cases += 1
-            if Statistics().num_test_cases == Config().get_num_test_cases():
-                visit_result = VisitResult.ABORT
+        if Statistics().num_test_cases == Config().get_num_test_cases():
+            visit_result = VisitResult.ABORT
 
         return visit_result
 
