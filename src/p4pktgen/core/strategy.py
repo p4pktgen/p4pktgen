@@ -102,13 +102,17 @@ class PathCoverageGraphVisitor(GraphVisitor):
             logging.info("Path trivially found to be satisfiable and not complete.")
             logging.info("END   %s" % logging_str)
             return result, record_result
+
         results = []
-        for _ in range(Config().get_max_test_cases_per_path()):
-            smt_result = self.translator.solve_path()
+        extract_vl_variation = Config().get_extract_vl_variation()
+        max_test_cases = Config().get_num_test_cases()
+        max_path_test_cases = Config().get_max_test_cases_per_path()
+
+        while True:
+            self.translator.solve_path()
             time4 = time.time()
 
             result, test_case, packet_list = self.translator.generate_test_case(
-                smt_result=smt_result,
                 expected_path=expected_path,
                 parser_path=self.parser_path,
                 control_path=control_path,
@@ -137,11 +141,20 @@ class PathCoverageGraphVisitor(GraphVisitor):
             Statistics().num_test_cases += 1
             logging.info("Generated %d test cases for path" % len(results))
 
-            # If we have produced enough test cases overall, or have
-            # exhausted possible packets for this path, move on.
-            if Statistics().num_test_cases == Config().get_num_test_cases() \
+            # If we have produced enough test cases overall, enough for this
+            # path, or have exhausted possible packets for this path, move on.
+            # Using '!=' rather than '<' here as None/0 represents no maximum.
+            if Statistics().num_test_cases == max_test_cases \
+                    or len(results) == max_path_test_cases \
                     or result == TestPathResult.NO_PACKET_FOUND:
                 break
+
+            if not self.translator.constrain_last_extract_vl_lengths(extract_vl_variation):
+                # Special case: unbounded numbers of test cases are only
+                # safe when we're building up constraints on VL-extraction
+                # lengths, or else we'll loop forever.
+                if max_path_test_cases == 0:
+                    break
 
         # Take result of first loop.
         result, record_result = results[0]

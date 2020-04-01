@@ -152,7 +152,7 @@ def main():
         type=int,
         default=1,
         help=
-        """With this option specified, generate at most the specified number of test cases for each control paths generated.  Without this option specified, the default behavior is to generate one test case for every control path."""
+        """With this option specified, generate at most the specified number of test cases for each control paths generated.  Without this option specified, the default behavior is to generate one test case for every control path.  Set to 0 to generate all possible test cases."""
     )
     parser.add_argument(
         '-c',
@@ -183,6 +183,18 @@ def main():
         default=False,
         help=
         """With this option given, generate ingress and egress control flow graphs using the Graphviz library, and do not generate test cases.  Without this option given (the default), do not generate graphs."""
+    )
+    parser.add_argument(
+        '-evv',
+        '--extract-vl-variation',
+        dest='extract_vl_variation',
+        type=str,
+        choices=['none', 'and', 'or'],
+        default='none',
+        help=
+        """With this option given, when generating multiple test-cases-per-path, vary extraction lengths of extract_vl operations between test-cases on each path.
+        and/or: test-cases will vary the AND/OR of all extraction lengths,
+        none: no variation enforced."""
     )
     parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')

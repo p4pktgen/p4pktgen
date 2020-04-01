@@ -49,6 +49,7 @@ class Context:
         self.source_info = None
 
         self.parsed_stacks = defaultdict(int)
+        self.parsed_vl_extracts = {}
 
     def __copy__(self):
         context_copy = Context()
@@ -199,6 +200,11 @@ class Context:
             var_constraints.append(var == self.var_to_smt_val[var])
         self.new_vars = set()
         return var_constraints
+
+    def record_extract_vl(self, header_name, header_field, sym_size):
+        var = (header_name, header_field)
+        assert var not in self.parsed_vl_extracts
+        self.parsed_vl_extracts[var] = sym_size
 
     def log_constraints(self):
         var_constraints = self.get_name_constraints()

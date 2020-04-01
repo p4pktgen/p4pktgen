@@ -30,6 +30,7 @@ class Config:
         self.incremental = args.incremental
         self.random_tlubf = args.random_tlubf
         self.output_path = './test-case'
+        self.extract_vl_variation = args.extract_vl_variation
 
     def get_debug(self):
         return self.debug
@@ -102,3 +103,9 @@ class Config:
 
     def get_output_pcap_path(self):
         return self.output_path + '.pcap'
+
+    def get_extract_vl_variation(self):
+        if self.extract_vl_variation is None or \
+                self.extract_vl_variation.lower() == 'none':
+            return None
+        return self.extract_vl_variation
