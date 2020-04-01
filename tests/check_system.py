@@ -1,3 +1,5 @@
+import json
+
 from p4pktgen.main import generate_test_cases, path_tuple
 from p4pktgen.config import Config
 from p4pktgen.core.translator import TestPathResult
@@ -68,6 +70,29 @@ def run_test(json_filename):
         for ((parser_path, control_path), result) in
             generate_test_cases(json_filename).iteritems()
     }
+
+
+def read_test_cases():
+    test_cases_file = Config().get_output_json_path()
+    with open(test_cases_file, 'r') as f:
+        return json.load(f)
+
+
+def get_packet_payloads(test_cases):
+    payloads = [
+        [packet['packet_hexstr'] for packet in test_case['input_packets']]
+        for test_case in test_cases
+    ]
+    # Ignore test cases with no packets
+    payloads = [p for p in payloads if p]
+    # A flat list implies all valid test cases have one packet
+    assert all(len(p) == 1 for p in payloads)
+    # Return a flat list of payloads
+    return [p[0] for p in payloads]
+
+
+def extract_payload_byte(payload, index):
+    return int(payload[index * 2: (index + 1) * 2], 16)
 
 
 class CheckSystem:
@@ -446,3 +471,61 @@ class CheckSystem:
             TestPathResult.SUCCESS,
         }
         assert results == expected_results
+
+
+    two_extract_vl_expected_results = {
+        ('start', 'sink', (u'tbl_twoextractvl49', u'twoextractvl49')):
+        TestPathResult.SUCCESS,
+    }
+
+
+    @staticmethod
+    def two_extract_vl_parse_lengths(payload):
+        l1 = extract_payload_byte(payload, 0)
+        assert l1 & 0x07 == 0, "Must be whole byte"
+        l2 = extract_payload_byte(payload, 1)
+        assert l2 & 0x07 == 0, "Must be whole byte"
+        return l1 & 0x1f, l2 & 0x1f
+
+
+    def check_extract_vl_variation_and_mode(self):
+        # This test case checks that setting extract_vl_variation to 'and'
+        # results in test-cases with correctly varying extraction lengths.
+        load_test_config()
+        Config().extract_vl_variation = 'and'
+        Config().max_test_cases_per_path = 0  # Unlimited
+        results = run_test('examples/two-extract-vl.json')
+        assert results == self.two_extract_vl_expected_results
+
+        payloads = get_packet_payloads(read_test_cases())
+        # Each length is masked down to 0x1f bits.
+        # i.e. there are 4 possible extraction lengths for each field.
+        assert len(payloads) == 16
+        lengths = set()
+        for payload in payloads:
+            l1, l2 = self.two_extract_vl_parse_lengths(payload)
+            assert (l1, l2) not in lengths
+            lengths.add((l1, l2))
+
+
+    def check_extract_vl_variation_or_mode(self):
+        # This test case checks that setting extract_vl_variation to 'or'
+        # results in test-cases with correctly varying extraction lengths.
+        load_test_config()
+        Config().extract_vl_variation = 'or'
+        Config().max_test_cases_per_path = 0  # Unlimited
+        results = run_test('examples/two-extract-vl.json')
+        assert results == self.two_extract_vl_expected_results
+
+        payloads = get_packet_payloads(read_test_cases())
+        # Each length is masked down to 0x1f bits.
+        # i.e. there are 4 possible extraction lengths for each field.
+        assert len(payloads) == 4
+        lengths1 = set()
+        lengths2 = set()
+        for payload in payloads:
+            l1, l2 = self.two_extract_vl_parse_lengths(payload)
+            assert l1 not in lengths1
+            lengths1.add(l1)
+            assert l2 not in lengths2
+            lengths2.add(l2)
