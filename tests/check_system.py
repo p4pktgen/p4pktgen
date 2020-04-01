@@ -59,6 +59,7 @@ def load_test_config(no_packet_length_errs=True,
     config.table_opt = True
     config.incremental = True
     config.output_path = './test-case'
+    config.extract_vl_variation = None
 
 
 def run_test(json_filename):

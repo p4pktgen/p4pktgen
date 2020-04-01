@@ -98,6 +98,7 @@ class Translator:
 
         self.solver = SolverFor('QF_UFBV')
         self.solver.push()
+        self.solver_result = None
         self.hlir = hlir
         self.pipeline = pipeline
         self.context_history = [Context()]  # XXX: implement better mechanism
@@ -441,6 +442,7 @@ class Translator:
                         context.set_field_value(header_name, field_name,
                                                 field_val & (LShR(ones, shift_bits)))
                         constraints.append(ULE(sym_size, field_size_c))
+                        context.record_extract_vl(header_name, field_name, sym_size)
 
                         extract_offset += sym_size
                     else:
@@ -948,6 +950,7 @@ class Translator:
         # Construct and test the packet
         # logging.debug(And(constraints))
         self.solver.add(And(constraints))
+        self.solver_result = None
 
     def try_quick_solve(self, control_path, is_complete_control_path):
         context = self.current_context()
@@ -979,12 +982,12 @@ class Translator:
 
     def solve_path(self):
         Statistics().solver_time.start()
-        smt_result = self.solver.check()
+        self.solver_result = self.solver.check()
         Statistics().num_solver_calls += 1
         Statistics().solver_time.stop()
-        return smt_result
+        return self.solver_result
 
-    def generate_test_case(self, smt_result, expected_path,
+    def generate_test_case(self, expected_path,
                            parser_path, control_path, is_complete_control_path,
                            source_info_to_node_name, count):
         packet_hexstr = None
@@ -998,7 +1001,7 @@ class Translator:
 
         context = self.current_context()
         start_time = time.time()
-        if smt_result != unsat:
+        if self.solver_result != unsat:
             model = self.solver.model()
             if not Config().get_silent():
                 self.log_model(model, self.context_history)
@@ -1264,6 +1267,33 @@ class Translator:
 
         self.result_history[-2].append(result)
         return (result, test_case, payloads)
+
+    def constrain_last_extract_vl_lengths(self, condition):
+        """This function adds constraints to the solver preventing it from
+         selecting the same lengths for extract_vl operations that were selected
+         in the last solution.  Returns whether any constraints were added."""
+
+        # Should be called after a solve attempt, should not be called if it
+        # failed.
+        assert self.solver_result is not None and self.solver_result != unsat
+
+        context = self.current_context()
+        if not context.parsed_vl_extracts or condition is None:
+            return False
+
+        model = self.solver.model()
+        solution_sizes = []
+        for var, sym_size in context.parsed_vl_extracts.items():
+            solved_size = model[sym_size]
+            solution_sizes.append(sym_size == solved_size)
+
+        if condition == 'and':
+            self.solver.add(Not(And(solution_sizes)))
+        else:
+            assert condition == 'or'
+            self.solver.add(Not(Or(solution_sizes)))
+
+        return True
 
     def test_packet(self, packet, table_configs, source_info_to_node_name):
         """This function starts simple_switch, sends a packet to the switch and
