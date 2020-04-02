@@ -1,4 +1,5 @@
 import json
+import pytest
 
 from p4pktgen.main import generate_test_cases, path_tuple
 from p4pktgen.config import Config
@@ -529,3 +530,17 @@ class CheckSystem:
             lengths1.add(l1)
             assert l2 not in lengths2
             lengths2.add(l2)
+
+
+    @pytest.mark.xfail(reason="Variable length extractions mask subsequent constant extractions")
+    def check_extract_fixed_after_variable(self):
+        # This test case checks that fixed-length extractions of regions
+        # that follow immediately after a variably-extracted region are
+        # handled correctly.
+        load_test_config()
+        results = run_test('examples/switch-after-varbit.json')
+        expected_results = {
+            ('start', 'test_non_zero', 'sink', (u'tbl_switchaftervarbit55', u'switchaftervarbit55')): TestPathResult.SUCCESS,
+            ('start', 'test_zero', 'sink', (u'tbl_switchaftervarbit55', u'switchaftervarbit55')): TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
