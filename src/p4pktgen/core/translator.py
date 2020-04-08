@@ -20,6 +20,7 @@ from p4pktgen.hlir.transition import *
 from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *
 from p4pktgen.switch.simple_switch import SimpleSwitch
+from p4pktgen.util.bitvec import equalize_bv_size
 from p4pktgen.util.statistics import Statistics, Timer
 from p4pktgen.util.table import Table
 
@@ -135,13 +136,6 @@ class Translator:
         #    self.switch.shutdown()
         pass
 
-    def equalize_bv_size(self, bvs):
-        target_size = max([bv.size() for bv in bvs])
-        return [
-            ZeroExt(target_size - bv.size(), bv)
-            if bv.size() != target_size else bv for bv in bvs
-        ]
-
     def p4_value_to_bv(self, value, size):
         # XXX: Support values that are not simple hexstrs
         if True:
@@ -239,7 +233,7 @@ class Translator:
                                              sym_packet, pos)
                 rhs = self.type_value_to_smt(context, type_value.right,
                                              sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
+                lhs, rhs = equalize_bv_size(lhs, rhs)
                 if type_value.op == '==':
                     return lhs == rhs
                 elif type_value.op == '!=':
@@ -265,7 +259,7 @@ class Translator:
                                              sym_packet, pos)
                 rhs = self.type_value_to_smt(context, type_value.right,
                                              sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
+                lhs, rhs = equalize_bv_size(lhs, rhs)
                 # XXX: signed/unsigned?
                 if type_value.op == '>':
                     return UGT(lhs, rhs)
@@ -283,7 +277,7 @@ class Translator:
                 # P4_16 does not require that lhs and rhs of <<
                 # operator be equal bit widths, but I believe that the
                 # Z3 SMT solver does.
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
+                lhs, rhs = equalize_bv_size(lhs, rhs)
                 if type_value.op == '<<':
                     return lhs << rhs
                 elif type_value.op == '>>':
@@ -295,7 +289,7 @@ class Translator:
                                              sym_packet, pos)
                 rhs = self.type_value_to_smt(context, type_value.right,
                                              sym_packet, pos)
-                lhs, rhs = self.equalize_bv_size([lhs, rhs])
+                lhs, rhs = equalize_bv_size(lhs, rhs)
                 return If(condition, lhs, rhs)
             else:
                 raise Exception('Type value expression {} not supported'.
@@ -437,8 +431,8 @@ class Translator:
                         ones = BitVecVal(-1, field.size)
                         assert ones.size() >= sym_size.size()
                         field_size_c = BitVecVal(field.size, sym_size.size())
-                        ones, shift_bits = self.equalize_bv_size(
-                            [ones, field_size_c - sym_size])
+                        ones, shift_bits = equalize_bv_size(
+                            ones, field_size_c - sym_size)
                         context.set_field_value(header_name, field_name,
                                                 field_val & (LShR(ones, shift_bits)))
                         constraints.append(ULE(sym_size, field_size_c))
