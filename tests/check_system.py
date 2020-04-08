@@ -542,3 +542,15 @@ class CheckSystem:
             ('start', 'test_zero', 'sink', (u'tbl_switchaftervarbit55', u'switchaftervarbit55')): TestPathResult.SUCCESS,
         }
         assert results == expected_results
+
+
+    def check_lookahead_beyond_extract(self):
+        # This test case checks that lookaheads that extend beyond the final
+        # extraction are handled correctly.
+        load_test_config()
+        results = run_test('examples/lookahead-beyond-extract.json')
+        expected_results = {
+            ('start', 'test_long', 'sink', (u'tbl_lookaheadbeyondextract53', u'lookaheadbeyondextract53')): TestPathResult.SUCCESS,
+            ('start', 'test_short', 'sink', (u'tbl_lookaheadbeyondextract53', u'lookaheadbeyondextract53')): TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
