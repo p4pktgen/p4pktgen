@@ -101,11 +101,23 @@ class PathSolver(object):
         self.hlir = hlir
         self.pipeline = pipeline
         self.translator = Translator(hlir, pipeline)
-        self.context_history = [Context()]  # XXX: implement better mechanism
-        self.result_history = [[]]
-        self.context_history_lens = []
         self.total_switch_time = 0.0
 
+        # List of contexts along control path.  First element is context at
+        # start of control path.  context_history may be appended to arbitrarily
+        # with context_history_lens recording length of context_history at each
+        # node along control path.
+        self.context_history = [Context()]  # XXX: implement better mechanism
+        self.context_history_lens = []
+
+        # List of TestPathResults for each transition out of a node.  First
+        # element is start of control graph, last element is dest of transition
+        # currently being processed (i.e. should always be empty unless
+        # mid-backtracking).
+        self.result_history = [[]]
+
+        # List of constraints added by each transition along the control path.
+        # First element is constraints added by entire parser path.
         self.constraints = None if Config().get_incremental() else [[]]
 
     def current_context(self):
@@ -316,17 +328,17 @@ class PathSolver(object):
                 self.solver.add(And(cs))
             self.constraints[-1].extend(constraints)
 
-        # Construct and test the packet
         # logging.debug(And(constraints))
         self.solver.add(And(constraints))
         self.solver_result = None
 
     def try_quick_solve(self, control_path, is_complete_control_path):
         context = self.current_context()
-        # If the last part of the path is a table with no const entries
-        # and the prefix of the current path is satisfiable, so is the new
-        # path
         result = None
+        # Can only use quick solve if we are:
+        #   - solving for a control transition, i.e. not at the starting node
+        #   - not going to record the test-case if successful, i.e. no complete
+        #     paths and no error cases.
         if len(control_path) > 0 \
                 and not is_complete_control_path \
                 and len(context.uninitialized_reads) == 0 \
@@ -334,6 +346,9 @@ class PathSolver(object):
             transition = control_path[-1]
             if Config().get_table_opt() \
                     and transition.transition_type == TransitionType.ACTION_TRANSITION:
+                # If the current transition is a table with no const entries
+                # and the prefix of the current path is satisfiable, so is the
+                # new path.
                 assert transition.src in self.pipeline.tables
                 table = self.pipeline.tables[transition.src]
                 assert not table.has_const_entries()
@@ -341,6 +356,11 @@ class PathSolver(object):
                 self.result_history[-2].append(result)
             elif Config().get_conditional_opt() \
                     and transition.transition_type == TransitionType.BOOL_TRANSITION:
+                # If the current transition is boolean then only two transitions
+                # out of the previous node are possible and at least one of them
+                # must be satisfiable.  If we've backtracked from one already
+                # then it represents the opposite side of the condition and if
+                # it was found to be unsatisfiable then we must be satisfiable.
                 cond_history = self.result_history[-2]
                 if len(cond_history) > 0 \
                         and cond_history[0] == TestPathResult.NO_PACKET_FOUND:
