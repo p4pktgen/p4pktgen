@@ -3,7 +3,7 @@ import pytest
 
 from p4pktgen.main import generate_test_cases, path_tuple
 from p4pktgen.config import Config
-from p4pktgen.core.translator import TestPathResult
+from p4pktgen.core.solver import TestPathResult
 
 
 def load_test_config(no_packet_length_errs=True,

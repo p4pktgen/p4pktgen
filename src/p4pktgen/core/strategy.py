@@ -9,7 +9,7 @@ import random
 from enum import Enum
 
 from p4pktgen.config import Config
-from p4pktgen.core.translator import TestPathResult
+from p4pktgen.core.solver import TestPathResult
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.hlir.transition import ActionTransition, ParserTransition
@@ -62,10 +62,10 @@ class ParserGraphVisitor(GraphVisitor):
         pass
 
 class PathCoverageGraphVisitor(GraphVisitor):
-    def __init__(self, translator, parser_path, source_info_to_node_name,
+    def __init__(self, path_solver, parser_path, source_info_to_node_name,
                  results, test_case_writer):
         super(PathCoverageGraphVisitor, self).__init__()
-        self.translator = translator
+        self.path_solver = path_solver
         self.parser_path = parser_path
         self.source_info_to_node_name = source_info_to_node_name
         self.path_count = 0
@@ -78,9 +78,9 @@ class PathCoverageGraphVisitor(GraphVisitor):
 
     def generate_test_case(self, control_path, is_complete_control_path):
         self.path_count += 1
-        self.translator.push()
+        self.path_solver.push()
 
-        expected_path = self.translator.expected_path(self.parser_path, control_path)
+        expected_path = self.path_solver.translator.expected_path(self.parser_path, control_path)
 
         logging_str = "%d Exp path (len %d+%d=%d) complete_path %s: %s" % \
             (self.path_count, len(self.parser_path), len(control_path),
@@ -90,10 +90,10 @@ class PathCoverageGraphVisitor(GraphVisitor):
         logging.info("BEGIN %s" % logging_str)
 
         time2 = time.time()
-        self.translator.add_path_constraints(control_path)
+        self.path_solver.add_path_constraints(control_path)
         time3 = time.time()
 
-        result = self.translator.try_quick_solve(control_path, is_complete_control_path)
+        result = self.path_solver.try_quick_solve(control_path, is_complete_control_path)
         if result == TestPathResult.SUCCESS:
             assert not is_complete_control_path
             # Path trivially found to be satisfiable and not complete.
@@ -109,10 +109,10 @@ class PathCoverageGraphVisitor(GraphVisitor):
         max_path_test_cases = Config().get_max_test_cases_per_path()
 
         while True:
-            self.translator.solve_path()
+            self.path_solver.solve_path()
             time4 = time.time()
 
-            result, test_case, packet_list = self.translator.generate_test_case(
+            result, test_case, packet_list = self.path_solver.generate_test_case(
                 expected_path=expected_path,
                 parser_path=self.parser_path,
                 control_path=control_path,
@@ -149,7 +149,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
                     or result == TestPathResult.NO_PACKET_FOUND:
                 break
 
-            if not self.translator.constrain_last_extract_vl_lengths(extract_vl_variation):
+            if not self.path_solver.constrain_last_extract_vl_lengths(extract_vl_variation):
                 # Special case: unbounded numbers of test cases are only
                 # safe when we're building up constraints on VL-extraction
                 # lengths, or else we'll loop forever.
@@ -160,7 +160,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
         result, record_result = results[0]
 
         if not Config().get_incremental():
-            self.translator.solver.reset()
+            self.path_solver.solver.reset()
 
         logging.info("END   %s: %s" % (logging_str, result) )
         return result, record_result
@@ -183,7 +183,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
             Statistics().count_unsat_paths.inc()
 
         if Config().get_record_statistics():
-            Statistics().record(result, is_complete_control_path, self.translator)
+            Statistics().record(result, is_complete_control_path, self.path_solver)
 
         if record_result:
             path = (tuple(self.parser_path), tuple(control_path))
@@ -229,14 +229,14 @@ class PathCoverageGraphVisitor(GraphVisitor):
         return visit_result
 
     def backtrack(self):
-        self.translator.pop()
+        self.path_solver.pop()
 
 EdgeLabels = Enum('EdgeLabels', 'UNVISITED VISITED DONE')
 
 class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
-    def __init__(self, graph, labels, translator, parser_path, source_info_to_node_name,
+    def __init__(self, graph, labels, path_solver, parser_path, source_info_to_node_name,
                  results, test_case_writer):
-        super(EdgeCoverageGraphVisitor, self).__init__(translator, parser_path, source_info_to_node_name, results, test_case_writer)
+        super(EdgeCoverageGraphVisitor, self).__init__(path_solver, parser_path, source_info_to_node_name, results, test_case_writer)
 
         self.graph = graph
         self.labels = labels
@@ -373,10 +373,10 @@ class LeastUsedPaths(ParserGraphVisitor):
             self.visitor.visit(path)
 
 class TLUBFParserVisitor:
-    def __init__(self, graph, labels, translator, source_info_to_node_name, results, test_case_writer, in_pipeline):
+    def __init__(self, graph, labels, path_solver, source_info_to_node_name, results, test_case_writer, in_pipeline):
         self.graph = graph
         self.labels = labels
-        self.translator = translator
+        self.path_solver = path_solver
         self.source_info_to_node_name = source_info_to_node_name
         self.results = results
         self.test_case_writer = test_case_writer
@@ -384,11 +384,11 @@ class TLUBFParserVisitor:
 
     def visit(self, parser_path):
         print("VISIT", parser_path)
-        if not self.translator.generate_parser_constraints(parser_path):
+        if not self.path_solver.generate_parser_constraints(parser_path):
             # Skip unsatisfiable parser paths
             return
 
-        graph_visitor = EdgeCoverageGraphVisitor(self.graph, self.labels, self.translator, parser_path,
+        graph_visitor = EdgeCoverageGraphVisitor(self.graph, self.labels, self.path_solver, parser_path,
                                                  self.source_info_to_node_name,
                                                  self.results, self.test_case_writer)
 
