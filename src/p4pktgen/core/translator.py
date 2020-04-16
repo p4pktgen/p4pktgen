@@ -46,6 +46,26 @@ def min_bits_for_uint(uint):
     return cur_width
 
 
+def p4_value_to_bv(value, size):
+    # XXX: Support values that are not simple hexstrs
+    if True:
+        if not (min_bits_for_uint(value) <= size):
+            logging.error("p4_value_to_bv: type(value)=%s value=%s"
+                          " type(size)=%s size=%s"
+                          "" % (type(value), value, type(size), size))
+        assert min_bits_for_uint(value) <= size
+        return BitVecVal(value, size)
+    else:
+        raise Exception('Transition value type not supported: {}'.format(
+            value.__class__))
+
+
+def parser_op_trans_to_str(op_trans):
+    # XXX: after unifying type value representations
+    # assert isinstance(op_trans.op.value[1], TypeValueHexstr)
+    return op_trans.error_str
+
+
 class Translator(object):
     """Translates p4pktgen path objects into z3 representations.  Should have a
     fixed state after instantiation with the HLIR and pipeline it's translating
@@ -56,36 +76,6 @@ class Translator(object):
         # operation on instances of this class.
         self.hlir = hlir
         self.pipeline = pipeline
-
-    def p4_value_to_bv(self, value, size):
-        # XXX: Support values that are not simple hexstrs
-        if True:
-            if not (min_bits_for_uint(value) <= size):
-                logging.error("p4_value_to_bv: type(value)=%s value=%s"
-                              " type(size)=%s size=%s"
-                              "" % (type(value), value, type(size), size))
-            assert min_bits_for_uint(value) <= size
-            return BitVecVal(value, size)
-        else:
-            raise Exception('Transition value type not supported: {}'.format(
-                value.__class__))
-
-    def stack_next_header_name(self, context, header_name):
-        name = '{}[{}]'.format(header_name, context.parsed_stacks[header_name])
-        context.parsed_stacks[header_name] += 1
-        return name
-
-    def set_valid_field(self, context, header_name):
-        # Even though the P4_16 isValid() method
-        # returns a boolean value, it appears that
-        # when p4c-bm2-ss compiles expressions like
-        # "if (ipv4.isValid())" into a JSON file, it
-        # compares the "ipv4.$valid$" field to a bit
-        # vector value of 1 with the == operator, thus
-        # effectively treating the "ipv4.$valid$" as
-        # if it is a bit<1> type.
-        context.set_field_value(header_name, '$valid$',
-                                BitVecVal(1, 1))
 
     def value_header_name_and_type(self, value):
         header_name = value.header_name
@@ -245,12 +235,12 @@ class Translator(object):
                 return new_pos
 
             if isinstance(parser_op.value[0], TypeValueStack):
-                header_name = self.stack_next_header_name(context, header_name)
+                header_name = context.get_stack_next_header_name(header_name)
 
             if isinstance(parser_op.value[0], TypeValueStack) or (
                     isinstance(parser_op.value[0], TypeValueRegular)
                     and not self.hlir.headers[header_name].metadata):
-                self.set_valid_field(context, header_name)
+                context.set_valid_field(header_name)
 
             # Map bits from packet to context
             extract_offset = BitVecVal(0, 32)
@@ -338,12 +328,12 @@ class Translator(object):
                 assert False
 
             if isinstance(parser_op.value[0], TypeValueStack):
-                header_name = self.stack_next_header_name(context, header_name)
+                header_name = context.get_stack_next_header_name(header_name)
 
             if isinstance(parser_op.value[0], TypeValueStack) or (
                     isinstance(parser_op.value[0], TypeValueRegular)
                     and not self.hlir.headers[header_name].metadata):
-                self.set_valid_field(context, header_name)
+                context.set_valid_field(header_name)
 
             extract_offset = BitVecVal(0, 32)
             for field_name, field in header_type.fields.items():
@@ -365,7 +355,7 @@ class Translator(object):
                                                     field.size))
                         extract_offset += BitVecVal(field.size, 32)
                 else:
-                    self.set_valid_field(context, header_name)
+                    context.set_valid_field(header_name)
 
             return new_pos + extract_offset
         elif op == P4ParserOpsEnum.verify:
@@ -546,7 +536,8 @@ class Translator(object):
 
         context.remove_runtime_data()
 
-    def parser_transition_key_constraint(self, sym_transition_keys, value,
+    @staticmethod
+    def parser_transition_key_constraint(sym_transition_keys, value,
                                          mask):
         # value should be int or long
         # mask should be int, long, or None
@@ -582,11 +573,6 @@ class Translator(object):
         else:
             constraint = (bitvecs[0] & bv_mask) == (bv_value & bv_mask)
         return constraint
-
-    def parser_op_trans_to_str(self, op_trans):
-        # XXX: after unifying type value representations
-        # assert isinstance(op_trans.op.value[1], TypeValueHexstr)
-        return op_trans.error_str
 
     def control_transition_constraints(self, context, transition):
         assert isinstance(transition, Edge)
@@ -641,9 +627,10 @@ class Translator(object):
         context.unset_source_info()
         return constraints
 
-    def expected_path(self, parser_path, control_path):
+    @staticmethod
+    def expected_path(parser_path, control_path):
         expected_path = [
             n.src if not isinstance(n, ParserOpTransition) else
-            self.parser_op_trans_to_str(n) for n in parser_path
+            parser_op_trans_to_str(n) for n in parser_path
         ] + ['sink'] + [(n.src, n) for n in control_path]
         return expected_path

@@ -211,3 +211,22 @@ class Context:
         logging.info('Variable constraints')
         for constraint in var_constraints:
             logging.info('\t{}'.format(constraint))
+
+    def get_stack_next_header_name(self, header_name):
+        # Each element in a stack needs a unique name, generate them in order
+        # of extraction.
+        name = '{}[{}]'.format(header_name, self.parsed_stacks[header_name])
+        self.parsed_stacks[header_name] += 1
+        return name
+
+    def set_valid_field(self, header_name):
+        # Even though the P4_16 isValid() method
+        # returns a boolean value, it appears that
+        # when p4c-bm2-ss compiles expressions like
+        # "if (ipv4.isValid())" into a JSON file, it
+        # compares the "ipv4.$valid$" field to a bit
+        # vector value of 1 with the == operator, thus
+        # effectively treating the "ipv4.$valid$" as
+        # if it is a bit<1> type.
+        self.set_field_value(header_name, '$valid$',
+                              BitVecVal(1, 1))
