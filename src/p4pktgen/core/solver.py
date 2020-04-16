@@ -50,6 +50,40 @@ def source_info_to_dict(source_info):
                                           source_info.source_fragment)])
 
 
+def table_set_default_cmd_string(table, action, params):
+    return ('{} {} {}'.format(table, action,
+                              ' '.join([str(x) for x in params])))
+
+
+def table_add_cmd_string(table, action, values, params, priority):
+    priority_str = ""
+    if priority:
+        priority_str = " %d" % (priority)
+    return ('{} {} {} => {}{}'.format(table, action, ' '.join(values),
+                                      ' '.join([str(x) for x in params]),
+                                      priority_str))
+
+
+def log_model(model, context_history):
+    var_vals = defaultdict(lambda: [])
+    for i, context in enumerate(context_history):
+        for var, smt_var in context.var_to_smt_var.items():
+            if len(var_vals[var]) < i:
+                # Add empty entries for the contexts where the variable
+                # didn't exist
+                var_vals[var] += [''] * (i - len(var_vals[var]))
+
+            if smt_var is None:
+                var_vals[var].append('')
+            else:
+                var_vals[var].append(str(model.eval(smt_var)))
+
+    table = Table()
+    table.add_rows([['.'.join(var)] + vals
+                    for var, vals in sorted(var_vals.items())])
+    logging.info('Model\n' + str(table))
+
+
 class PathSolver(object):
     """Manages a z3 solver for paths through the graph.  Maintains state to
     allow an incremental approach with backtracking and efficient solving of
@@ -98,18 +132,6 @@ class PathSolver(object):
 
     def cleanup(self):
         pass
-
-    def table_set_default_cmd_string(self, table, action, params):
-        return ('{} {} {}'.format(table, action,
-                                  ' '.join([str(x) for x in params])))
-
-    def table_add_cmd_string(self, table, action, values, params, priority):
-        priority_str = ""
-        if priority:
-            priority_str = " %d" % (priority)
-        return ('{} {} {} => {}{}'.format(table, action, ' '.join(values),
-                                          ' '.join([str(x) for x in params]),
-                                          priority_str))
 
     def init_context(self):
         assert len(self.context_history) == 1
@@ -263,25 +285,6 @@ class PathSolver(object):
 
         return result == sat
 
-    def log_model(self, model, context_history):
-        var_vals = defaultdict(lambda: [])
-        for i, context in enumerate(context_history):
-            for var, smt_var in context.var_to_smt_var.items():
-                if len(var_vals[var]) < i:
-                    # Add empty entries for the contexts where the variable
-                    # didn't exist
-                    var_vals[var] += [''] * (i - len(var_vals[var]))
-
-                if smt_var is None:
-                    var_vals[var].append('')
-                else:
-                    var_vals[var].append(str(model.eval(smt_var)))
-
-        table = Table()
-        table.add_rows([['.'.join(var)] + vals
-                        for var, vals in sorted(var_vals.items())])
-        logging.info('Model\n' + str(table))
-
     def add_path_constraints(self, control_path):
         assert len(control_path) == len(self.context_history_lens) \
                or not Config().get_incremental()
@@ -370,7 +373,7 @@ class PathSolver(object):
         if self.solver_result != unsat:
             model = self.solver.model()
             if not Config().get_silent():
-                self.log_model(model, self.context_history)
+                log_model(model, self.context_history)
             payload = self.sym_packet.get_payload_from_model(model)
 
             # Determine table configurations
@@ -483,7 +486,7 @@ class PathSolver(object):
                                      ]))
                 if len(values) == 0 or const_table or action.default_entry:
                     ss_cli_cmd = ('table_set_default ' +
-                                  self.table_set_default_cmd_string(
+                                  table_set_default_cmd_string(
                                       table, action.get_name(), param_vals))
                     logging.info(ss_cli_cmd)
                     table_setup_info = OrderedDict(
@@ -492,7 +495,7 @@ class PathSolver(object):
                          ("action_name",
                           action.get_name()), ("action_parameters", params2)])
                 else:
-                    ss_cli_cmd = ('table_add ' + self.table_add_cmd_string(
+                    ss_cli_cmd = ('table_add ' + table_add_cmd_string(
                         table, action.get_name(), values, param_vals,
                         priority))
                     table_setup_info = OrderedDict(
