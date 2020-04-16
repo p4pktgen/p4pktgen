@@ -5,7 +5,7 @@ from collections import defaultdict, OrderedDict
 
 from p4_top import P4_Top
 from config import Config
-from core.translator import Translator
+from core.solver import PathSolver
 from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
 from p4pktgen.core.strategy import EdgeLabels, TLUBFParserVisitor, LeastUsedPaths, EdgeCoverageGraphVisitor
 from p4pktgen.util.statistics import Statistics
@@ -266,7 +266,7 @@ def generate_test_cases(input_file):
 
     # XXX: move
     labels = defaultdict(lambda: EdgeLabels.UNVISITED)
-    translator = Translator(input_file, top.hlir, top.in_pipeline)
+    path_solver = PathSolver(input_file, top.hlir, top.in_pipeline)
     results = OrderedDict()
 
     # TBD: Make this filename specifiable via command line option
@@ -281,7 +281,7 @@ def generate_test_cases(input_file):
     Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges
 
     if Config().get_try_least_used_branches_first():
-        p_visitor = TLUBFParserVisitor(top.in_graph, labels, translator, top.in_source_info_to_node_name, results,
+        p_visitor = TLUBFParserVisitor(top.in_graph, labels, path_solver, top.in_source_info_to_node_name, results,
                                        test_case_writer, top.in_pipeline)
         lup = LeastUsedPaths(top.hlir, top.parser_graph, top.hlir.parsers['parser'].init_state, p_visitor)
         lup.visit()
@@ -313,7 +313,7 @@ def generate_test_cases(input_file):
             path_count[e] += 1
         logging.info("Analyzing parser_path %d of %d: %s"
                      "" % (i_path, len(parser_paths), parser_path))
-        if not translator.generate_parser_constraints(parser_path):
+        if not path_solver.generate_parser_constraints(parser_path):
             logging.info("Could not find any packet to satisfy parser path: %s"
                          "" % (parser_path))
             # Skip unsatisfiable parser paths
@@ -321,11 +321,11 @@ def generate_test_cases(input_file):
 
         graph_visitor = None
         if Config().get_try_least_used_branches_first():
-            graph_visitor = EdgeCoverageGraphVisitor(top.in_graph, labels, translator, parser_path,
+            graph_visitor = EdgeCoverageGraphVisitor(top.in_graph, labels, path_solver, parser_path,
                                                      top.in_source_info_to_node_name,
                                                      results, test_case_writer)
         else:
-            graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
+            graph_visitor = PathCoverageGraphVisitor(path_solver, parser_path,
                                                      top.in_source_info_to_node_name,
                                                      results, test_case_writer)
 
@@ -339,7 +339,7 @@ def generate_test_cases(input_file):
     Statistics().log_control_path_stats(
         Statistics().stats_per_control_path_edge, Statistics().num_control_path_edges)
     test_case_writer.cleanup()
-    translator.cleanup()
+    path_solver.cleanup()
 
     Statistics().dump()
     Statistics().cleanup()
