@@ -118,7 +118,7 @@ class PathSolver(object):
 
         # List of constraints added by each transition along the control path.
         # First element is constraints added by entire parser path.
-        self.constraints = None if Config().get_incremental() else [[]]
+        self.constraints = [[]]
 
     def current_context(self):
         return self.context_history[-1]
@@ -127,9 +127,7 @@ class PathSolver(object):
         self.solver.push()
         self.context_history_lens.append(len(self.context_history))
         self.result_history.append([])
-
-        if self.constraints is not None:
-            self.constraints.append([])
+        self.constraints.append([])
 
     def pop(self):
         if Config().get_incremental():
@@ -138,9 +136,7 @@ class PathSolver(object):
         old_len = self.context_history_lens.pop()
         self.context_history = self.context_history[:old_len]
         self.result_history.pop()
-
-        if self.constraints is not None:
-            self.constraints.pop()
+        self.constraints.pop()
 
     def cleanup(self):
         pass
@@ -148,6 +144,7 @@ class PathSolver(object):
     def init_context(self):
         assert len(self.context_history) == 1
         assert len(self.result_history) == 1
+        assert len(self.constraints) == 1
 
         context = Context()
 
@@ -177,6 +174,7 @@ class PathSolver(object):
 
         self.context_history[0] = context
         self.result_history[0] = []
+        self.constraints[0] = []
 
     def generate_parser_constraints(self, parser_path):
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
@@ -281,6 +279,7 @@ class PathSolver(object):
         constraints.extend(self.sym_packet.get_packet_constraints())
         constraints.extend(self.current_context().get_name_constraints())
         self.solver.add(And(constraints))
+        self.constraints[0] = constraints
 
         parser_constraints_gen_timer.stop()
         logging.info('Generate parser constraints: %.3f sec' %
@@ -292,7 +291,6 @@ class PathSolver(object):
         Statistics().solver_time.stop()
 
         if not Config().get_incremental():
-            self.constraints[0] = constraints
             self.solver.reset()
 
         return result == sat
@@ -324,9 +322,10 @@ class PathSolver(object):
         )
 
         if not Config().get_incremental():
+            # Add constraints from each previous path node
             for cs in self.constraints:
                 self.solver.add(And(cs))
-            self.constraints[-1].extend(constraints)
+        self.constraints[-1].extend(constraints)
 
         # logging.debug(And(constraints))
         self.solver.add(And(constraints))
