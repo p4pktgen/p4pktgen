@@ -9,7 +9,7 @@ import random
 from enum import Enum
 
 from p4pktgen.config import Config
-from p4pktgen.core.solver import TestPathResult
+from p4pktgen.core.test_cases import TestPathResult
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.hlir.transition import ActionTransition, ParserTransition
