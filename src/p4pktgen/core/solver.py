@@ -319,9 +319,13 @@ class PathSolver(object):
         result, test_case, payloads = \
             self.test_case_builder.build(
                 context, model, self.sym_packet, expected_path,
-                parser_path, control_path, is_complete_control_path,
-                source_info_to_node_name, count
-            )
+                parser_path, control_path, is_complete_control_path, count)
+
+        if Config().get_run_simple_switch():
+            result = self.test_case_builder.run_simple_switch(
+                expected_path, test_case, payloads,
+                is_complete_control_path, source_info_to_node_name)
+
         self.total_switch_time += time.time() - start_time
 
         self.result_history[-2].append(result)
