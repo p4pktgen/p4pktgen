@@ -62,8 +62,7 @@ class TestCaseBuilder(object):
         self.pipeline = pipeline
 
     def build(self, context, model, sym_packet, expected_path,
-              parser_path, control_path, is_complete_control_path,
-              source_info_to_node_name, count):
+              parser_path, control_path, is_complete_control_path, count):
         packet_hexstr = None
         payload = None
         ss_cli_setup_cmds = []
@@ -231,35 +230,13 @@ class TestCaseBuilder(object):
                         OrderedDict([("variable_name", var_name), (
                             "source_info", source_info_to_dict(source_info))]))
             elif len(payload) >= Config().get_min_packet_len_generated():
-                if Config().get_run_simple_switch() \
-                        and is_complete_control_path:
-                    extracted_path = self.test_packet(payload, table_configs,
-                                                      source_info_to_node_name)
-
-                    if is_complete_control_path:
-                        match = (expected_path == extracted_path)
-                    else:
-                        len1 = len(expected_path)
-                        len2 = len(extracted_path)
-                        match = (expected_path == extracted_path[0:len1]
-                                 ) and len1 <= len2
-                else:
-                    match = True
-                if match:
-                    logging.info('Test successful: {}'.format(expected_path))
-                    result = TestPathResult.SUCCESS
-                else:
-                    logging.error('Expected and actual path differ')
-                    logging.error('Expected: {}'.format(expected_path))
-                    logging.error('Actual:   {}'.format(extracted_path))
-                    result = TestPathResult.TEST_FAILED
-                    assert False
+                logging.info('Found packet for path: {}'.format(expected_path))
+                result = TestPathResult.SUCCESS
             else:
                 result = TestPathResult.PACKET_SHORTER_THAN_MIN
-                logging.warning('Packet not sent (%d bytes is shorter than'
-                                ' minimum %d supported)' %
-                                (len(payload),
-                                 Config().get_min_packet_len_generated()))
+                logging.warning(
+                    'Packet length %d shorter than than minimum %d supported)' %
+                    (len(payload), Config().get_min_packet_len_generated()))
         else:
             logging.info(
                 'Unable to find packet for path: {}'.format(expected_path))
@@ -334,24 +311,33 @@ class TestCaseBuilder(object):
 
         return result, test_case, payloads
 
-    def test_packet(self, packet, table_configs, source_info_to_node_name):
+    def run_simple_switch(self, expected_path, test_case, payloads,
+                          is_complete_control_path, source_info_to_node_name):
+        result = TestPathResult[test_case['result']]
+        if is_complete_control_path and result == TestPathResult.SUCCESS:
+            assert len(payloads) == 1
+            extracted_path = self.test_packet(payloads[0],
+                                              test_case['ss_cli_setup_cmds'],
+                                              source_info_to_node_name)
+
+            if expected_path != extracted_path:
+                logging.error('Expected and actual path differ')
+                logging.error('Expected: {}'.format(expected_path))
+                logging.error('Actual:   {}'.format(extracted_path))
+                result = TestPathResult.TEST_FAILED
+                assert False
+            else:
+                logging.info('Test successful: {}'.format(expected_path))
+        return result
+
+    def test_packet(self, packet, ss_cli_setup_cmds, source_info_to_node_name):
         """This function starts simple_switch, sends a packet to the switch and
         returns the parser states that the packet traverses based on the output of
         simple_switch."""
 
         with SimpleSwitch(self.json_file) as switch:
-            for table, action, values, _, params, priority in table_configs:
-                # XXX: inelegant
-                const_table = self.pipeline.tables[table].has_const_entries()
-
-                # Extract values of parameters, without the names
-                param_vals = map(lambda x: x[1], params)
-                if len(values) == 0 or const_table or action.default_entry:
-                    switch.table_set_default(table, action.get_name(),
-                                             param_vals)
-                else:
-                    switch.table_add(table, action.get_name(), values,
-                                     param_vals, priority)
+            for cmd in ss_cli_setup_cmds:
+                switch.table_cmd(cmd)
 
             extracted_path = switch.send_and_check_only_1_packet(
                 packet, source_info_to_node_name)

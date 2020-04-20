@@ -321,19 +321,17 @@ class SimpleSwitch:
         logging.debug("Calling fp.flush() after _writer_header(None)")
         self.intf_info[intf_num]['pcap_in_fp'] = fp
 
-    def table_add(self, table, action, values, params, priority):
-        self.modified_tables.append(table)
-        priority_str = ""
-        if priority:
-            priority_str = " %d" % (priority)
-        self.api.do_table_add(
-            '{} {} {} => {}{}'.format(table, action, ' '.join(
-                values), ' '.join([str(x) for x in params]), priority_str))
-
-    def table_set_default(self, table, action, params):
-        self.modified_tables.append(table)
-        self.api.do_table_set_default('{} {} {}'.format(
-            table, action, ' '.join([str(x) for x in params])))
+    def table_cmd(self, cmd):
+        clis = {'default': 'table_set_default ',
+                'add': 'table_add '}
+        if cmd.startswith(clis['default']):
+            body = cmd[len(clis['default']):]
+            self.api.do_table_set_default(body)
+        elif cmd.startswith(clis['add']):
+            body = cmd[len(clis['add']):]
+            self.api.do_table_add(body)
+        else:
+            raise Exception('Unknown table cmd: %s' % cmd)
 
     def clear_tables(self):
         """Clears all modified tables."""
