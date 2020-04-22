@@ -407,26 +407,24 @@ class PathSolver(object):
                             transition.action.runtime_data):
                         runtime_data_values.append(
                             (runtime_param.name,
-                             model[context.get_runtime_data_for_table_action(
-                                 table_name, transition.action.name,
-                                 runtime_param.name, i)]))
-                    sym_table_values = context.get_table_values(
+                             model[context.get_table_runtime_data(table_name, i)]))
+                    table_key_values = context.get_table_key_values(
                         model, table_name)
 
                     table = self.pipeline.tables[table_name]
-                    table_values_strs = []
+                    table_key_values_strs = []
                     table_key_data = []
                     table_entry_priority = None
-                    for table_key, sym_table_value in zip(
-                            table.key, sym_table_values):
+                    for table_key, table_key_value in zip(
+                            table.key, table_key_values):
                         key_field_name = '.'.join(table_key.target)
                         sym_table_value_long = model_value_to_long(
-                            sym_table_value)
+                            table_key_value)
                         if table_key.match_type == 'lpm':
                             bitwidth = context.get_header_field_size(
                                 table_key.target[0], table_key.target[1])
-                            table_values_strs.append(
-                                '{}/{}'.format(sym_table_value, bitwidth))
+                            table_key_values_strs.append(
+                                '{}/{}'.format(table_key_value, bitwidth))
                             table_key_data.append(
                                 OrderedDict([
                                     ('match_kind', 'lpm'),
@@ -441,8 +439,8 @@ class PathSolver(object):
                             bitwidth = context.get_header_field_size(
                                 table_key.target[0], table_key.target[1])
                             mask = (1 << bitwidth) - 1
-                            table_values_strs.append(
-                                '{}&&&{}'.format(sym_table_value, mask))
+                            table_key_values_strs.append(
+                                '{}&&&{}'.format(table_key_value, mask))
                             table_entry_priority = 1
                             table_key_data.append(
                                 OrderedDict([('match_kind', 'ternary'), (
@@ -454,8 +452,8 @@ class PathSolver(object):
                             # Always use a range where the min and max
                             # values are exactly the one desired value
                             # generated.
-                            table_values_strs.append('{}->{}'.format(
-                                sym_table_value, sym_table_value))
+                            table_key_values_strs.append('{}->{}'.format(
+                                table_key_value, table_key_value))
                             table_entry_priority = 1
                             table_key_data.append(
                                 OrderedDict([('match_kind', 'range'), (
@@ -464,7 +462,7 @@ class PathSolver(object):
                                                  'max_value',
                                                  sym_table_value_long)]))
                         elif table_key.match_type == 'exact':
-                            table_values_strs.append(str(sym_table_value))
+                            table_key_values_strs.append(str(table_key_value))
                             table_key_data.append(
                                 OrderedDict([('match_kind', 'exact'), (
                                     'key_field_name', key_field_name), (
@@ -478,7 +476,7 @@ class PathSolver(object):
                                   " table.default_entry.action_const %s" %
                                   (table_name,
                                    table.default_entry.action_const))
-                    if (len(table_values_strs) == 0
+                    if (len(table_key_values_strs) == 0
                             and table.default_entry.action_const):
                         # Then we cannot change the default action for the
                         # table at run time, so don't remember any entry
@@ -486,7 +484,7 @@ class PathSolver(object):
                         pass
                     else:
                         table_configs.append(
-                            (table_name, transition, table_values_strs,
+                            (table_name, transition, table_key_values_strs,
                              table_key_data, runtime_data_values,
                              table_entry_priority))
 

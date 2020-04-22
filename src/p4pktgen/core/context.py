@@ -3,6 +3,7 @@
 
 from collections import defaultdict
 import logging
+from contextlib import contextmanager
 import time
 
 from z3 import *
@@ -43,10 +44,20 @@ class Context:
         # XXX: unify errors
         self.uninitialized_reads = []
         self.invalid_header_writes = []
-        self.runtime_data = []
-        self.table_values = {}
         self.input_metadata = {}
         self.source_info = None
+
+        # Stores references to smt_vars of header fields used to key into each
+        # table on the path.
+        # TODO: Consolidate table fields into one dict.
+        self.table_key_values = {}  # {table_name: [key_smt_var, ...]}
+        # Stores references to smt_vars of table runtime data (action params)
+        # used in each table-action on the path.
+        self.table_runtime_data = {}  # {table_name: [param_smt_var, ...]}
+        # Each table can only be hit once per path.
+        self.table_action = {}  # {table_name: action_name}
+        # Temporary variable only populated while translating a table action
+        self.current_table_name = None
 
         self.parsed_stacks = defaultdict(int)
         self.parsed_vl_extracts = {}
@@ -60,8 +71,9 @@ class Context:
         context_copy.new_vars = set(self.new_vars)
         context_copy.var_to_smt_var = dict.copy(self.var_to_smt_var)
         context_copy.var_to_smt_val = dict.copy(self.var_to_smt_val)
-        context_copy.runtime_data = list(self.runtime_data)
-        context_copy.table_values = dict.copy(self.table_values)
+        context_copy.table_key_values = dict.copy(self.table_key_values)
+        context_copy.table_runtime_data = dict.copy(self.table_runtime_data)
+        context_copy.table_action = dict.copy(self.table_action)
         context_copy.input_metadata = dict.copy(self.input_metadata)
         return context_copy
 
@@ -109,21 +121,41 @@ class Context:
             self.var_to_smt_var[var_name] = new_smt_var
             self.var_to_smt_val[new_smt_var] = sym_val
 
-    def register_runtime_data(self, table_name, action_name, param_name,
-                              bitwidth):
-        # XXX: can actions call other actions? This won't work in that case
-        runtime_data_val = BitVec('${}$.${}$.runtime_data_{}'.format(
-            table_name, action_name, param_name), bitwidth)
-        self.set_field_value('{}.{}.{}'.format(table_name, action_name,
-                                               param_name),
-                             str(len(self.runtime_data)), runtime_data_val)
-        self.runtime_data.append(runtime_data_val)
+    def set_table_action(self, table_name, action_name):
+        if table_name in self.table_action:
+            assert self.table_action[table_name] == action_name
+        else:
+            self.table_action[table_name] = action_name
 
-    def get_runtime_data(self, idx):
-        return self.runtime_data[idx]
+    def add_runtime_data(self, table_name, action_name, params):
+        assert table_name not in self.table_runtime_data
+        runtime_data = []
+        for i, (param_name, param_bitwidth) in enumerate(params):
+            # XXX: can actions call other actions? This won't work in that case
+            param_smt_var = BitVec('${}$.${}$.runtime_data_{}'.format(
+                table_name, action_name, param_name), param_bitwidth)
+            self.set_field_value('{}.{}.{}'.format(table_name, action_name,
+                                                   param_name),
+                                 str(i), param_smt_var)
+            runtime_data.append(param_smt_var)
+        self.table_runtime_data[table_name] = runtime_data
 
-    def remove_runtime_data(self):
-        self.runtime_data = []
+    def get_table_runtime_data(self, table_name, idx):
+        return self.table_runtime_data[table_name][idx]
+
+    @contextmanager
+    def set_current_table(self, table_name):
+        # Temporarily sets current table, for converting table primitives.
+        try:
+            self.current_table_name = table_name
+            yield
+        finally:
+            self.current_table_name = None
+
+    def get_current_table_runtime_data(self, idx):
+        # Must be called inside a with set_current_table context
+        assert self.current_table_name is not None
+        return self.get_table_runtime_data(self.current_table_name, idx)
 
     def remove_header_fields(self, header_name):
         # XXX: hacky
@@ -132,21 +164,16 @@ class Context:
                 Context.next_id += 1
                 self.var_to_smt_var[k] = None
 
-    def get_runtime_data_for_table_action(self, table_name, action_name,
-                                          param_name, idx):
-        return self.get_header_field('{}.{}.{}'.format(table_name, action_name,
-                                                       param_name), str(idx))
+    def set_table_key_values(self, table_name, sym_key_vals):
+        self.table_key_values[table_name] = sym_key_vals
 
-    def set_table_values(self, table_name, sym_vals):
-        self.table_values[table_name] = sym_vals
-
-    def get_table_values(self, model, table_name):
+    def get_table_key_values(self, model, table_name):
         return [
-            model.eval(sym_val) for sym_val in self.table_values[table_name]
+            model.eval(sym_val) for sym_val in self.table_key_values[table_name]
         ]
 
     def has_table_values(self, table_name):
-        return table_name in self.table_values
+        return table_name in self.table_key_values
 
     def get(self, field):
         return self.get_var(self.field_to_var(field))

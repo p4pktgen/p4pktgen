@@ -111,7 +111,7 @@ class Translator(object):
                 type_value.header_name, type_value.header_field,
                 self.hlir.get_header_stack(type_value.header_name).size)
         if isinstance(type_value, TypeValueRuntimeData):
-            return context.get_runtime_data(type_value.index)
+            return context.get_current_table_runtime_data(type_value.index)
         if isinstance(type_value, TypeValueExpression):
             if type_value.op in ['and', 'or']:
                 lhs = self.type_value_to_smt(context, type_value.left,
@@ -383,158 +383,156 @@ class Translator(object):
         # XXX: This will not work if an action is used multiple times
         # XXX: Need a way to access the model for those parameters
         # Create symbolic values for the runtime data (parameters for actions)
-        for i, runtime_param in enumerate(action.runtime_data):
-            context.register_runtime_data(table_name, action.name,
-                                          runtime_param.name,
-                                          runtime_param.bitwidth)
+        context.set_table_action(table_name, action.name)
+        context.add_runtime_data(table_name, action.name,
+                                 [(param.name, param.bitwidth)
+                                  for param in action.runtime_data])
+        with context.set_current_table(table_name):
+            for primitive in action.primitives:
+                context.set_source_info(primitive.source_info)
 
-        for primitive in action.primitives:
-            context.set_source_info(primitive.source_info)
+                # In Apr 2017, p4c and behavioral-model added primitives
+                # "assign", "assign_VL" (for assigning variable length
+                # 'varbit' fields), and "assign_header" primitives.  I believe
+                # that "assign" is either identical to "modify_field", or very
+                # very close.  See
+                # https://github.com/p4lang/behavioral-model/pull/330
+                if primitive.op in ['modify_field', 'assign']:
+                    value = self.type_value_to_smt(context,
+                                                   primitive.parameters[1])
+                    field = primitive.parameters[0]
+                    fld_info = self.hlir.headers[field.header_name].fields[
+                        field.header_field]
+                    dest_size = fld_info.size
+                    if dest_size != value.size():
+                        if Config().get_debug():
+                            logging.debug(
+                                "primitive op '%s' lhs/rhs width mismatch"
+                                " (%d != %d bits) lhs %s source_info %s"
+                                "" % (primitive.op, dest_size, value.size(), field,
+                                      primitive.source_info))
+                            logging.debug("    value %s" % (value))
+                        if dest_size > value.size():
+                            value = ZeroExt(dest_size - value.size(), value)
+                        else:
+                            value = Extract(dest_size - 1, 0, value)
+                    context.set_field_value(field.header_name, field.header_field,
+                                            value)
+                elif primitive.op == 'drop' or primitive.op == 'mark_to_drop':
+                    # Dropping the packet does not modify the context. However we
+                    # should eventually adapt the expected path.
+                    context.set_field_value('standard_metadata', 'egress_spec',
+                                            BitVecVal(511, 9))
+                    context.set_field_value('standard_metadata', 'mcast_grp',
+                                            BitVecVal(0, 16))
+                    pass
+                elif primitive.op == 'add_header':
+                    header_name = primitive.parameters[0].header_name
+                    context.set_field_value(header_name, '$valid$', BitVecVal(
+                        1, 1))
+                elif primitive.op == 'remove_header':
+                    header_name = primitive.parameters[0].header_name
+                    context.set_field_value(header_name, '$valid$', BitVecVal(
+                        0, 1))
+                    context.remove_header_fields(header_name)
+                elif primitive.op == 'assign_header_stack':
+                    header_stack_src = self.hlir.get_header_stack(
+                        primitive.parameters[1].header_stack_name)
+                    header_stack_dst = self.hlir.get_header_stack(
+                        primitive.parameters[0].header_stack_name)
+                    header_stack_t = self.hlir.get_header_type(
+                        header_stack_src.header_type_name)
 
-            # In Apr 2017, p4c and behavioral-model added primitives
-            # "assign", "assign_VL" (for assigning variable length
-            # 'varbit' fields), and "assign_header" primitives.  I believe
-            # that "assign" is either identical to "modify_field", or very
-            # very close.  See
-            # https://github.com/p4lang/behavioral-model/pull/330
-            if primitive.op in ['modify_field', 'assign']:
-                value = self.type_value_to_smt(context,
-                                               primitive.parameters[1])
-                field = primitive.parameters[0]
-                fld_info = self.hlir.headers[field.header_name].fields[
-                    field.header_field]
-                dest_size = fld_info.size
-                if dest_size != value.size():
-                    if Config().get_debug():
-                        logging.debug(
-                            "primitive op '%s' lhs/rhs width mismatch"
-                            " (%d != %d bits) lhs %s source_info %s"
-                            "" % (primitive.op, dest_size, value.size(), field,
-                                  primitive.source_info))
-                        logging.debug("    value %s" % (value))
-                    if dest_size > value.size():
-                        value = ZeroExt(dest_size - value.size(), value)
-                    else:
-                        value = Extract(dest_size - 1, 0, value)
-                context.set_field_value(field.header_name, field.header_field,
-                                        value)
-            elif primitive.op == 'drop' or primitive.op == 'mark_to_drop':
-                # Dropping the packet does not modify the context. However we
-                # should eventually adapt the expected path.
-                context.set_field_value('standard_metadata', 'egress_spec',
-                                        BitVecVal(511, 9))
-                context.set_field_value('standard_metadata', 'mcast_grp',
-                                        BitVecVal(0, 16))
-                pass
-            elif primitive.op == 'add_header':
-                header_name = primitive.parameters[0].header_name
-                context.set_field_value(header_name, '$valid$', BitVecVal(
-                    1, 1))
-            elif primitive.op == 'remove_header':
-                header_name = primitive.parameters[0].header_name
-                context.set_field_value(header_name, '$valid$', BitVecVal(
-                    0, 1))
-                context.remove_header_fields(header_name)
-            elif primitive.op == 'assign_header_stack':
-                header_stack_src = self.hlir.get_header_stack(
-                    primitive.parameters[1].header_stack_name)
-                header_stack_dst = self.hlir.get_header_stack(
-                    primitive.parameters[0].header_stack_name)
-                header_stack_t = self.hlir.get_header_type(
-                    header_stack_src.header_type_name)
+                    for i in range(header_stack_src.size):
+                        src_valid = simplify(
+                            context.get_header_field('{}[{}]'.format(
+                                header_stack_src.name, i), '$valid$'))
+                        context.set_field_value('{}[{}]'.format(
+                            header_stack_dst.name, i), '$valid$', src_valid)
 
-                for i in range(header_stack_src.size):
-                    src_valid = simplify(
-                        context.get_header_field('{}[{}]'.format(
-                            header_stack_src.name, i), '$valid$'))
-                    context.set_field_value('{}[{}]'.format(
-                        header_stack_dst.name, i), '$valid$', src_valid)
+                        if src_valid == BitVecVal(1, 1):
+                            for field_name, field in header_stack_t.fields.items():
+                                val = context.get_header_field(
+                                    '{}[{}]'.format(header_stack_src.name, i),
+                                    field.name)
+                                context.set_field_value('{}[{}]'.format(
+                                    header_stack_dst.name, i), field.name, val)
+                        else:
+                            dst_name = '{}[{}]'.format(header_stack_dst.name, i)
+                            context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                            context.remove_header_fields(dst_name)
+                elif primitive.op == 'pop':
+                    assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
+                    assert isinstance(primitive.parameters[1], TypeValueHexstr)
+                    header_stack_name = primitive.parameters[0].header_stack_name
+                    header_stack = self.hlir.get_header_stack(header_stack_name)
+                    header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
+                    pop_n = primitive.parameters[1].value
 
-                    if src_valid == BitVecVal(1, 1):
-                        for field_name, field in header_stack_t.fields.items():
-                            val = context.get_header_field(
-                                '{}[{}]'.format(header_stack_src.name, i),
-                                field.name)
-                            context.set_field_value('{}[{}]'.format(
-                                header_stack_dst.name, i), field.name, val)
-                    else:
-                        dst_name = '{}[{}]'.format(header_stack_dst.name, i)
-                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
-                        context.remove_header_fields(dst_name)
-            elif primitive.op == 'pop':
-                assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
-                assert isinstance(primitive.parameters[1], TypeValueHexstr)
-                header_stack_name = primitive.parameters[0].header_stack_name
-                header_stack = self.hlir.get_header_stack(header_stack_name)
-                header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
-                pop_n = primitive.parameters[1].value
+                    for i in range(pop_n, header_stack.size):
+                        j = i - pop_n
 
-                for i in range(pop_n, header_stack.size):
-                    j = i - pop_n
+                        src_name = '{}[{}]'.format(header_stack_name, i)
+                        dst_name = '{}[{}]'.format(header_stack_name, j)
+                        src_valid = simplify(context.get_header_field(src_name, '$valid$'))
+                        if src_valid == BitVecVal(1, 1):
+                            for field_name, field in header_stack_t.fields.items():
+                                val = context.get_header_field(
+                                    src_name,
+                                    field.name)
+                                context.set_field_value(dst_name, field.name, val)
+                        else:
+                            context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                            context.remove_header_fields(dst_name)
 
-                    src_name = '{}[{}]'.format(header_stack_name, i)
-                    dst_name = '{}[{}]'.format(header_stack_name, j)
-                    src_valid = simplify(context.get_header_field(src_name, '$valid$'))
-                    if src_valid == BitVecVal(1, 1):
-                        for field_name, field in header_stack_t.fields.items():
-                            val = context.get_header_field(
-                                src_name,
-                                field.name)
-                            context.set_field_value(dst_name, field.name, val)
-                    else:
-                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
-                        context.remove_header_fields(dst_name)
-
-                for i in range(header_stack.size - pop_n, header_stack.size):
-                    dst_name = '{}[{}]'.format(header_stack_name, i)
-                    context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
-                    context.remove_header_fields(dst_name)
-            
-            elif primitive.op == 'push':
-                assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
-                assert isinstance(primitive.parameters[1], TypeValueHexstr)
-                header_stack_name = primitive.parameters[0].header_stack_name
-                header_stack = self.hlir.get_header_stack(header_stack_name)
-                header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
-                push_n = primitive.parameters[1].value
-
-                for i in range(header_stack.size - 1, push_n - 1, -1):
-                    j = i - push_n
-
-                    src_name = '{}[{}]'.format(header_stack_name, j)
-                    dst_name = '{}[{}]'.format(header_stack_name, i)
-                    src_valid = simplify(context.get_header_field(src_name, '$valid$'))
-                    if src_valid == BitVecVal(1, 1):
-                        for field_name, field in header_stack_t.fields.items():
-                            val = context.get_header_field(
-                                src_name,
-                                field.name)
-                            context.set_field_value(dst_name, field.name, val)
-                    else:
+                    for i in range(header_stack.size - pop_n, header_stack.size):
+                        dst_name = '{}[{}]'.format(header_stack_name, i)
                         context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
                         context.remove_header_fields(dst_name)
 
-                for i in range(0, push_n):
-                    dst_name = '{}[{}]'.format(header_stack_name, i)
-                    context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
-                    context.remove_header_fields(dst_name)
-                
-            elif (primitive.op in [
-                    'modify_field_rng_uniform',
-                    'modify_field_with_hash_based_offset',
-                    'clone_ingress_pkt_to_egress',
-                    'clone_egress_pkt_to_egress', 'count', 'execute_meter',
-                    'generate_digest'
-            ] and Config().get_allow_unimplemented_primitives()):
-                logging.warning('Primitive op {} allowed but treated as no-op'.
-                                format(primitive.op))
-            else:
-                raise Exception(
-                    'Primitive op {} not supported'.format(primitive.op))
+                elif primitive.op == 'push':
+                    assert isinstance(primitive.parameters[0], TypeValueHeaderStack)
+                    assert isinstance(primitive.parameters[1], TypeValueHexstr)
+                    header_stack_name = primitive.parameters[0].header_stack_name
+                    header_stack = self.hlir.get_header_stack(header_stack_name)
+                    header_stack_t = self.hlir.get_header_type(header_stack.header_type_name)
+                    push_n = primitive.parameters[1].value
 
-            context.unset_source_info()
+                    for i in range(header_stack.size - 1, push_n - 1, -1):
+                        j = i - push_n
 
-        context.remove_runtime_data()
+                        src_name = '{}[{}]'.format(header_stack_name, j)
+                        dst_name = '{}[{}]'.format(header_stack_name, i)
+                        src_valid = simplify(context.get_header_field(src_name, '$valid$'))
+                        if src_valid == BitVecVal(1, 1):
+                            for field_name, field in header_stack_t.fields.items():
+                                val = context.get_header_field(
+                                    src_name,
+                                    field.name)
+                                context.set_field_value(dst_name, field.name, val)
+                        else:
+                            context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                            context.remove_header_fields(dst_name)
+
+                    for i in range(0, push_n):
+                        dst_name = '{}[{}]'.format(header_stack_name, i)
+                        context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
+                        context.remove_header_fields(dst_name)
+
+                elif (primitive.op in [
+                        'modify_field_rng_uniform',
+                        'modify_field_with_hash_based_offset',
+                        'clone_ingress_pkt_to_egress',
+                        'clone_egress_pkt_to_egress', 'count', 'execute_meter',
+                        'generate_digest'
+                ] and Config().get_allow_unimplemented_primitives()):
+                    logging.warning('Primitive op {} allowed but treated as no-op'.
+                                    format(primitive.op))
+                else:
+                    raise Exception(
+                        'Primitive op {} not supported'.format(primitive.op))
+
+                context.unset_source_info()
 
     @staticmethod
     def parser_transition_key_constraint(sym_transition_keys, value,
@@ -603,7 +601,7 @@ class Translator(object):
                     context.get_header_field(key_elem.target[0],
                                              key_elem.target[1]))
 
-            context.set_table_values(table_name, sym_key_elems)
+            context.set_table_key_values(table_name, sym_key_elems)
             self.action_to_smt(context, table_name, transition.action)
         elif transition.transition_type == TransitionType.CONST_ACTION_TRANSITION:
             logging.debug("const action transition table_name='%s'"
