@@ -73,18 +73,12 @@ class Packet(object):
             constraints = [And(self.packet_size_var > packet_size,
                                self.packet_size_var < self.max_length)]
 
-        # Constrain variable-length extractions to the specified size.
-        for (read_size, var) in self.vl_extract_vars:
-            ones = BitVecVal(-1, var.size())
-            field_size_c = BitVecVal(var.size(), read_size.size())
-            # Technicality: extend var to be at least as wide as field_size_c
-            # so that they're compatible for constraints.
-            var_ext, _ = equalize_bv_size(var, field_size_c)
-            # Constrain that the variable modelling the variable-length
-            # extraction contains a value no larger than that specified by the
-            # specified length of that extraction.
-            constraints.append(ULE(var_ext,
-                                   LShREq(ones, field_size_c - read_size)))
+        # N.B. Variable-length extractions do not need to be constrained
+        # explicitly to their specified sizes.  The correct number of bits from
+        # the variable will be used when the packet data is generated.  This
+        # means that Z3 might return non-zero values for the truncated bits,
+        # but this is OK, because the restricted set of possible operations on
+        # varbits means that those bits will never affect the path taken.
 
         # Create a packet-subfield for lookaheads that extend beyond the end
         # of the final extraction.
@@ -180,7 +174,7 @@ class Packet(object):
 
             val = var_expr.as_long()
             width = model.eval(read_width, model_completion=True).as_long()
-            assert val < (1 << width)
+            val &= (1 << width) - 1
 
             assert carry_width < 4
             if carry_width > 0:
