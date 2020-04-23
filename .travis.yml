@@ -34,9 +34,9 @@ addons:
 script:
   - ccache -M 1G
   - ccache -z
+  - bash tools/install-thrift.sh
   - git clone https://github.com/p4lang/behavioral-model.git
   - cd behavioral-model
-  - bash travis/install-thrift.sh
   - bash travis/install-nanomsg.sh
   - ./autogen.sh
   - ./configure 'CXXFLAGS=-Wno-sign-compare' 
