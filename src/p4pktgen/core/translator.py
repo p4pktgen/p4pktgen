@@ -131,8 +131,6 @@ class Translator:
             self.constraints.pop()
 
     def cleanup(self):
-        #if Config().get_run_simple_switch():
-        #    self.switch.shutdown()
         pass
 
     def p4_value_to_bv(self, value, size):
@@ -1291,26 +1289,23 @@ class Translator:
         returns the parser states that the packet traverses based on the output of
         simple_switch."""
 
-        self.switch = SimpleSwitch(self.json_file)
+        with SimpleSwitch(self.json_file) as switch:
+            for table, action, values, _, params, priority in table_configs:
+                # XXX: inelegant
+                const_table = self.pipeline.tables[table].has_const_entries()
 
-        for table, action, values, key_data, params, priority in table_configs:
-            # XXX: inelegant
-            const_table = self.pipeline.tables[table].has_const_entries()
+                # Extract values of parameters, without the names
+                param_vals = map(lambda x: x[1], params)
+                if len(values) == 0 or const_table or action.default_entry:
+                    switch.table_set_default(table, action.get_name(),
+                                                  param_vals)
+                else:
+                    switch.table_add(table, action.get_name(), values,
+                                          param_vals, priority)
 
-            # Extract values of parameters, without the names
-            param_vals = map(lambda x: x[1], params)
-            if len(values) == 0 or const_table or action.default_entry:
-                self.switch.table_set_default(table,
-                                              action.get_name(), param_vals)
-            else:
-                self.switch.table_add(table,
-                                      action.get_name(), values, param_vals,
-                                      priority)
+            extracted_path = switch.send_and_check_only_1_packet(
+                packet, source_info_to_node_name)
 
-        extracted_path = self.switch.send_and_check_only_1_packet(
-            packet, source_info_to_node_name)
-
-        self.switch.clear_tables()
-        self.switch.shutdown()
+            switch.clear_tables()
 
         return extracted_path

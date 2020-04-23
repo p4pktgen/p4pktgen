@@ -140,19 +140,24 @@ class SimpleSwitch:
         self.num_ports = num_ports
         self.pcap_filename_prefix = 'pcap'
 
+        self.folder = folder
+        self.tmpdir = None
+        self.thrift_port_num = 9090
+
+        self.intf_info = {}
+
+        self.proc = None
+        self.api = None
+
+    def _start(self):
         # TBD: See bmv2stf.py for ideas on running multiple
         # simple_switch processes in parallel on the same machine.
         # This code does not support that yet.
-        if folder is None:
-            folder = self.tmpdir = tempfile.mkdtemp(dir=".")
-        else:
-            self.tmpdir = None
-        self.folder = folder
-        self.thrift_port_num = 9090
+        if self.folder is None:
+            self.folder = self.tmpdir = tempfile.mkdtemp(dir=".")
 
         # See step (1) above
         intf_args = []
-        self.intf_info = {}
         for i in range(self.num_ports):
             intf_args.append('-i')
             intf_args.append(self.intf_num_to_simple_switch_arg(i))
@@ -253,6 +258,14 @@ class SimpleSwitch:
 
         load_json_config(standard_client)
         self.api = RuntimeAPI(pre, standard_client, mc_client)
+
+    def __enter__(self):
+        try:
+            self._start()
+        except:
+            self.shutdown()
+            raise
+        return self
 
     def intf_num_to_simple_switch_name(self, intf_num):
         return "%s%d" % (self.pcap_filename_prefix, intf_num)
@@ -476,13 +489,17 @@ class SimpleSwitch:
 
     def shutdown(self):
         logging.debug("Killing simple_switch process")
-        self.proc.kill()
+        if self.proc is not None:
+            self.proc.kill()
         for i in sorted(self.intf_info):
             self.remove_file_if_exists(self.intf_info[i]['pcap_in_fname'])
             self.remove_file_if_exists(self.intf_info[i]['pcap_out_fname'])
         # Don't remove "." !!!
         if self.tmpdir is not None and self.tmpdir != ".":
             os.removedirs(self.tmpdir)
+
+    def __exit__(self, *args):
+        self.shutdown()
 
 
 # TBD: bmv2stf.py removes /tmp/bmv2-%d-notifications.ipc file when
