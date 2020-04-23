@@ -245,10 +245,10 @@ class Translator(object):
             # Map bits from packet to context
             extract_offset = BitVecVal(0, 32)
             for field_name, field in header_type.fields.items():
-                context.set_field_value(header_name, field_name,
-                                        sym_packet.extract(
-                                            new_pos + extract_offset,
-                                            field.size))
+                context.set_field_var(header_name, field_name,
+                                      sym_packet.extract(
+                                          new_pos + extract_offset,
+                                          field.size))
                 extract_offset += BitVecVal(field.size, 32)
 
             return new_pos + extract_offset
@@ -345,14 +345,14 @@ class Translator(object):
                         field_size_c = BitVecVal(field.size, sym_size.size())
                         constraints.append(ULE(sym_size, field_size_c))
                         context.record_extract_vl(header_name, field_name, sym_size)
-                        context.set_field_value(header_name, field_name,
-                                                field_val)
+                        context.set_field_var(header_name, field_name,
+                                              field_val)
                         extract_offset += sym_size
                     else:
-                        context.set_field_value(header_name, field_name,
-                                                sym_packet.extract(
-                                                    new_pos + extract_offset,
-                                                    field.size))
+                        context.set_field_var(header_name, field_name,
+                                              sym_packet.extract(
+                                                  new_pos + extract_offset,
+                                                  field.size))
                         extract_offset += BitVecVal(field.size, 32)
                 else:
                     context.set_valid_field(header_name)

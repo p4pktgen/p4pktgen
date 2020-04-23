@@ -97,6 +97,9 @@ class Context:
     def insert(self, field, sym_val):
         self.set_field_value(field.header.name, field.name, sym_val)
 
+    def set_field_var(self, header_name, header_field, var):
+        self.var_to_smt_var[(header_name, header_field)] = var
+
     def set_field_value(self, header_name, header_field, sym_val):
         var_name = (header_name, header_field)
         do_write = True
