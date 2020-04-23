@@ -7,7 +7,6 @@ import copy
 import logging
 import math
 import pprint as pp
-import tempfile
 import time
 
 from enum import Enum
@@ -1292,8 +1291,7 @@ class Translator:
         returns the parser states that the packet traverses based on the output of
         simple_switch."""
 
-        tmpdir = tempfile.mkdtemp(dir=".")
-        self.switch = SimpleSwitch(self.json_file, tmpdir)
+        self.switch = SimpleSwitch(self.json_file)
 
         for table, action, values, key_data, params, priority in table_configs:
             # XXX: inelegant
@@ -1314,8 +1312,5 @@ class Translator:
 
         self.switch.clear_tables()
         self.switch.shutdown()
-        # Don't remove "." !!!
-        if tmpdir != ".":
-            os.removedirs(tmpdir)
 
         return extracted_path

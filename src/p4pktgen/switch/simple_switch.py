@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 from scapy.all import *
@@ -131,7 +132,7 @@ def logf_append(s):
 
 
 class SimpleSwitch:
-    def __init__(self, json_file, folder, num_ports=8):
+    def __init__(self, json_file, folder=None, num_ports=8):
         self.modified_tables = []
 
         self.json_file = json_file
@@ -142,6 +143,10 @@ class SimpleSwitch:
         # TBD: See bmv2stf.py for ideas on running multiple
         # simple_switch processes in parallel on the same machine.
         # This code does not support that yet.
+        if folder is None:
+            folder = self.tmpdir = tempfile.mkdtemp(dir=".")
+        else:
+            self.tmpdir = None
         self.folder = folder
         self.thrift_port_num = 9090
 
@@ -475,6 +480,9 @@ class SimpleSwitch:
         for i in sorted(self.intf_info):
             self.remove_file_if_exists(self.intf_info[i]['pcap_in_fname'])
             self.remove_file_if_exists(self.intf_info[i]['pcap_out_fname'])
+        # Don't remove "." !!!
+        if self.tmpdir is not None and self.tmpdir != ".":
+            os.removedirs(self.tmpdir)
 
 
 # TBD: bmv2stf.py removes /tmp/bmv2-%d-notifications.ipc file when
