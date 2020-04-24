@@ -61,6 +61,148 @@ class TestCaseBuilder(object):
             self.json_file = None
         self.pipeline = pipeline
 
+    def get_table_entry_config(self, table_name, action,
+                               key_values, runtime_data_values):
+
+        table = self.pipeline.tables[table_name]
+        key_value_strs = []
+        key_data = []
+        priority = None
+        for table_key, table_key_value in zip(table.key, key_values):
+            key_field_name = '.'.join(table_key.target)
+            long_value = model_value_to_long(table_key_value)
+            if table_key.match_type == 'lpm':
+                bitwidth = table_key_value.size()
+                key_value_strs.append(
+                    '{}/{}'.format(table_key_value, bitwidth))
+                key_data.append(
+                    OrderedDict([
+                        ('match_kind', 'lpm'),
+                        ('key_field_name', key_field_name),
+                        ('value', long_value),
+                        ('prefix_length', bitwidth),
+                    ]))
+            elif table_key.match_type == 'ternary':
+                # Always use exact match mask, which is
+                # represented in simple_switch_CLI as a 1 bit
+                # in every bit position of the field.
+                bitwidth = table_key_value.size()
+                mask = (1 << bitwidth) - 1
+                key_value_strs.append(
+                    '{}&&&{}'.format(table_key_value, mask))
+                priority = 1
+                key_data.append(
+                    OrderedDict([('match_kind', 'ternary'), (
+                        'key_field_name', key_field_name), (
+                            'value', long_value), (
+                                'mask', mask)]))
+            elif table_key.match_type == 'range':
+                # Always use a range where the min and max
+                # values are exactly the one desired value
+                # generated.
+                key_value_strs.append('{}->{}'.format(
+                    table_key_value, table_key_value))
+                priority = 1
+                key_data.append(
+                    OrderedDict([('match_kind', 'range'), (
+                        'key_field_name', key_field_name
+                    ), ('min_value', long_value), (
+                        'max_value', long_value)]))
+            elif table_key.match_type == 'exact':
+                key_value_strs.append(str(table_key_value))
+                key_data.append(
+                    OrderedDict([('match_kind', 'exact'), (
+                        'key_field_name', key_field_name), (
+                        'value', long_value)]))
+            else:
+                raise Exception('Match type {} not supported'.
+                                format(table_key.match_type))
+
+        logging.debug("table_name %s"
+                      " table.default_entry.action_const %s" %
+                      (table_name,
+                       table.default_entry.action_const))
+
+        if (len(key_value_strs) == 0
+                and table.default_entry.action_const):
+            # Then we cannot change the default action for the
+            # table at run time, so don't remember any entry
+            # for this table.
+            return None
+
+        return (table_name, action,
+                key_value_strs, key_data, runtime_data_values,  priority)
+
+    def get_table_setup_cmd(self, entry_config):
+        table, action, values, key_data, params, priority = entry_config
+        # XXX: inelegant
+        const_table = self.pipeline.tables[table].has_const_entries()
+
+        params2 = []
+        param_vals = []
+        for param_name, param_val in params:
+            param_val = model_value_to_long(param_val)
+            param_vals.append(param_val)
+            params2.append(
+                OrderedDict([('name', param_name), ('value', param_val)
+                             ]))
+        if len(values) == 0 or const_table or action.default_entry:
+            cmd = ('table_set_default ' +
+                   table_set_default_cmd_string(
+                       table, action.get_name(), param_vals))
+            logging.info(cmd)
+            cmd_data = OrderedDict(
+                [("command", "table_set_default"), ("table_name",
+                                                    table),
+                 ("action_name",
+                  action.get_name()), ("action_parameters", params2)])
+        else:
+            cmd = ('table_add ' + table_add_cmd_string(
+                table, action.get_name(), values, param_vals,
+                priority))
+            cmd_data = OrderedDict(
+                [("command", "table_add"), ("table_name",
+                                            table), ("keys", key_data),
+                 ("action_name",
+                  action.get_name()), ("action_parameters", params2)])
+            if priority is not None:
+                cmd_data['priority'] = priority
+
+        logging.info(cmd)
+        return cmd, cmd_data
+
+    def table_config_for_path(self, context, model, control_path):
+        # Determine the minimal table configuration for this path, produce
+        # setup commands and associated data.
+        cmds = []
+        cmd_datas = []
+        for t in control_path:
+            table_name = t.src
+            transition = t
+            if table_name in self.pipeline.tables \
+                    and context.has_table_values(table_name):
+                runtime_data_values = []
+                for i, runtime_param in enumerate(
+                        transition.action.runtime_data):
+                    runtime_data_values.append(
+                        (runtime_param.name,
+                         model[context.get_table_runtime_data(table_name, i)]))
+                table_key_values = context.get_table_key_values(
+                    model, table_name)
+
+                entry_config = self.get_table_entry_config(
+                    table_name, transition,
+                    table_key_values, runtime_data_values)
+                if entry_config is None:
+                    continue
+
+                # Get table configuration commands
+                cmd, cmd_data = self.get_table_setup_cmd(entry_config)
+                cmds.append(cmd)
+                cmd_datas.append(cmd_data)
+
+        return cmds, cmd_datas
+
     def build(self, context, model, sym_packet, expected_path,
               parser_path, control_path, is_complete_control_path, count):
         packet_hexstr = None
@@ -73,137 +215,12 @@ class TestCaseBuilder(object):
         result = None
 
         if model is not None:
+            # Do this first to ensure all packet fields are in model.
             payload = sym_packet.get_payload_from_model(model)
 
-            # Determine table configurations
-            table_configs = []
-            for t in control_path:
-                table_name = t.src
-                transition = t
-                if table_name in self.pipeline.tables \
-                        and context.has_table_values(table_name):
-                    runtime_data_values = []
-                    for i, runtime_param in enumerate(
-                            transition.action.runtime_data):
-                        runtime_data_values.append(
-                            (runtime_param.name,
-                             model[context.get_table_runtime_data(table_name, i)]))
-                    table_key_values = context.get_table_key_values(
-                        model, table_name)
+            ss_cli_setup_cmds, table_setup_cmd_data = \
+                self.table_config_for_path(context, model, control_path)
 
-                    table = self.pipeline.tables[table_name]
-                    table_key_values_strs = []
-                    table_key_data = []
-                    table_entry_priority = None
-                    for table_key, table_key_value in zip(
-                            table.key, table_key_values):
-                        key_field_name = '.'.join(table_key.target)
-                        sym_table_value_long = model_value_to_long(
-                            table_key_value)
-                        if table_key.match_type == 'lpm':
-                            bitwidth = context.get_header_field_size(
-                                table_key.target[0], table_key.target[1])
-                            table_key_values_strs.append(
-                                '{}/{}'.format(table_key_value, bitwidth))
-                            table_key_data.append(
-                                OrderedDict([
-                                    ('match_kind', 'lpm'),
-                                    ('key_field_name', key_field_name),
-                                    ('value', sym_table_value_long),
-                                    ('prefix_length', bitwidth),
-                                ]))
-                        elif table_key.match_type == 'ternary':
-                            # Always use exact match mask, which is
-                            # represented in simple_switch_CLI as a 1 bit
-                            # in every bit position of the field.
-                            bitwidth = context.get_header_field_size(
-                                table_key.target[0], table_key.target[1])
-                            mask = (1 << bitwidth) - 1
-                            table_key_values_strs.append(
-                                '{}&&&{}'.format(table_key_value, mask))
-                            table_entry_priority = 1
-                            table_key_data.append(
-                                OrderedDict([('match_kind', 'ternary'), (
-                                    'key_field_name', key_field_name), (
-                                                 'value', sym_table_value_long),
-                                             (
-                                                 'mask', mask)]))
-                        elif table_key.match_type == 'range':
-                            # Always use a range where the min and max
-                            # values are exactly the one desired value
-                            # generated.
-                            table_key_values_strs.append('{}->{}'.format(
-                                table_key_value, table_key_value))
-                            table_entry_priority = 1
-                            table_key_data.append(
-                                OrderedDict([('match_kind', 'range'), (
-                                    'key_field_name', key_field_name
-                                ), ('min_value', sym_table_value_long), (
-                                                 'max_value',
-                                                 sym_table_value_long)]))
-                        elif table_key.match_type == 'exact':
-                            table_key_values_strs.append(str(table_key_value))
-                            table_key_data.append(
-                                OrderedDict([('match_kind', 'exact'), (
-                                    'key_field_name', key_field_name), (
-                                    'value', sym_table_value_long)]))
-                        else:
-                            raise Exception('Match type {} not supported'.
-                                            format(table_key.match_type))
-
-                    logging.debug("table_name %s"
-                                  " table.default_entry.action_const %s" %
-                                  (table_name,
-                                   table.default_entry.action_const))
-                    if (len(table_key_values_strs) == 0
-                            and table.default_entry.action_const):
-                        # Then we cannot change the default action for the
-                        # table at run time, so don't remember any entry
-                        # for this table.
-                        pass
-                    else:
-                        table_configs.append(
-                            (table_name, transition, table_key_values_strs,
-                             table_key_data, runtime_data_values,
-                             table_entry_priority))
-
-            # Print table configuration
-            for table, action, values, key_data, params, priority in table_configs:
-                # XXX: inelegant
-                const_table = self.pipeline.tables[table].has_const_entries()
-
-                params2 = []
-                param_vals = []
-                for param_name, param_val in params:
-                    param_val = model_value_to_long(param_val)
-                    param_vals.append(param_val)
-                    params2.append(
-                        OrderedDict([('name', param_name), ('value', param_val)
-                                     ]))
-                if len(values) == 0 or const_table or action.default_entry:
-                    ss_cli_cmd = ('table_set_default ' +
-                                  table_set_default_cmd_string(
-                                      table, action.get_name(), param_vals))
-                    logging.info(ss_cli_cmd)
-                    table_setup_info = OrderedDict(
-                        [("command", "table_set_default"), ("table_name",
-                                                            table),
-                         ("action_name",
-                          action.get_name()), ("action_parameters", params2)])
-                else:
-                    ss_cli_cmd = ('table_add ' + table_add_cmd_string(
-                        table, action.get_name(), values, param_vals,
-                        priority))
-                    table_setup_info = OrderedDict(
-                        [("command", "table_add"), ("table_name",
-                                                    table), ("keys", key_data),
-                         ("action_name",
-                          action.get_name()), ("action_parameters", params2)])
-                    if priority is not None:
-                        table_setup_info['priority'] = priority
-                logging.info(ss_cli_cmd)
-                ss_cli_setup_cmds.append(ss_cli_cmd)
-                table_setup_cmd_data.append(table_setup_info)
             packet_len_bytes = len(payload)
             packet_hexstr = ''.join([('%02x' % (x)) for x in payload])
             logging.info("packet (%d bytes) %s"
