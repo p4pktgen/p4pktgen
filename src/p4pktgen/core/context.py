@@ -169,7 +169,8 @@ class Context:
 
     def get_table_key_values(self, model, table_name):
         return [
-            model.eval(sym_val) for sym_val in self.table_key_values[table_name]
+            model.eval(sym_val, model_completion=True)
+            for sym_val in self.table_key_values[table_name]
         ]
 
     def has_table_values(self, table_name):
