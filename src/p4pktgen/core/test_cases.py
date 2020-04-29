@@ -61,7 +61,7 @@ class TestCaseBuilder(object):
             self.json_file = None
         self.pipeline = pipeline
 
-    def get_table_entry_config(self, table_name, action,
+    def get_table_entry_config(self, table_name, action_name, is_default,
                                key_values, runtime_data_values):
 
         table = self.pipeline.tables[table_name]
@@ -130,13 +130,14 @@ class TestCaseBuilder(object):
             # for this table.
             return None
 
-        return (table_name, action,
+        return (table_name, action_name, is_default,
                 key_value_strs, key_data, runtime_data_values,  priority)
 
     def get_table_setup_cmd(self, entry_config):
-        table, action, values, key_data, params, priority = entry_config
+        table_name, action_name, is_default, values, \
+            key_data, params, priority = entry_config
         # XXX: inelegant
-        const_table = self.pipeline.tables[table].has_const_entries()
+        const_table = self.pipeline.tables[table_name].has_const_entries()
 
         params2 = []
         param_vals = []
@@ -144,27 +145,24 @@ class TestCaseBuilder(object):
             param_val = model_value_to_long(param_val)
             param_vals.append(param_val)
             params2.append(
-                OrderedDict([('name', param_name), ('value', param_val)
-                             ]))
-        if len(values) == 0 or const_table or action.default_entry:
+                OrderedDict(
+                    [('name', param_name), ('value', param_val)]))
+        if len(values) == 0 or const_table or is_default:
             cmd = ('table_set_default ' +
                    table_set_default_cmd_string(
-                       table, action.get_name(), param_vals))
+                       table_name, action_name, param_vals))
             logging.info(cmd)
             cmd_data = OrderedDict(
-                [("command", "table_set_default"), ("table_name",
-                                                    table),
-                 ("action_name",
-                  action.get_name()), ("action_parameters", params2)])
+                [("command", "table_set_default"), ("table_name", table_name),
+                 ("action_name", action_name), ("action_parameters", params2)])
         else:
-            cmd = ('table_add ' + table_add_cmd_string(
-                table, action.get_name(), values, param_vals,
-                priority))
+            cmd = ('table_add ' +
+                   table_add_cmd_string(
+                       table_name, action_name, values, param_vals, priority))
             cmd_data = OrderedDict(
-                [("command", "table_add"), ("table_name",
-                                            table), ("keys", key_data),
-                 ("action_name",
-                  action.get_name()), ("action_parameters", params2)])
+                [("command", "table_add"), ("table_name", table_name),
+                 ("keys", key_data),
+                 ("action_name", action_name), ("action_parameters", params2)])
             if priority is not None:
                 cmd_data['priority'] = priority
 
@@ -174,8 +172,10 @@ class TestCaseBuilder(object):
     def table_config_for_path(self, context, model, control_path):
         # Determine the minimal table configuration for this path, produce
         # setup commands and associated data.
-        cmds = []
-        cmd_datas = []
+        table_config = []  # [(cmd, cmd_data), ...]
+        if model is None:
+            return table_config
+
         for t in control_path:
             table_name = t.src
             transition = t
@@ -191,20 +191,25 @@ class TestCaseBuilder(object):
                     model, table_name)
 
                 entry_config = self.get_table_entry_config(
-                    table_name, transition,
+                    table_name, transition.get_name(),
+                    transition.default_entry,
                     table_key_values, runtime_data_values)
                 if entry_config is None:
                     continue
 
-                # Get table configuration commands
-                cmd, cmd_data = self.get_table_setup_cmd(entry_config)
-                cmds.append(cmd)
-                cmd_datas.append(cmd_data)
+                # Get table configuration commands and associated data
+                table_config.append(self.get_table_setup_cmd(entry_config))
 
-        return cmds, cmd_datas
+        return table_config
 
-    def build(self, context, model, sym_packet, expected_path,
-              parser_path, control_path, is_complete_control_path, count):
+    @staticmethod
+    def build(
+            model, sym_packet, expected_path, parser_path, control_path,
+            is_complete_control_path, count, input_metadata,
+            uninitialized_reads, invalid_header_writes, table_config):
+        """Should take only explicit references to all variables to ensure that
+        none are missed when separating paths for consolidated solving."""
+
         packet_hexstr = None
         payload = None
         ss_cli_setup_cmds = []
@@ -218,28 +223,30 @@ class TestCaseBuilder(object):
             # Do this first to ensure all packet fields are in model.
             payload = sym_packet.get_payload_from_model(model)
 
-            ss_cli_setup_cmds, table_setup_cmd_data = \
-                self.table_config_for_path(context, model, control_path)
+            if table_config:
+                # Unzip [(x, y), ...] to [x, ...], [y, ...]
+                ss_cli_setup_cmds, table_setup_cmd_data = \
+                    (list(x) for x in zip(*table_config))
 
             packet_len_bytes = len(payload)
             packet_hexstr = ''.join([('%02x' % (x)) for x in payload])
             logging.info("packet (%d bytes) %s"
                          "" % (packet_len_bytes, packet_hexstr))
 
-            if len(context.uninitialized_reads) != 0:
+            if uninitialized_reads:
                 result = TestPathResult.UNINITIALIZED_READ
                 uninitialized_read_data = []
-                for uninitialized_read in context.uninitialized_reads:
+                for uninitialized_read in uninitialized_reads:
                     var_name, source_info = uninitialized_read
                     logging.error('Uninitialized read of {} at {}'.format(
                         var_name, source_info))
                     uninitialized_read_data.append(
                         OrderedDict([("variable_name", var_name), (
                             "source_info", source_info_to_dict(source_info))]))
-            elif len(context.invalid_header_writes) != 0:
+            elif invalid_header_writes:
                 result = TestPathResult.INVALID_HEADER_WRITE
                 invalid_header_write_data = []
-                for invalid_header_write in context.invalid_header_writes:
+                for invalid_header_write in invalid_header_writes:
                     var_name, source_info = invalid_header_write
                     logging.error('Invalid header write of {} at {}'.format(
                         var_name, source_info))
@@ -265,7 +272,7 @@ class TestCaseBuilder(object):
             input_metadata = {
                 '.'.join(var_name):
                     model.eval(value, model_completion=True).as_long()
-                for (var_name, value) in context.input_metadata.iteritems()
+                for (var_name, value) in input_metadata.iteritems()
             }
             input_packets = [
                 OrderedDict([
@@ -327,6 +334,17 @@ class TestCaseBuilder(object):
             payloads.append(payload)
 
         return result, test_case, payloads
+
+    def build_for_path(self, context, model, sym_packet, expected_path,
+                       parser_path, control_path, is_complete_control_path,
+                       count):
+        return self.build(
+            model, sym_packet, expected_path, parser_path, control_path,
+            is_complete_control_path, count,
+            context.input_metadata, context.uninitialized_reads,
+            context.invalid_header_writes,
+            self.table_config_for_path(context, model, control_path)
+        )
 
     def run_simple_switch(self, expected_path, test_case, payloads,
                           is_complete_control_path, source_info_to_node_name):

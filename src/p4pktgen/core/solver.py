@@ -317,7 +317,7 @@ class PathSolver(object):
 
         start_time = time.time()
         result, test_case, payloads = \
-            self.test_case_builder.build(
+            self.test_case_builder.build_for_path(
                 context, model, self.sym_packet, expected_path,
                 parser_path, control_path, is_complete_control_path, count)
 
