@@ -195,7 +195,8 @@ class TestCaseBuilder(object):
                         transition.action.runtime_data):
                     runtime_data_values.append(
                         (runtime_param.name,
-                         model[context.get_table_runtime_data(table_name, i)]))
+                         model.eval(context.get_table_runtime_data(table_name, i),
+                                    model_completion=True)))
                 table_key_values = context.get_table_key_values(
                     model, table_name)
 
