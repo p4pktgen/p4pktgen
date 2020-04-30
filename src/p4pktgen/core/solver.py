@@ -215,7 +215,6 @@ class PathSolver(object):
         self.current_context().set_field_value('meta_meta', 'packet_len',
                                                self.sym_packet.packet_size_var)
         constraints.extend(self.sym_packet.get_packet_constraints())
-        constraints.extend(self.current_context().get_name_constraints())
         self.solver.add(And(constraints))
         self.constraints[0] = constraints
 
@@ -250,7 +249,6 @@ class PathSolver(object):
             self.context_history.append(copy.copy(self.current_context()))
             context = self.current_context()
 
-        constraints.extend(context.get_name_constraints())
         # XXX: Workaround for simple_switch issue
         constraints.append(
             Or(
@@ -353,7 +351,7 @@ class PathSolver(object):
         model = self.solver.model()
         solution_sizes = []
         for var, sym_size in context.parsed_vl_extracts.items():
-            solved_size = model[sym_size]
+            solved_size = model.eval(sym_size, model_completion=True)
             solution_sizes.append(sym_size == solved_size)
 
         if condition == 'and':

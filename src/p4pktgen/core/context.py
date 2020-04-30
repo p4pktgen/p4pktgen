@@ -34,11 +34,8 @@ class Context:
     next_id = 0
 
     def __init__(self):
-        # Maps variables to a list of versions
-        self.var_to_smt_var = {}
+        # Maps P4 variables to SMT expressions
         self.var_to_smt_val = {}
-
-        self.new_vars = set()
 
         self.fields = {}
         # XXX: unify errors
@@ -68,8 +65,6 @@ class Context:
         context_copy.fields = dict.copy(self.fields)
         context_copy.uninitialized_reads = list(self.uninitialized_reads)
         context_copy.invalid_header_writes = list(self.invalid_header_writes)
-        context_copy.new_vars = set(self.new_vars)
-        context_copy.var_to_smt_var = dict.copy(self.var_to_smt_var)
         context_copy.var_to_smt_val = dict.copy(self.var_to_smt_val)
         context_copy.table_key_values = dict.copy(self.table_key_values)
         context_copy.table_runtime_data = dict.copy(self.table_runtime_data)
@@ -98,31 +93,22 @@ class Context:
         self.set_field_value(field.header.name, field.name, sym_val)
 
     def set_field_var(self, header_name, header_field, var):
-        self.var_to_smt_var[(header_name, header_field)] = var
+        self.var_to_smt_val[(header_name, header_field)] = var
 
     def set_field_value(self, header_name, header_field, sym_val):
-        var_name = (header_name, header_field)
-        do_write = True
-
         # XXX: clean up
         if header_field != '$valid$' and (header_name,
-                                          '$valid$') in self.var_to_smt_var:
-            smt_var_valid = self.var_to_smt_var[(header_name, '$valid$')]
-            if simplify(self.var_to_smt_val[smt_var_valid]) == BitVecVal(0, 1):
+                                          '$valid$') in self.var_to_smt_val:
+            valid = self.var_to_smt_val[(header_name, '$valid$')]
+            if simplify(valid) == BitVecVal(0, 1):
                 if Config().get_allow_invalid_header_writes():
-                    do_write = False
+                    return
                 else:
-                    self.invalid_header_writes.append((var_name,
-                                                       self.source_info))
+                    self.invalid_header_writes.append(
+                        ((header_name, header_field), self.source_info)
+                    )
 
-        if do_write:
-            Context.next_id += 1
-            new_smt_var = BitVec('{}.{}.{}'.format(var_name[0], var_name[1],
-                                                   Context.next_id),
-                                 sym_val.size())
-            self.new_vars.add(new_smt_var)
-            self.var_to_smt_var[var_name] = new_smt_var
-            self.var_to_smt_val[new_smt_var] = sym_val
+        self.set_field_var(header_name, header_field, sym_val)
 
     def set_table_action(self, table_name, action_name):
         if table_name in self.table_action:
@@ -162,10 +148,10 @@ class Context:
 
     def remove_header_fields(self, header_name):
         # XXX: hacky
-        for k in list(self.var_to_smt_var.keys()):
+        for k in list(self.var_to_smt_val.keys()):
             if len(k) == 2 and k[0] == header_name and not k[1] == '$valid$':
                 Context.next_id += 1
-                self.var_to_smt_var[k] = None
+                self.var_to_smt_val[k] = None
 
     def set_table_key_values(self, table_name, sym_key_vals):
         self.table_key_values[table_name] = sym_key_vals
@@ -179,9 +165,6 @@ class Context:
     def has_table_values(self, table_name):
         return table_name in self.table_key_values
 
-    def get(self, field):
-        return self.get_var(self.field_to_var(field))
-
     def get_header_field(self, header_name, header_field):
         return self.get_var((header_name, header_field))
 
@@ -192,11 +175,11 @@ class Context:
         # XXX: size should not be a param
 
         last_valid = None
-        for i in range(size):
-            smt_var_valid = self.var_to_smt_var[('{}[{}]'.format(
-                header_name, i), '$valid$')]
-            if simplify(self.var_to_smt_val[smt_var_valid]) == BitVecVal(1, 1):
+        for i in reversed(range(size)):
+            valid_var_name = ('{}[{}]'.format(header_name, i), '$valid$')
+            if simplify(self.var_to_smt_val[valid_var_name]) == BitVecVal(1, 1):
                 last_valid = i
+                break
 
         # XXX: check for all invalid
 
@@ -204,7 +187,7 @@ class Context:
                                      header_field)
 
     def get_var(self, var_name):
-        if var_name not in self.var_to_smt_var:
+        if var_name not in self.var_to_smt_val:
             # The variable that we're reading has not been set by the program.
             field = self.fields[var_name]
             new_var = BitVec(self.fresh_var(var_name), field.size)
@@ -222,26 +205,13 @@ class Context:
                 self.uninitialized_reads.append((var_name, self.source_info))
                 return new_var
 
-        assert var_name in self.var_to_smt_var
-        return self.var_to_smt_var[var_name]
-
-    def get_name_constraints(self):
-        var_constraints = []
-        for var in self.new_vars:
-            var_constraints.append(var == self.var_to_smt_val[var])
-        self.new_vars = set()
-        return var_constraints
+        assert var_name in self.var_to_smt_val
+        return self.var_to_smt_val[var_name]
 
     def record_extract_vl(self, header_name, header_field, sym_size):
         var = (header_name, header_field)
         assert var not in self.parsed_vl_extracts
         self.parsed_vl_extracts[var] = sym_size
-
-    def log_constraints(self):
-        var_constraints = self.get_name_constraints()
-        logging.info('Variable constraints')
-        for constraint in var_constraints:
-            logging.info('\t{}'.format(constraint))
 
     def get_stack_next_header_name(self, header_name):
         # Each element in a stack needs a unique name, generate them in order

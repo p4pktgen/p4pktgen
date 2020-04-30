@@ -256,12 +256,15 @@ class TableConsolidatedSolver(ConsolidatedSolver):
                 # per action, therefore if action is the table's default it is
                 # only accessible as the table default action.
                 is_default = (action_name == default_action)
-                key_values = [model[element] for element in sym_key]
+                key_values = [model.eval(element, model_completion=True)
+                              for element in sym_key]
 
                 # TODO: Make this the name of the parameter, rather than the
                 #     mangled SMT variable name, only affects cmd_data (not cmd)
-                param_names_values = [(str(param), model[param])
-                                      for param in sym_params]
+                param_names_values = [
+                    (str(param), model.eval(param, model_completion=True))
+                    for param in sym_params
+                ]
 
                 entry_config = self.test_case_builder.get_table_entry_config(
                     table_name, action_name, is_default,
