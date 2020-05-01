@@ -554,3 +554,21 @@ class CheckSystem:
             ('start', 'test_short', 'sink', (u'tbl_lookaheadbeyondextract53', u'lookaheadbeyondextract53')): TestPathResult.SUCCESS,
         }
         assert results == expected_results
+
+
+    def check_narrow_extractions(self):
+        # This test case checks that extractions that straddle nybble
+        # boundaries are handled correctly.
+        load_test_config()
+        results = run_test('examples/narrow-extractions.json')
+        expected_results = {
+            ('start', 'sink', (u'node_2', (True, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'tbl_narrowextractions44', u'narrowextractions44'), (u'node_4', (True, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'tbl_narrowextractions47', u'narrowextractions47'), (u'node_6', (True, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7'))), (u'tbl_narrowextractions50', u'narrowextractions50')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'tbl_narrowextractions44', u'narrowextractions44'), (u'node_4', (True, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'tbl_narrowextractions47', u'narrowextractions47'), (u'node_6', (False, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7')))): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'tbl_narrowextractions44', u'narrowextractions44'), (u'node_4', (False, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'node_6', (True, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7'))), (u'tbl_narrowextractions50', u'narrowextractions50')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'tbl_narrowextractions44', u'narrowextractions44'), (u'node_4', (False, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'node_6', (False, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7')))): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'node_4', (True, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'tbl_narrowextractions47', u'narrowextractions47'), (u'node_6', (True, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7'))), (u'tbl_narrowextractions50', u'narrowextractions50')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'node_4', (True, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'tbl_narrowextractions47', u'narrowextractions47'), (u'node_6', (False, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7')))): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'node_4', (False, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'node_6', (True, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7'))), (u'tbl_narrowextractions50', u'narrowextractions50')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'node_4', (False, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'node_6', (False, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7')))): TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
