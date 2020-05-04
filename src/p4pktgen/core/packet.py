@@ -37,18 +37,26 @@ class Packet(object):
         """Return the symbolic packet size."""
         return self.packet_size_var
 
-    def extract(self, start, field_size, read_size=None, lookahead=False):
+    def extract(self, start, field_size, read_size=None, lookahead=False,
+                label=None):
         """Return a new Z3 variable modelling a portion of the packet data."""
         varbit = read_size is not None
         if not varbit:
             read_size = BitVecVal(field_size, 32)
 
         if lookahead:
-            var = BitVec('lookahead{}'.format(len(self.lookaheads)), field_size)
+            name = '$lookahead{}$'.format(len(self.lookaheads))
+        else:
+            name = '$packet{}$'.format(len(self.extract_vars))
+        if label is not None:
+            name = '{}.{}'.format(name, label)
+
+        if lookahead:
+            var = BitVec(name, field_size)
             self.lookaheads.append((simplify(start), len(self.extract_vars),
                                     var))
         else:
-            var = BitVec('packet{}'.format(len(self.extract_vars)), field_size)
+            var = BitVec(name, field_size)
             self.extract_vars.append((read_size, var))
             if varbit:
                 self.vl_extract_vars.append((read_size, var))
