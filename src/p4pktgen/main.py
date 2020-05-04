@@ -202,6 +202,14 @@ def main():
         """With this option given, consolidate test-cases around common tables up to the maximum value given (omit value for unlimited).  Currently incompatible with max_test_cases_per_path != 1."""
     )
     parser.add_argument(
+        '-rnd', '--randomize',
+        dest='randomize',
+        action='store_true',
+        default=False,
+        help=
+        """With this option given, randomize the generated test-case data where possible."""
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments

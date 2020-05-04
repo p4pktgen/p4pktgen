@@ -4,6 +4,7 @@ import logging
 import z3
 
 from p4pktgen.config import Config
+from p4pktgen.core.context import Variables
 from p4pktgen.core.test_cases import TestCaseBuilder
 from p4pktgen.core.test_cases import record_test_case
 from p4pktgen.core.packet import Packet
@@ -116,6 +117,13 @@ class ConsolidatedSolver(object):
     def build_test_case(self, model, path_id, path_data):
         raise NotImplementedError("Overwrite in child class.")
 
+    def add_final_constraints(self):
+        """This method is called when flushing.  Child classes can override it
+        to add any additional constraints (which must be satisfiable)
+        immediately before evaluating the solution.
+        """
+        pass
+
     def solve(self):
         start_time = time.time()
         Statistics().solver_time.start()
@@ -133,6 +141,9 @@ class ConsolidatedSolver(object):
         if not self.paths_data:
             # If no paths have been added then nothing to do
             return
+
+        self.add_final_constraints()
+        assert self.solve() == z3.sat
 
         # If any paths have been added and not removed, they should already be
         # solved satisfiably, if not this will raise an error.
@@ -224,11 +235,15 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         # Filled with [(cmd, cmd_data), ...] during flush, None otherwise.
         self.table_setup_cmds = None
 
+        # Object for managing table-data variables.
+        self.table_vars = Variables()
+
     def reset(self):
         super(TableConsolidatedSolver, self).reset()
         self.table_action_sym_vals = {}
         self.pending_table_action_sym_vals = {}
         self.table_setup_cmds = None
+        self.table_vars = Variables()
 
     def add_pending_table_sym_vals(self):
         if self.pending_table_action_sym_vals is not None:
@@ -330,10 +345,12 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         prefix = 'consolidated_${}$.${}$.'.format(table_name, action_name)
         # No existing entry for this action-table combination, create new
         # symbolic variables.
-        sym_key = [z3.BitVec(prefix + 'key_{}'.format(i), element.size())
+        sym_key = [self.table_vars.new(prefix + 'key_{}'.format(i),
+                                       element.size())
                    for i, element in enumerate(path_sym_key)]
 
-        sym_params = [z3.BitVec(prefix + 'param_{}'.format(i), param.size())
+        sym_params = [self.table_vars.new(prefix + 'param_{}'.format(i),
+                                          param.size())
                       for i, param in enumerate(path_sym_params)]
 
         constraints = []
@@ -424,3 +441,8 @@ class TableConsolidatedSolver(ConsolidatedSolver):
 
         self._add_path(path_id, new_constraints, path_data)
         self.add_pending_table_sym_vals()
+
+    def add_final_constraints(self):
+        super(TableConsolidatedSolver, self).add_final_constraints()
+        for constraint in self.table_vars.random_displacement_constraints():
+            self.solver.add(constraint)

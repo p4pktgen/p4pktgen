@@ -4,6 +4,7 @@
 from collections import defaultdict
 import logging
 from contextlib import contextmanager
+import random
 import time
 
 from z3 import *
@@ -24,6 +25,47 @@ class Field(ContextVar):
 
     def __eq__(self, other):
         return self.header == other.header and self.header == other.header
+
+
+class Variables(object):
+    """Helper class for creating variables used to model input data.  It
+    encapsulates the handling of the randomization of solutions found for
+    variables satisfying given constraints, which is achieved by replacing
+    variables v with expressions of the form v^x for some random value x, and
+    relying on this randomness being propagated to v^x.
+    """
+    def __init__(self):
+        self.rand_disp_vars = []
+
+    def __copy__(self):
+        variables_copy = self.__class__()
+        variables_copy.rand_disp_vars = list(self.rand_disp_vars)
+        return variables_copy
+
+    def new(self, name, size):
+        """Creates a new variable with the specified name and size, with a
+        random displacement if required.
+        """
+        var = z3.BitVec(name, size)
+        # If we're randomizing, XOR in a variable that will be set to a random
+        # value before the expression is evaluated.
+        if Config().get_randomize():
+            disp_name = '$rand_disp$.{}'.format(name)
+            rand_disp = z3.BitVec(disp_name, size)
+            self.rand_disp_vars.append(rand_disp)
+            var ^= rand_disp
+        return var
+
+    def random_displacement_constraints(self):
+        """Yields constraints fixing the random displacements to constant
+        values.  These constraints should be imposed when the packet has been
+        found to satisfy a complete control path.  This arrangement, rather
+        than picking a value at the point at which the displacement variable is
+        created, allows successive backtracking iterations to use different
+        random values for the same field.
+        """
+        for rand_disp in self.rand_disp_vars:
+            yield rand_disp == random.getrandbits(rand_disp.size())
 
 
 # XXX: This class needs some heavy refactoring.
@@ -59,6 +101,9 @@ class Context:
         self.parsed_stacks = defaultdict(int)
         self.parsed_vl_extracts = {}
 
+        # Object used to create variables.
+        self.variables = Variables()
+
     def __copy__(self):
         context_copy = Context()
         context_copy.__dict__.update(self.__dict__)
@@ -70,6 +115,7 @@ class Context:
         context_copy.table_runtime_data = dict.copy(self.table_runtime_data)
         context_copy.table_action = dict.copy(self.table_action)
         context_copy.input_metadata = dict.copy(self.input_metadata)
+        context_copy.variables = copy.copy(self.variables)
         return context_copy
 
     def set_source_info(self, source_info):
@@ -81,9 +127,9 @@ class Context:
     def register_field(self, field):
         self.fields[self.field_to_var(field)] = field
 
-    def fresh_var(self, prefix):
+    def fresh_var(self, prefix, size):
         Context.next_id += 1
-        return '{}_{}'.format(prefix, Context.next_id)
+        return self.variables.new('{}_{}'.format(prefix, Context.next_id), size)
 
     def field_to_var(self, field):
         assert field.header is not None
@@ -120,9 +166,10 @@ class Context:
         assert table_name not in self.table_runtime_data
         runtime_data = []
         for i, (param_name, param_bitwidth) in enumerate(params):
+            name = '${}$.${}$.runtime_data_{}'.format(table_name, action_name,
+                                                      param_name)
             # XXX: can actions call other actions? This won't work in that case
-            param_smt_var = BitVec('${}$.${}$.runtime_data_{}'.format(
-                table_name, action_name, param_name), param_bitwidth)
+            param_smt_var = self.variables.new(name, param_bitwidth)
             self.set_field_value('{}.{}.{}'.format(table_name, action_name,
                                                    param_name),
                                  str(i), param_smt_var)
@@ -190,7 +237,7 @@ class Context:
         if var_name not in self.var_to_smt_val:
             # The variable that we're reading has not been set by the program.
             field = self.fields[var_name]
-            new_var = BitVec(self.fresh_var(var_name), field.size)
+            new_var = self.fresh_var(var_name, field.size)
             if field.hdr.metadata and Config().get_solve_for_metadata():
                 # We're solving for metadata.  Set the field to an
                 # unconstrained value.

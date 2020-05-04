@@ -2,7 +2,7 @@ from z3 import *
 
 import logging
 
-from p4pktgen.config import Config
+from p4pktgen.core.context import Variables
 from p4pktgen.util.bitvec import equalize_bv_size, LShREq
 
 class Packet(object):
@@ -33,13 +33,16 @@ class Packet(object):
         # extending beyond the final extraction.
         self.lookahead_tail = None
 
+        # Object used to create variables.
+        self.variables = Variables()
+
     def get_sym_packet_size(self):
         """Return the symbolic packet size."""
         return self.packet_size_var
 
     def extract(self, start, field_size, read_size=None, lookahead=False,
                 label=None):
-        """Return a new Z3 variable modelling a portion of the packet data."""
+        """Return a new Z3 expression modelling a portion of the packet data."""
         varbit = read_size is not None
         if not varbit:
             read_size = BitVecVal(field_size, 32)
@@ -50,16 +53,16 @@ class Packet(object):
             name = '$packet{}$'.format(len(self.extract_vars))
         if label is not None:
             name = '{}.{}'.format(name, label)
+        var = self.variables.new(name, field_size)
 
         if lookahead:
-            var = BitVec(name, field_size)
             self.lookaheads.append((simplify(start), len(self.extract_vars),
                                     var))
         else:
-            var = BitVec(name, field_size)
             self.extract_vars.append((read_size, var))
             if varbit:
                 self.vl_extract_vars.append((read_size, var))
+
         return var
 
     def get_packet_constraints(self):
