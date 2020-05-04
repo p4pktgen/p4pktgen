@@ -86,10 +86,10 @@ def path_specific_packet(prefix, packet, var_mapping):
     # Only need packet to call get_payload_from_model so only fill in these
     # fields.
     new_packet.packet_size_var = \
-        path_specific_var(prefix, packet.packet_size_var, var_mapping)
+        path_specific_expr(prefix, packet.packet_size_var, var_mapping)
     new_packet.extract_vars = \
-        [(path_specific_var(prefix, length, var_mapping),
-          path_specific_var(prefix, var, var_mapping))
+        [(path_specific_expr(prefix, length, var_mapping),
+          path_specific_expr(prefix, var, var_mapping))
          for length, var in packet.extract_vars]
 
     return new_packet
@@ -401,9 +401,9 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         assert set(table_names) == set(context.table_runtime_data.keys())
         table_data = {}
         for table_name in table_names:
-            new_key_values = [path_specific_var(prefix, var, var_mapping)
+            new_key_values = [path_specific_expr(prefix, var, var_mapping)
                               for var in context.table_key_values[table_name]]
-            new_runtime_data = [path_specific_var(prefix, var, var_mapping)
+            new_runtime_data = [path_specific_expr(prefix, var, var_mapping)
                                 for var in context.table_runtime_data[table_name]]
             table_data[table_name] = (
                 context.table_action[table_name],
@@ -412,7 +412,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
             )
 
         input_metadata = {
-            var_name: path_specific_var(prefix, var, var_mapping)
+            var_name: path_specific_expr(prefix, var, var_mapping)
             for var_name, var in context.input_metadata.iteritems()
         }
         path_data = (
