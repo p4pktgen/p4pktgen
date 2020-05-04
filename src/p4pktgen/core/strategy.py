@@ -121,6 +121,14 @@ class PathCoverageGraphVisitor(GraphVisitor):
 
         while True:
             self.path_solver.solve_path()
+
+            # Choose values for randomization variables.
+            random_constraints = []
+            fix_random = is_complete_control_path
+            if fix_random:
+                self.path_solver.push()
+                random_constraints = self.path_solver.fix_random_constraints()
+
             time4 = time.time()
 
             result, test_case, packet_list = self.path_solver.generate_test_case(
@@ -132,6 +140,11 @@ class PathCoverageGraphVisitor(GraphVisitor):
             )
             time5 = time.time()
 
+            # Clear the constraints on the values of the randomization
+            # variables.
+            if fix_random:
+                self.path_solver.pop()
+
             results.append(result)
             # If this result wouldn't be recorded, subsequent ones won't be
             # either, so move on.
@@ -142,7 +155,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
                 # TODO: refactor path_solver to allow extraction of result &
                 # record_test_case without building test case.
                 self.table_solver.add_path(
-                    path_id, self.path_solver.constraints,
+                    path_id, self.path_solver.constraints + [random_constraints],
                     self.path_solver.current_context(),
                     self.path_solver.sym_packet,
                     expected_path, self.parser_path, control_path,

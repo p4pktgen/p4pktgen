@@ -311,6 +311,21 @@ class PathSolver(object):
         Statistics().solver_time.stop()
         return self.solver_result
 
+    def fix_random_constraints(self):
+        """Fixes values for random displacement variables.  Call this when a
+        complete path has been traversed.
+        """
+        context = self.current_context()
+        constraints = []
+        if self.solver_result == sat:
+            for variables in [self.sym_packet.variables, context.variables]:
+                for constraint in variables.random_displacement_constraints():
+                    constraints.append(constraint)
+                    self.solver.add(constraint)
+            self.solve_path()
+            assert self.solver_result == sat
+        return constraints
+
     def generate_test_case(self, expected_path,
                            parser_path, control_path, is_complete_control_path,
                            source_info_to_node_name):
