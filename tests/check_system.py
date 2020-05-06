@@ -659,3 +659,87 @@ class CheckSystem:
         assert len(test_cases) == 6
         assert len(table_configs) == 2
         assert len(table_configs[0][0]) > 0, "Config has no commands"
+
+
+class CheckRandomization(object):
+    @pytest.mark.parametrize('consolidate', [False, True],
+                             ids=lambda x: 'consolidated' if x else 'default')
+    def check_randomization(self, consolidate):
+        """Tests that all possible inputs are found for a given path in a P4
+        program when randomisation is enabled and solutions are generated
+        repeatedly.
+        """
+        load_test_config(
+            run_simple_switch=False,
+            randomize=True,
+            solve_for_metadata=True,
+        )
+        if consolidate:
+            Config().consolidate_tables = -1
+
+        # On the face of it, there are four variables in play: the packet, the
+        # metadata, the table-key and the table-parameter.  The packet and the
+        # table-key are necessarily equal, so we need only track one of those.
+        # Create some sets to keep track of the values that we've seen for each
+        # of these.
+        packet_values = set()
+        metadata_values = set()
+        param_values = set()
+        sets = [packet_values, metadata_values, param_values]
+
+        # We also track the combinations of values, to guard against the
+        # possibility that only some combinations are generated even though we
+        # generate each possible value of each variable individually.
+        triples = set()
+
+        # Each of our three variables is constrained on this path to take one
+        # of four possible values.  Supposing that p4pktgen picks these
+        # uniformly at random, then after 11 iterations the probability that we
+        # will not have generated all possible values for all of the parameters
+        # becomes smaller than 0.5, and after 100 iterations it is smaller than
+        # 1e-11.  We attempt up to 1000 iterations for good measure.
+        for _ in range(1000):
+            run_test('examples/randomization-test.json')
+
+            test_cases = read_test_cases()
+
+            # Hone in on one path, for which we happen to know that there are
+            # exactly four possible values for each of our variables.  Firstly,
+            # find the test case itself.
+            action = 'set_hdr_byte'
+            result = [case for case in test_cases
+                      if action in case['expected_path'][-1]]
+            assert len(result) == 1, result
+            result = result[0]
+
+            # Now find the packet with its metadata.
+            packet_desc = result['input_packets'][0]
+            metadata = packet_desc['input_metadata']
+
+            # Finally, find the table entry for the path's action.
+            table_entry_descs = result['table_setup_cmd_data']
+            set_hdr_byte_entry = [desc for desc in table_entry_descs
+                                  if desc['action_name'].endswith(action)]
+            assert len(set_hdr_byte_entry) == 1, set_hdr_byte_entry
+            action_params = set_hdr_byte_entry[0]['action_parameters']
+            assert len(action_params) == 1, action_params
+
+            # Track the values that we found on this iteration.
+            packet_val = packet_desc['packet_hexstr']
+            metadata_val = metadata['scalars.userMetadata.meta_byte']
+            param_val = action_params[0]['value']
+            packet_values.add(packet_val)
+            metadata_values.add(metadata_val)
+            param_values.add(param_val)
+
+            triples.add((packet_val, metadata_val, param_val))
+
+            # Check whether we've found every possible value for each variable,
+            # and that we've found enough of the triples that we can be sure
+            # that there are no trivial invariants between the values for those
+            # variables.
+            if all(len(s) == 4 for s in sets) and len(triples) >= 17:
+                break
+            assert all(len(s) <= 4 for s in sets), sets
+        else:
+            assert False, "Gave up trying to find all solutions."
