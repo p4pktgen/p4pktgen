@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import json
 import pytest
 
@@ -8,7 +9,8 @@ from p4pktgen.core.test_cases import TestPathResult
 
 def load_test_config(no_packet_length_errs=True,
                      run_simple_switch=True,
-                     solve_for_metadata=False):
+                     solve_for_metadata=False,
+                     randomize=False):
     config = Config()
     config.debug = False
     config.silent = False
@@ -63,7 +65,7 @@ def load_test_config(no_packet_length_errs=True,
     config.output_path = './test-case'
     config.extract_vl_variation = None
     config.consolidate_tables = None
-    config.randomize = False
+    config.randomize = randomize
 
 
 def run_test(json_filename):
@@ -112,9 +114,14 @@ def extract_payload_byte(payload, index):
     return int(payload[index * 2: (index + 1) * 2], 16)
 
 
+configs = OrderedDict([
+    ('default', {}),
+    ('random', {'randomize': True}),
+])
+@pytest.mark.parametrize("config", configs.values(), ids=configs.keys())
 class CheckSystem:
-    def check_demo1b(self):
-        load_test_config()
+    def check_demo1b(self, config):
+        load_test_config(**config)
         results = run_test('examples/demo1b.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (True, (u'demo1b.p4', 141, u'hdr.ipv4.isValid()')))):
@@ -142,8 +149,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_demo1(self):
-        load_test_config()
+    def check_demo1(self, config):
+        load_test_config(**config)
         results = run_test(
             'examples/demo1-action-names-uniquified.p4_16.json')
         expected_results = {
@@ -162,8 +169,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_demo1_no_uninit_reads(self):
-        load_test_config()
+    def check_demo1_no_uninit_reads(self, config):
+        load_test_config(**config)
         results = run_test(
             'examples/demo1-no-uninit-reads.p4_16.json')
         expected_results = {
@@ -186,8 +193,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_demo9b(self):
-        load_test_config()
+    def check_demo9b(self, config):
+        load_test_config(**config)
         results = run_test('examples/demo9b.json')
         expected_results = {
             ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
@@ -227,8 +234,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_config_table(self):
-        load_test_config()
+    def check_config_table(self, config):
+        load_test_config(**config)
         results = run_test('examples/config-table.json')
         expected_results = {
             ('start', 'sink', (u'ingress.switch_config_params', u'ingress.set_config_parameters'), (u'ingress.mac_da', u'ingress.set_bd_dmac_intf')):
@@ -250,8 +257,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_demo1_rm_header(self):
-        load_test_config()
+    def check_demo1_rm_header(self, config):
+        load_test_config(**config)
         results = run_test(
             'examples/demo1_rm_header.json')
         expected_results = {
@@ -262,8 +269,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_add_remove_header(self):
-        load_test_config()
+    def check_add_remove_header(self, config):
+        load_test_config(**config)
         results = run_test(
             'examples/add-remove-header.json')
         expected_results = {
@@ -292,8 +299,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_checksum_ipv4_with_options(self):
-        load_test_config()
+    def check_checksum_ipv4_with_options(self, config):
+        load_test_config(**config)
         # This test case exercises variable-length extract, lookahead,
         # and verify statements in the parser.
         results = run_test('examples/checksum-ipv4-with-options.json')
@@ -315,8 +322,9 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_parser_impossible_transitions(self):
-        load_test_config()
+
+    def check_parser_impossible_transitions(self, config):
+        load_test_config(**config)
         # This test case has at least one parser path that is
         # impossible to traverse, and several that are possible that,
         # when taken, make certain paths through ingress impossible.
@@ -358,8 +366,8 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_parser_impossible_transitions2_with_epl(self):
-        load_test_config(no_packet_length_errs=False)
+    def check_parser_impossible_transitions2_with_epl(self, config):
+        load_test_config(no_packet_length_errs=False, **config)
         # Similar to the previous test case, this test case has
         # several parser paths that are impossible to traverse, and
         # several that are possible.
@@ -410,13 +418,14 @@ class CheckSystem:
         assert results == expected_results
 
 
-    def check_user_metadata(self):
+    def check_user_metadata(self, config):
         # This test case checks that we can solve for values of input metadata.
 
         # There's no plumbing from the solved metadata to simple_switch, so
         # disable it.
         load_test_config(solve_for_metadata=True,
-                         run_simple_switch=False)
+                         run_simple_switch=False,
+                         **config)
 
         results = run_test('examples/user-metadata.json')
         expected_results = {
@@ -431,11 +440,12 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_header_stack_variable_length(self):
+
+    def check_header_stack_variable_length(self, config):
         # This test case checks that we can perform variable-length extractions
         # into header stacks.
 
-        load_test_config()
+        load_test_config(**config)
 
         results = run_test('examples/header-stack-variable-length.json')
         expected_results = {
@@ -444,11 +454,11 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    def check_parser_cycle(self):
+    def check_parser_cycle(self, config):
         # This test case checks that we do not attempt to advance beyond the
         # last element of a header stack.
 
-        load_test_config()
+        load_test_config(**config)
 
         results = run_test('examples/parser-cycle.json')
         expected_results = {
@@ -467,17 +477,18 @@ class CheckSystem:
     # incorrect results for this program now, because p4pktgen does
     # not correctly handle multiple possible transitions from parser
     # state A to parser state B.
-    def xfail_parser_parallel_paths(self):
-        load_test_config()
+    def xfail_parser_parallel_paths(self, config):
+        load_test_config(**config)
         results = run_test('examples/parser-parallel-paths.json')
         expected_results = {
         }
         assert results == expected_results
 
-    def check_header_stack_too_many_extracts(self):
+
+    def check_header_stack_too_many_extracts(self, config):
         # This test case checks that parser paths that would result in
         # overfilling of header stacks are not followed.
-        load_test_config()
+        load_test_config(**config)
         results = run_test('examples/header-stack-too-many-extracts.json')
         expected_results = {
             ('start', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
@@ -505,10 +516,10 @@ class CheckSystem:
         return l1 & 0x1f, l2 & 0x1f
 
 
-    def check_extract_vl_variation_and_mode(self):
+    def check_extract_vl_variation_and_mode(self, config):
         # This test case checks that setting extract_vl_variation to 'and'
         # results in test-cases with correctly varying extraction lengths.
-        load_test_config()
+        load_test_config(**config)
         Config().extract_vl_variation = 'and'
         Config().max_test_cases_per_path = 0  # Unlimited
         results = run_test('examples/two-extract-vl.json')
@@ -525,10 +536,10 @@ class CheckSystem:
             lengths.add((l1, l2))
 
 
-    def check_extract_vl_variation_or_mode(self):
+    def check_extract_vl_variation_or_mode(self, config):
         # This test case checks that setting extract_vl_variation to 'or'
         # results in test-cases with correctly varying extraction lengths.
-        load_test_config()
+        load_test_config(**config)
         Config().extract_vl_variation = 'or'
         Config().max_test_cases_per_path = 0  # Unlimited
         results = run_test('examples/two-extract-vl.json')
@@ -548,11 +559,11 @@ class CheckSystem:
             lengths2.add(l2)
 
 
-    def check_extract_fixed_after_variable(self):
+    def check_extract_fixed_after_variable(self, config):
         # This test case checks that fixed-length extractions of regions
         # that follow immediately after a variably-extracted region are
         # handled correctly.
-        load_test_config()
+        load_test_config(**config)
         results = run_test('examples/switch-after-varbit.json')
         expected_results = {
             ('start', 'test_non_zero', 'sink', (u'tbl_switchaftervarbit55', u'switchaftervarbit55')): TestPathResult.SUCCESS,
@@ -561,10 +572,10 @@ class CheckSystem:
         assert results == expected_results
 
 
-    def check_lookahead_beyond_extract(self):
+    def check_lookahead_beyond_extract(self, config):
         # This test case checks that lookaheads that extend beyond the final
         # extraction are handled correctly.
-        load_test_config()
+        load_test_config(**config)
         results = run_test('examples/lookahead-beyond-extract.json')
         expected_results = {
             ('start', 'test_long', 'sink', (u'tbl_lookaheadbeyondextract53', u'lookaheadbeyondextract53')): TestPathResult.SUCCESS,
@@ -573,10 +584,10 @@ class CheckSystem:
         assert results == expected_results
 
 
-    def check_narrow_extractions(self):
+    def check_narrow_extractions(self, config):
         # This test case checks that extractions that straddle nybble
         # boundaries are handled correctly.
-        load_test_config()
+        load_test_config(**config)
         results = run_test('examples/narrow-extractions.json')
         expected_results = {
             ('start', 'sink', (u'node_2', (True, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'tbl_narrowextractions44', u'narrowextractions44'), (u'node_4', (True, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'tbl_narrowextractions47', u'narrowextractions47'), (u'node_6', (True, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7'))), (u'tbl_narrowextractions50', u'narrowextractions50')): TestPathResult.SUCCESS,
@@ -598,18 +609,18 @@ class CheckSystem:
 
 
     @pytest.mark.xfail(reason="Table const default actions cause simple_switch to raise error.")
-    def check_simple_table_with_const_default_action(self):
+    def check_simple_table_with_const_default_action(self, config):
         # This test checks that a simple program with a table that has a const
         # default action can be tested with the simple switch.
-        load_test_config(run_simple_switch=True)
+        load_test_config(run_simple_switch=True, **config)
         results = run_test('examples/simple-table.json')
         assert results == self.simple_table_expected_results
 
 
-    def check_consolidated_simple_table(self):
+    def check_consolidated_simple_table(self, config):
         # This test checks that consolidation of tables for a simple table
         # program generates test-cases with only one table configuration.
-        load_test_config(run_simple_switch=False)
+        load_test_config(run_simple_switch=False, **config)
         Config().consolidate_tables = -1
         results = run_test('examples/simple-table.json')
         assert results == self.simple_table_expected_results
@@ -621,10 +632,10 @@ class CheckSystem:
         assert len(table_configs[0][0]) > 0, "Config has no commands"
 
 
-    def check_consolidated_two_config_table(self):
+    def check_consolidated_two_config_table(self, config):
         # This test checks that consolidation of tables for a program that
         # requires two configs to exercise.
-        load_test_config(run_simple_switch=False)
+        load_test_config(run_simple_switch=False, **config)
         Config().consolidate_tables = -1
         results = run_test('examples/two-config-table.json')
         expected_results = {
