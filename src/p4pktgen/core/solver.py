@@ -133,7 +133,7 @@ class PathSolver(object):
             [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
             assert isinstance(path_transition, ParserTransition) or isinstance(
-                path_transition, ParserOpTransition)
+                path_transition, ParserErrorTransition)
 
             node = path_transition.src
             next_node = path_transition.dst
@@ -145,7 +145,7 @@ class PathSolver(object):
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
                 fail = ''
                 if isinstance(
-                        path_transition, ParserOpTransition
+                        path_transition, ParserErrorTransition
                 ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
                     fail = path_transition.error_str
                     skip_select = True

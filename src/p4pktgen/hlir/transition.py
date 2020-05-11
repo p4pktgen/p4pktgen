@@ -3,7 +3,7 @@ from p4pktgen.util.graph import Edge
 
 TransitionType = Enum(
     'TransitionType',
-    'PARSER_OP_TRANSITION ACTION_TRANSITION CONST_ACTION_TRANSITION BOOL_TRANSITION'
+    'PARSER_ERROR_TRANSITION ACTION_TRANSITION CONST_ACTION_TRANSITION BOOL_TRANSITION'
 )
 
 
@@ -45,10 +45,10 @@ class ParserTransition(Edge):
                     self.mask == other.mask) and (self.value == other.value)
 
 
-class ParserOpTransition(Transition):
+class ParserErrorTransition(Transition):
     def __init__(self, state_name, op, op_idx, next_state, error_str):
-        super(ParserOpTransition, self).__init__(
-            TransitionType.PARSER_OP_TRANSITION, state_name, next_state)
+        super(ParserErrorTransition, self).__init__(
+            TransitionType.PARSER_ERROR_TRANSITION, state_name, next_state)
         self.op = op
         self.op_idx = op_idx
         self.next_state = next_state

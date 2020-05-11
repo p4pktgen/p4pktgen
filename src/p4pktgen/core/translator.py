@@ -60,10 +60,10 @@ def p4_value_to_bv(value, size):
             value.__class__))
 
 
-def parser_op_trans_to_str(op_trans):
+def parser_error_trans_to_str(error_trans):
     # XXX: after unifying type value representations
-    # assert isinstance(op_trans.op.value[1], TypeValueHexstr)
-    return op_trans.error_str
+    # assert isinstance(error_trans.op.value[1], TypeValueHexstr)
+    return error_trans.error_str
 
 
 class Translator(object):
@@ -630,7 +630,7 @@ class Translator(object):
     @staticmethod
     def expected_path(parser_path, control_path):
         expected_path = [
-            n.src if not isinstance(n, ParserOpTransition) else
-            parser_op_trans_to_str(n) for n in parser_path
+            n.src if not isinstance(n, ParserErrorTransition) else
+            parser_error_trans_to_str(n) for n in parser_path
         ] + ['sink'] + [(n.src, n) for n in control_path]
         return expected_path
