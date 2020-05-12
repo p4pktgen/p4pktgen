@@ -1,4 +1,5 @@
 from collections import OrderedDict, defaultdict
+import copy
 import json
 import time
 import logging
@@ -12,7 +13,8 @@ from p4pktgen.config import Config
 from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
-from p4pktgen.hlir.transition import ActionTransition, ParserTransition
+from p4pktgen.hlir.transition import (ActionTransition, ParserTransition,
+                                      ParserErrorTransition)
 
 
 def record_path_result(result, is_complete_control_path):
@@ -33,32 +35,29 @@ class ParserGraphVisitor(GraphVisitor):
             for extract in state.header_stack_extracts:
                 stack_counts[extract] += 1
 
-    def preprocess_edges(self, path, edges):
-        filtered_edges = []
-        for edge in edges:
-            if edge.dst != 'sink' and isinstance(edge, ParserTransition):
-                state = self.hlir.get_parser_state(edge.dst)
-                if state.has_header_stack_extracts():
-                    stack_counts = defaultdict(int)
+    def preprocess_edges(self, path_prefix, onward_edges):
+        # Count the number of extractions for each header stack in the path so
+        # far.
+        stack_counts = defaultdict(int)
+        if len(path_prefix) > 0:
+            self.count(stack_counts, path_prefix[0].src)
+            for e in path_prefix:
+                self.count(stack_counts, e.dst)
 
-                    if len(path) > 0:
-                        self.count(stack_counts, path[0].src)
-                        for e in path:
-                            self.count(stack_counts, e.dst)
-                    self.count(stack_counts, edge.dst)
+        # Check whether the path so far involves an extraction beyond the
+        # end of a header stack.  In this case, the only legal onward
+        # transition is the StackOutOfBounds error.  If the -epl option is not
+        # in force, we won't have generated such a transition and the returned
+        # list will be empty, which will cause the caller to drop the current
+        # path-prefix entirely.
+        if any(self.hlir.get_header_stack(stack).size < count
+               for stack, count in stack_counts.iteritems()):
+            return [edge for edge in onward_edges
+                    if isinstance(edge, ParserErrorTransition) and
+                    edge.error_str == 'StackOutOfBounds']
 
-                    # If one of the header stacks is overful, remove the edge
-                    valid = True
-                    for stack, count in stack_counts.items():
-                        if self.hlir.get_header_stack(stack).size < count:
-                            valid = False
-                            break
-                    if not valid:
-                        continue
-
-            filtered_edges.append(edge)
-
-        return filtered_edges
+        # Otherwise, no further filtering is necessary.
+        return list(onward_edges)
 
     def visit(self, path, is_complete_path):
         if is_complete_path:

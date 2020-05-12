@@ -210,6 +210,20 @@ class Translator(object):
             raise Exception('Type value {} not supported (type: {})'.format(
                 type_value, type_value.__class__))
 
+    def parser_op_oob(self, context, parser_op):
+        for value in parser_op.stack_out_of_bounds_values():
+            parsed_count = context.get_stack_parsed_count(value.header_name)
+            size = self.hlir.get_header_stack(value.header_name).size
+            assert 0 <= parsed_count <= size
+            assert isinstance(value, (TypeValueStack, TypeValueStackField))
+            # TypeValueStack is the ".next" case, where we're out of bounds if
+            # we overflow.  TypeValueStackField is the ".last" case, where
+            # we're out of bounds if we underflow.
+            oob_count = size if isinstance(value, TypeValueStack) else 0
+            if parsed_count == oob_count:
+                return True
+        return False
+
     # XXX: "fail" should not be a string
     # XXX: pos/new_pos should be part of the context
     def parser_op_to_smt(self, context, sym_packet, parser_op, fail, pos,
