@@ -187,6 +187,12 @@ class HLIR_Parser_Ops(object):
             raise Exception(
                 'Unexpected op: {}'.format(json_op['op']))
 
+        if self.op == P4ParserOpsEnum.primitive:
+            self.value = [PrimitiveCall(json_op['parameters'][0])]
+        else:
+            self.value = [parse_type_value(pair)
+                          for pair in json_op['parameters']]
+
 
 class HLIR_Parse_States(object):
     """
@@ -347,13 +353,6 @@ class P4_HLIR(object):
                 p4ps = HLIR_Parse_States(parse_state)
                 for i, k in enumerate(parse_state['parser_ops']):
                     parser_op = HLIR_Parser_Ops(k)
-
-                    if parser_op.op == P4ParserOpsEnum.primitive:
-                        parser_op.value = [PrimitiveCall(k['parameters'][0])]
-                    else:
-                        parser_op.value = []
-                        for pair in k['parameters']:
-                            parser_op.value.append(parse_type_value(pair))
 
                     if (parser_op.op == P4ParserOpsEnum.extract or
                         parser_op.op == P4ParserOpsEnum.extract_VL) \
