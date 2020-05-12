@@ -10,6 +10,9 @@ class TypeValueExpression(TypeValue):
         # cond only exists for the ternary operator '?'
         if 'cond' in json_obj:
             self.cond = parse_type_value(json_obj['cond'])
+            assert self.cond is not None
+        else:
+            self.cond = None
         if json_obj['left'] is None:
             self.left = None
         else:
@@ -17,7 +20,7 @@ class TypeValueExpression(TypeValue):
         self.right = parse_type_value(json_obj['right'])
 
     def __repr__(self):
-        if hasattr(self, 'cond'):
+        if self.cond is not None:
             return '({} {} : {})'.format(self.cond, self.op, self.left,
                                          self.right)
         else:

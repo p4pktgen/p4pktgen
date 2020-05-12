@@ -267,6 +267,9 @@ class Context:
         self.parsed_stacks[header_name] += 1
         return name
 
+    def get_stack_parsed_count(self, header_name):
+        return self.parsed_stacks[header_name]
+
     def set_valid_field(self, header_name):
         # Even though the P4_16 isValid() method
         # returns a boolean value, it appears that

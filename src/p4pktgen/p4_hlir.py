@@ -193,6 +193,21 @@ class HLIR_Parser_Ops(object):
             self.value = [parse_type_value(pair)
                           for pair in json_op['parameters']]
 
+    def stack_out_of_bounds_values(self):
+        """Yields the sub-expressions of arguments to this parser op that can
+        cause StackOutOfBounds errors.
+        """
+        # Use a stack to walk the list of expression-trees.
+        stack = list(self.value)
+        while stack:
+            value = stack.pop()
+            if isinstance(value, (TypeValueStackField, TypeValueStack)):
+                yield value
+            elif isinstance(value, TypeValueExpression):
+                stack.extend(v for v in [value.left, value.right, value.cond]
+                             if v is not None)
+
+
 
 class HLIR_Parse_States(object):
     """
@@ -364,6 +379,16 @@ class P4_HLIR(object):
                                                   'sink', error_str)
                         )
                     elif not Config().get_no_packet_length_errs():
+                        # If _any_ of the values for this op can generate a
+                        # StackOutOfBounds error, add _one_ transition.
+                        if any(parser_op.stack_out_of_bounds_values()):
+                            p4ps.parser_error_transitions.append(
+                                ParserErrorTransition(p4ps.name, parser_op, i,
+                                                      'sink',
+                                                      'StackOutOfBounds')
+                            )
+
+                        # Add op-specific error transitions.
                         if parser_op.op == P4ParserOpsEnum.extract:
                             p4ps.parser_error_transitions.append(
                                 ParserErrorTransition(p4ps.name, parser_op, i,

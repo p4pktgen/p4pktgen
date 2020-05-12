@@ -140,6 +140,7 @@ class PathSolver(object):
             logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
+            context = self.current_context()
 
             skip_select = False
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
@@ -148,11 +149,17 @@ class PathSolver(object):
                         path_transition, ParserErrorTransition
                 ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
                     fail = path_transition.error_str
+
+                    if (fail == 'StackOutOfBounds' and
+                        not self.translator.parser_op_oob(context, parser_op)):
+                        # If we get here, the path is unsatisfiable.
+                        return False
+
                     skip_select = True
 
                 new_pos = self.translator.parser_op_to_smt(
-                    self.current_context(), self.sym_packet, parser_op, fail,
-                    pos, new_pos, constraints)
+                    context, self.sym_packet, parser_op, fail, pos, new_pos,
+                    constraints)
 
                 if skip_select:
                     break
