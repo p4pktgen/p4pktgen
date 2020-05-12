@@ -216,9 +216,7 @@ class HLIR_Parse_States(object):
         self.transitions = []
         self.transition_key = []
 
-        # List of lists of transitions from parser operators. Every
-        # element in the list corresponds to a list of transitions from
-        # the parser operator with the same index.
+        # List of error transitions from parser operators in this state.
         self.parser_error_transitions = []
 
         # The header stacks that this parser state is extracting into.
@@ -361,28 +359,25 @@ class P4_HLIR(object):
 
                     if parser_op.op == P4ParserOpsEnum.verify:
                         error_str = self.id_to_errors[parser_op.value[1].value]
-                        p4ps.parser_error_transitions.append([
+                        p4ps.parser_error_transitions.append(
                             ParserErrorTransition(p4ps.name, parser_op, i,
                                                   'sink', error_str)
-                        ])
-                    elif not (Config().get_no_packet_length_errs()
-                              ) and parser_op.op == P4ParserOpsEnum.extract:
-                        p4ps.parser_error_transitions.append([
-                            ParserErrorTransition(p4ps.name, parser_op, i,
-                                                  'sink', 'PacketTooShort')
-                        ])
-                    elif not (Config().get_no_packet_length_errs(
-                    )) and parser_op.op == P4ParserOpsEnum.extract_VL:
-                        p4ps.parser_error_transitions.append([
-                            ParserErrorTransition(p4ps.name, parser_op, i,
-                                                  'sink', 'PacketTooShort')
-                        ])
-                        p4ps.parser_error_transitions.append([
-                            ParserErrorTransition(p4ps.name, parser_op, i,
-                                                  'sink', 'HeaderTooShort')
-                        ])
-                    else:
-                        p4ps.parser_error_transitions.append([])
+                        )
+                    elif not Config().get_no_packet_length_errs():
+                        if parser_op.op == P4ParserOpsEnum.extract:
+                            p4ps.parser_error_transitions.append(
+                                ParserErrorTransition(p4ps.name, parser_op, i,
+                                                      'sink', 'PacketTooShort')
+                            )
+                        elif parser_op.op == P4ParserOpsEnum.extract_VL:
+                            p4ps.parser_error_transitions.append(
+                                ParserErrorTransition(p4ps.name, parser_op, i,
+                                                      'sink', 'PacketTooShort')
+                            )
+                            p4ps.parser_error_transitions.append(
+                                ParserErrorTransition(p4ps.name, parser_op, i,
+                                                      'sink', 'HeaderTooShort')
+                            )
 
                     p4ps.parser_ops.append(parser_op)
 
@@ -473,9 +468,8 @@ class P4_HLIR(object):
                     graph.add_edge(ps_name, tns.next_state.name, tns)
                 else:
                     graph.add_edge(ps_name, 'sink', tns)
-            for parser_error_transitions in ps.parser_error_transitions:
-                for transition in parser_error_transitions:
-                    graph.add_edge(ps_name, transition.next_state, transition)
+            for transition in ps.parser_error_transitions:
+                graph.add_edge(ps_name, transition.next_state, transition)
 
         return graph
 
