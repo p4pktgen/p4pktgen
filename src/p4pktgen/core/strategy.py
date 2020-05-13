@@ -85,7 +85,10 @@ class PathCoverageGraphVisitor(GraphVisitor):
     def generate_test_case(self, control_path, is_complete_control_path):
         self.path_solver.push()
 
-        expected_path = self.path_solver.translator.expected_path(self.parser_path, control_path)
+        expected_path = list(
+            self.path_solver.translator.expected_path(self.parser_path,
+                                                      control_path)
+        )
         path_id = self.path_solver.path_id
 
         logging_str = "%d Exp path (len %d+%d=%d) complete_path %s: %s" % \
