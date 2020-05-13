@@ -497,19 +497,33 @@ class CheckSystem:
         assert results == expected_results
 
 
-    def check_header_stack_too_many_extracts(self, config):
+    @pytest.mark.parametrize("epl", [True, False], ids=["with_epl",
+                                                        "without_epl"])
+    def check_header_stack_too_many_extracts(self, config, epl):
         # This test case checks that parser paths that would result in
-        # overfilling of header stacks are not followed.
-        load_test_config(**config)
+        # overfilling of header stacks are not followed, except, when enabled,
+        # to handle the consequent StackOutOfBounds error.
+        load_test_config(no_packet_length_errs=not epl, **config)
         results = run_test('examples/header-stack-too-many-extracts.json')
+        ingress_node = (u'tbl_headerstacktoomanyextracts80',
+                        u'headerstacktoomanyextracts80')
         expected_results = {
-            ('start', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
+            ('start', 'sink', ingress_node):
             TestPathResult.SUCCESS,
-            ('start', 'extract_const', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
+            ('start', 'extract_const', 'sink', ingress_node):
             TestPathResult.SUCCESS,
-            ('start', 'extract_vl', 'sink', (u'tbl_headerstacktoomanyextracts80', u'headerstacktoomanyextracts80')):
+            ('start', 'extract_vl', 'sink', ingress_node):
             TestPathResult.SUCCESS,
         }
+        if epl:
+            for node in ['extract_const', 'extract_vl']:
+                twice_node = node + '_twice'
+                path = ('start', twice_node, 'StackOutOfBounds', 'sink',
+                        ingress_node)
+                expected_results[path] = TestPathResult.SUCCESS
+                for n in [node, twice_node]:
+                    path = ('start', n, 'PacketTooShort', 'sink', ingress_node)
+                    expected_results[path] = TestPathResult.SUCCESS
         assert results == expected_results
 
 
