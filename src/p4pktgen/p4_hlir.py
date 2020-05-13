@@ -496,6 +496,12 @@ class P4_HLIR(object):
             pipeline = Pipeline(self, pipeline_json)
             self.pipelines[pipeline.name] = pipeline
 
+        # Get any extern instances
+        self.extern_instances = {}
+        for extern_instance_json in json_obj['extern_instances']:
+            extern = ExternInstance(extern_instance_json)
+            self.extern_instances[extern.name] = extern
+
         self.hdr_stacks = None
         self.hdr_union_types = None
         self.hdr_unions = None
@@ -532,6 +538,9 @@ class P4_HLIR(object):
 
     def get_header_type(self, type_name):
         return self.header_types[type_name]
+
+    def get_extern_instance(self, extern_instance_name):
+        return self.extern_instances[extern_instance_name]
 
 
 class PrimitiveCall:
@@ -1039,6 +1048,22 @@ class Pipeline:
                     visited.add(next_table)
 
         return graph, source_info_to_node_name
+
+
+class ExternAttributeValue:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.type = json_obj['type']
+        self.value = json_obj['value']
+
+
+class ExternInstance:
+    def __init__(self, json_obj):
+        self.name = json_obj['name']
+        self.id = int(json_obj['id'])
+        self.type = json_obj['type']
+        self.attribute_values = [ExternAttributeValue(v)
+                                 for v in json_obj['attribute_values']]
 
 
 class Calculation:
