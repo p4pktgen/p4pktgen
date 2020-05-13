@@ -60,12 +60,6 @@ def p4_value_to_bv(value, size):
             value.__class__))
 
 
-def parser_error_trans_to_str(error_trans):
-    # XXX: after unifying type value representations
-    # assert isinstance(error_trans.op.value[1], TypeValueHexstr)
-    return error_trans.error_str
-
-
 class Translator(object):
     """Translates p4pktgen path objects into z3 representations.  Should have a
     fixed state after instantiation with the HLIR and pipeline it's translating
@@ -642,9 +636,21 @@ class Translator(object):
         return constraints
 
     @staticmethod
-    def expected_path(parser_path, control_path):
-        expected_path = [
-            n.src if not isinstance(n, ParserErrorTransition) else
-            parser_error_trans_to_str(n) for n in parser_path
-        ] + ['sink'] + [(n.src, n) for n in control_path]
-        return expected_path
+    def expected_path(parser_path, control_path, substitute_errors=True):
+        """Yields nodes that together describe a complete path.  If
+        substitute_errors is true, parser errors are reported in place of the
+        state in which they occur, which is the format reported by
+        simple_switch.  If it's false, the error is instead reported following
+        the state in which it occurs.
+        """
+        for node in parser_path:
+            error = isinstance(node, ParserErrorTransition)
+            if not substitute_errors or not error:
+                yield node.src
+            if error:
+                yield node.error_str
+
+        yield 'sink'
+
+        for node in control_path:
+            yield (node.src, node)
