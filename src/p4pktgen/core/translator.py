@@ -529,13 +529,15 @@ class Translator(object):
                         context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
                         context.remove_header_fields(dst_name)
 
-                elif (primitive.op in [
+                elif primitive.op in [
                         'modify_field_rng_uniform',
                         'modify_field_with_hash_based_offset',
                         'clone_ingress_pkt_to_egress',
-                        'clone_egress_pkt_to_egress', 'count', 'execute_meter',
-                        'generate_digest'
-                ] and Config().get_allow_unimplemented_primitives()):
+                        'clone_egress_pkt_to_egress', 'count',
+                        'execute_meter', 'generate_digest']:
+                    if not Config().get_allow_unimplemented_primitives():
+                        raise Exception('Primitive op {} only allowed with'
+                                        '--allow-unimplemented-primitives option')
                     logging.warning('Primitive op {} allowed but treated as no-op'.
                                     format(primitive.op))
                 else:
