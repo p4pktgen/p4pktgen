@@ -145,17 +145,25 @@ class PathSolver(object):
             skip_select = False
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
                 fail = ''
+                oob = self.translator.parser_op_oob(context, parser_op)
                 if isinstance(
                         path_transition, ParserErrorTransition
                 ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
                     fail = path_transition.error_str
 
-                    if (fail == 'StackOutOfBounds' and
-                        not self.translator.parser_op_oob(context, parser_op)):
-                        # If we get here, the path is unsatisfiable.
+                    if not oob and fail == 'StackOutOfBounds':
+                        # We're on a path where the current parser op over-/
+                        # underflows the stack, but in fact that didn't happen,
+                        # so the path is unsatisfiable.
                         return False
 
                     skip_select = True
+
+                if oob and fail != 'StackOutOfBounds':
+                    # This parser op over-/underflows, and we're not on a path
+                    # that handles that error condition, so the path is
+                    # unsatisfiable.
+                    return False
 
                 new_pos = self.translator.parser_op_to_smt(
                     context, self.sym_packet, parser_op, fail, pos, new_pos,

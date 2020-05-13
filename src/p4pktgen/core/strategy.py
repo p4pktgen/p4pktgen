@@ -44,17 +44,15 @@ class ParserGraphVisitor(GraphVisitor):
             for e in path_prefix:
                 self.count(stack_counts, e.dst)
 
-        # Check whether the path so far involves an extraction beyond the
-        # end of a header stack.  In this case, the only legal onward
-        # transition is the StackOutOfBounds error.  If the -epl option is not
-        # in force, we won't have generated such a transition and the returned
-        # list will be empty, which will cause the caller to drop the current
-        # path-prefix entirely.
+        # Check whether the path so far involves an extraction beyond the end
+        # of a header stack.  In this case, the only legal onward transitions
+        # are error transitions.  If there are no such transitions, the
+        # returned list will be empty, which will cause the caller to drop the
+        # current path-prefix entirely.
         if any(self.hlir.get_header_stack(stack).size < count
                for stack, count in stack_counts.iteritems()):
             return [edge for edge in onward_edges
-                    if isinstance(edge, ParserErrorTransition) and
-                    edge.error_str == 'StackOutOfBounds']
+                    if isinstance(edge, ParserErrorTransition)]
 
         # Otherwise, no further filtering is necessary.
         return list(onward_edges)
