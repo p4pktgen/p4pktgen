@@ -129,7 +129,7 @@ class PathSolver(object):
         # XXX: make this work for multiple parsers
         parser = self.hlir.parsers['parser']
         pos = BitVecVal(0, 32)
-        logging.info('path = {}'.format(' -> '.join(
+        logging.info('path = {}'.format(', '.join(
             [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
             assert isinstance(path_transition, ParserTransition) or isinstance(
@@ -137,7 +137,7 @@ class PathSolver(object):
 
             node = path_transition.src
             next_node = path_transition.dst
-            logging.debug('{} -> {}\tpos = {}'.format(node, next_node, pos))
+            logging.debug('{}\tpos = {}'.format(path_transition, pos))
             new_pos = pos
             parse_state = parser.parse_states[node]
             context = self.current_context()
