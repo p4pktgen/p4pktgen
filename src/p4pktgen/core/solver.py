@@ -177,7 +177,24 @@ class PathSolver(object):
                 self.sym_packet.set_max_length(simplify(new_pos - 8))
                 break
 
-            if not skip_select:
+            if skip_select:
+                continue
+
+            underflow = any(context.get_stack_parsed_count(f.header_name) == 0
+                            for f in parse_state.stack_field_key_elems())
+            if isinstance(path_transition, ParserErrorTransition):
+                assert path_transition.op_idx is None
+                assert path_transition.error_str == 'StackOutOfBounds'
+                if not underflow:
+                    # On an error path but no underflow: unsatisfiable.
+                    return False
+                # Otherwise, the path so far is satisfiable, and we have no
+                # further constraints to impose.
+                continue
+            elif underflow:
+                # Underflow but not an error path: unsatisfiable.
+                return False
+            else:
                 sym_transition_key = []
                 for transition_key_elem in parse_state.transition_key:
                     if isinstance(transition_key_elem, TypeValueField):

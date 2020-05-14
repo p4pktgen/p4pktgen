@@ -241,6 +241,13 @@ class HLIR_Parse_States(object):
     def has_header_stack_extracts(self):
         return len(self.header_stack_extracts) > 0
 
+    def stack_field_key_elems(self):
+        """Returns components of the key that involve the .last member of a
+        header stack.
+        """
+        return [elem for elem in self.transition_key
+                if isinstance(elem, TypeValueStackField)]
+
 
 class HLIR_Parser(object):
     """
@@ -446,7 +453,20 @@ class P4_HLIR(object):
                         p4ps.transitions.append(transition)
                 for k in parse_state['transition_key']:
                     p4ps.transition_key.append(parse_type_value(k))
+
+                # Check whether the expression used to construct the transition
+                # key can underflow a header stack.  Note that this relies on
+                # already having built p4ps.transition_key above.
+                if (p4ps.stack_field_key_elems() and
+                    not Config().get_no_packet_length_errs()):
+                    p4ps.parser_error_transitions.append(
+                        ParserErrorTransition(p4ps.name, op=None, op_idx=None,
+                                              next_state='sink',
+                                              error_str='StackOutOfBounds')
+                    )
+
                 parser.parse_states[p4ps.name] = p4ps
+
             # Link up the parse state objects
             for ps_name, ps in parser.parse_states.items():
                 for tns in ps.transitions:
