@@ -527,6 +527,37 @@ class CheckSystem:
         assert results == expected_results
 
 
+    @pytest.mark.parametrize("epl", [True, False], ids=["with_epl",
+                                                        "without_epl"])
+    def check_header_stack_in_select(self, config, epl):
+        # This test case checks that stack-header underflow arising from the
+        # use of the .last member in a select() block is handled correctly.
+        load_test_config(
+            no_packet_length_errs=not epl,
+            # simple_switch trips an assertion when underflowing on .last.
+            run_simple_switch=not epl,
+            **config
+        )
+        results = run_test('examples/header-stack-in-select.json')
+        ingress_node = (u'tbl_headerstackinselect53',
+                        u'headerstackinselect53')
+        expected_results = {
+            ('start', 'extract_stack', 'select_last', 'sink', ingress_node):
+            TestPathResult.SUCCESS,
+        }
+        if epl:
+            for path in [
+                # Broken inequalities on packet-length mean that we miss this
+                # path:
+                #('start', 'extract_stack', 'PacketTooShort', 'sink',
+                # ingress_node),
+                ('start', 'select_last', 'StackOutOfBounds', 'sink',
+                 ingress_node),
+            ]:
+                expected_results[path] = TestPathResult.SUCCESS
+        assert results == expected_results
+
+
     two_extract_vl_expected_results = {
         ('start', 'sink', (u'tbl_twoextractvl49', u'twoextractvl49')):
         TestPathResult.SUCCESS,
