@@ -87,9 +87,9 @@ class Packet(object):
         if self.max_length is None and self.extract_vars:
             constraints.append(self.packet_size_var == packet_size)
         else:
-            constraints.append(self.packet_size_var > packet_size)
+            constraints.append(self.packet_size_var >= packet_size)
             if self.max_length is not None:
-                constraints.append(self.packet_size_var < self.max_length)
+                constraints.append(self.packet_size_var <= self.max_length)
 
         # N.B. Variable-length extractions do not need to be constrained
         # explicitly to their specified sizes.  The correct number of bits from
