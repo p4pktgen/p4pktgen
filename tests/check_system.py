@@ -547,10 +547,8 @@ class CheckSystem:
         }
         if epl:
             for path in [
-                # Broken inequalities on packet-length mean that we miss this
-                # path:
-                #('start', 'extract_stack', 'PacketTooShort', 'sink',
-                # ingress_node),
+                ('start', 'extract_stack', 'PacketTooShort', 'sink',
+                 ingress_node),
                 ('start', 'select_last', 'StackOutOfBounds', 'sink',
                  ingress_node),
             ]:
