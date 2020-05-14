@@ -54,6 +54,8 @@ class ParserErrorTransition(Transition):
         self.next_state = next_state
         self.error_str = error_str
 
+    def __repr__(self):
+        return '{} -({})-> {}'.format(self.src, self.error_str, self.dst)
 
 class ActionTransition(Transition):
     def __init__(self, src, dest, action, default_entry, action_data):
