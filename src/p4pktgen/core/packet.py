@@ -2,6 +2,7 @@ from z3 import *
 
 import logging
 
+from p4pktgen.config import Config
 from p4pktgen.core.context import Variables
 from p4pktgen.util.bitvec import equalize_bv_size, LShREq
 
@@ -70,6 +71,11 @@ class Packet(object):
         extractions that have been performed on the packet.
         """
 
+        constraints = [
+            self.packet_size_var >= Config().get_min_packet_len_generated(),
+            self.packet_size_var <= Config().get_max_packet_len_generated(),
+        ]
+
         if self.extract_vars:
             packet_size = simplify(sum(length
                                        for (length, _) in self.extract_vars))
@@ -78,11 +84,12 @@ class Packet(object):
 
         # Constrain the packet length according to the lengths of the
         # extractions and any external constraints imposed on the length.
-        if self.max_length is None:
-            constraints = [self.packet_size_var == packet_size]
+        if self.max_length is None and self.extract_vars:
+            constraints.append(self.packet_size_var == packet_size)
         else:
-            constraints = [And(self.packet_size_var > packet_size,
-                               self.packet_size_var < self.max_length)]
+            constraints.append(self.packet_size_var > packet_size)
+            if self.max_length is not None:
+                constraints.append(self.packet_size_var < self.max_length)
 
         # N.B. Variable-length extractions do not need to be constrained
         # explicitly to their specified sizes.  The correct number of bits from

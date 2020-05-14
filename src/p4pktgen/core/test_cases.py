@@ -12,7 +12,7 @@ from p4pktgen.switch.simple_switch import SimpleSwitch
 
 TestPathResult = Enum(
     'TestPathResult',
-    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE PACKET_SHORTER_THAN_MIN'
+    'SUCCESS NO_PACKET_FOUND TEST_FAILED UNINITIALIZED_READ INVALID_HEADER_WRITE'
 )
 
 
@@ -263,14 +263,10 @@ class TestCaseBuilder(object):
                     invalid_header_write_data.append(
                         OrderedDict([("variable_name", var_name), (
                             "source_info", source_info_to_dict(source_info))]))
-            elif len(payload) >= Config().get_min_packet_len_generated():
+            else:
+                assert len(payload) >= Config().get_min_packet_len_generated()
                 logging.info('Found packet for path: {}'.format(expected_path))
                 result = TestPathResult.SUCCESS
-            else:
-                result = TestPathResult.PACKET_SHORTER_THAN_MIN
-                logging.warning(
-                    'Packet length %d shorter than than minimum %d supported)' %
-                    (len(payload), Config().get_min_packet_len_generated()))
         else:
             logging.info(
                 'Unable to find packet for path: {}'.format(expected_path))
