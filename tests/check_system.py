@@ -67,6 +67,7 @@ def load_test_config(no_packet_length_errs=True,
     config.extract_vl_variation = None
     config.consolidate_tables = None
     config.randomize = randomize
+    config.extern_definitions = None
 
 
 def run_test(json_filename):

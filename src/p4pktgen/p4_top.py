@@ -5,6 +5,7 @@ import json
 from collections import OrderedDict
 
 from p4_hlir import P4_HLIR
+from hlir.externs import Externs
 
 
 def log_graph(name, graph):
@@ -24,6 +25,8 @@ class P4_Top():
         self.json_obj = None
 
         self.hlir = None
+        self.externs = None
+
         self.parser_graph = None
 
         # Ingress graph, required for generating test cases
@@ -56,3 +59,7 @@ class P4_Top():
             self.eg_pipeline = self.hlir.pipelines['egress']
             self.eg_graph, self.eg_source_info_to_node_name = self.eg_pipeline.generate_CFG()
             log_graph('egress', self.eg_graph)
+
+    def load_extern_backends(self):
+        self.externs = Externs()
+        self.externs.load_instances(self.hlir.extern_instances)

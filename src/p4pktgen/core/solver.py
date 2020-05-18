@@ -27,13 +27,13 @@ class PathSolver(object):
     allow an incremental approach with backtracking and efficient solving of
     graph edges."""
 
-    def __init__(self, json_file, hlir, pipeline):
+    def __init__(self, json_file, p4top, pipeline):
         self.solver = SolverFor('QF_UFBV')
         self.solver.push()
         self.solver_result = None
-        self.hlir = hlir
+        self.hlir = p4top.hlir
         self.pipeline = pipeline
-        self.translator = Translator(hlir, pipeline)
+        self.translator = Translator(p4top, pipeline)
         self.test_case_builder = TestCaseBuilder(json_file, pipeline)
         self.total_switch_time = 0.0
 

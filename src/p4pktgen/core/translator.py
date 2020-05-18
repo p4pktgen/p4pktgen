@@ -65,10 +65,11 @@ class Translator(object):
     fixed state after instantiation with the HLIR and pipeline it's translating
     for."""
 
-    def __init__(self, hlir, pipeline):
+    def __init__(self, p4top, pipeline):
         # These are used for necessary lookups and should be unchanged by any
         # operation on instances of this class.
-        self.hlir = hlir
+        self.hlir = p4top.hlir
+        self.externs = p4top.externs
         self.pipeline = pipeline
 
     def value_header_name_and_type(self, value):
