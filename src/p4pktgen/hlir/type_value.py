@@ -136,6 +136,11 @@ class TypeValueLookahead(TypeValue):
         self.size = json_obj[1]
 
 
+class TypeValueExtern(TypeValue):
+    def __init__(self, json_obj):
+        self.extern_instance_name = json_obj
+
+
 def parse_type_value(json_obj):
     p4_type_str = json_obj['type']
     value = json_obj['value']
@@ -180,5 +185,7 @@ def parse_type_value(json_obj):
         return TypeValueRegular(value)
     elif p4_type_str == 'lookahead':
         return TypeValueLookahead(value)
+    elif p4_type_str == 'extern':
+        return TypeValueExtern(value)
     else:
         raise Exception('{} not supported'.format(p4_type_str))
