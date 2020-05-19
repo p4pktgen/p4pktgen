@@ -716,6 +716,38 @@ class CheckSystem:
         assert len(table_configs[0][0]) > 0, "Config has no commands"
 
 
+    def check_parser_error(self, config):
+        # This test case checks that the parser_error standard metadata field
+        # is set correctly.
+        load_test_config(no_packet_length_errs=False, **config)
+        results = run_test('examples/parser-error.json')
+        expected_results = {
+            # There is precisely one SUCCESS path through the program for each
+            # of the five parser paths.  The branch taken in the ingress path
+            # corresponds to the error in the parser path.
+            ('start', 'sink', (u'node_2', (True, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'tbl_parsererror46', u'parsererror46')): TestPathResult.SUCCESS,
+            ('start', 'PacketTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (True, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'tbl_parsererror48', u'parsererror48')): TestPathResult.SUCCESS,
+            ('start', 'HeaderTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'node_6', (True, (u'parser-error.p4', 49, u'standard_meta.parser_error == error.HeaderTooShort'))), (u'tbl_parsererror50', u'parsererror50')): TestPathResult.SUCCESS,
+            ('start', 'start', 'StackOutOfBounds', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'node_6', (False, (u'parser-error.p4', 49, u'standard_meta.parser_error == error.HeaderTooShort'))), (u'node_8', (True, (u'parser-error.p4', 51, u'standard_meta.parser_error == error.StackOutOfBounds'))), (u'tbl_parsererror52', u'parsererror52')): TestPathResult.SUCCESS,
+            ('start', 'start', 'PacketTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (True, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'tbl_parsererror48', u'parsererror48')): TestPathResult.SUCCESS,
+
+            # All other combinations are NO_PACKET_FOUND.
+            ('start', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'PacketTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'PacketTooShort', 'sink', (u'node_2', (True, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'HeaderTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'node_6', (False, (u'parser-error.p4', 49, u'standard_meta.parser_error == error.HeaderTooShort')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'HeaderTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (True, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'HeaderTooShort', 'sink', (u'node_2', (True, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'start', 'PacketTooShort', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'start', 'PacketTooShort', 'sink', (u'node_2', (True, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'start', 'StackOutOfBounds', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'node_6', (False, (u'parser-error.p4', 49, u'standard_meta.parser_error == error.HeaderTooShort'))), (u'node_8', (False, (u'parser-error.p4', 51, u'standard_meta.parser_error == error.StackOutOfBounds')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'start', 'StackOutOfBounds', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (False, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort'))), (u'node_6', (True, (u'parser-error.p4', 49, u'standard_meta.parser_error == error.HeaderTooShort')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'start', 'StackOutOfBounds', 'sink', (u'node_2', (False, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError'))), (u'node_4', (True, (u'parser-error.p4', 47, u'standard_meta.parser_error == error.PacketTooShort')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'start', 'StackOutOfBounds', 'sink', (u'node_2', (True, (u'parser-error.p4', 45, u'standard_meta.parser_error == error.NoError')))): TestPathResult.NO_PACKET_FOUND,
+        }
+        assert results == expected_results
+
+
     def check_empty_control_graph(self, config):
         # This test checks that p4pktgen can handle programs with empty control
         # graphs.
