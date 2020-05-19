@@ -109,6 +109,8 @@ class PathSolver(object):
                                 BitVec('$instance_type$', 32))
         context.set_field_value('standard_metadata', 'egress_spec',
                                 BitVecVal(0, 9))
+        context.set_field_value('standard_metadata', 'parser_error',
+                                self.error_bitvec('NoError'))
 
         self.context_history[0] = context
         self.result_history[0] = []
@@ -243,8 +245,12 @@ class PathSolver(object):
                 pos = simplify(new_pos)
 
         # XXX: workaround
-        self.current_context().set_field_value('meta_meta', 'packet_len',
-                                               self.sym_packet.packet_size_var)
+        context = self.current_context()
+        context.set_field_value('meta_meta', 'packet_len',
+                                self.sym_packet.packet_size_var)
+        if fail:
+            context.set_field_value('standard_metadata', 'parser_error',
+                                    self.error_bitvec(fail))
         constraints.extend(self.sym_packet.get_packet_constraints())
         self.solver.add(And(constraints))
         self.constraints[0] = constraints
@@ -407,3 +413,6 @@ class PathSolver(object):
             self.solver.add(Not(Or(solution_sizes)))
 
         return True
+
+    def error_bitvec(self, error):
+        return BitVecVal(self.hlir.errors_to_id[error], 32)

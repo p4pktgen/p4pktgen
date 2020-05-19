@@ -363,8 +363,14 @@ class P4_HLIR(object):
 
         # Get the mapping of error ids to error strings
         self.id_to_errors = {}
-        for error in json_obj['errors']:
-            self.id_to_errors[int(error[1])] = error[0]
+        self.errors_to_id = {}
+        for error, id_str in json_obj['errors']:
+            self.id_to_errors[int(id_str)] = error
+            self.errors_to_id[error] = int(id_str)
+        assert 'NoError' in self.errors_to_id
+        assert 'PacketTooShort' in self.errors_to_id
+        assert 'HeaderTooShort' in self.errors_to_id
+        assert 'StackOutOfBounds' in self.errors_to_id
 
         self.parsers = OrderedDict()
         for p in json_obj['parsers']:
