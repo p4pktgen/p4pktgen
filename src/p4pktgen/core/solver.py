@@ -141,10 +141,9 @@ class PathSolver(object):
             new_pos = pos
             parse_state = parser.parse_states[node]
             context = self.current_context()
+            fail = ''
 
-            skip_select = False
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
-                fail = ''
                 oob = self.translator.parser_op_oob(context, parser_op)
                 if isinstance(
                         path_transition, ParserErrorTransition
@@ -157,8 +156,6 @@ class PathSolver(object):
                         # so the path is unsatisfiable.
                         return False
 
-                    skip_select = True
-
                 if oob and fail != 'StackOutOfBounds':
                     # This parser op over-/underflows, and we're not on a path
                     # that handles that error condition, so the path is
@@ -169,7 +166,7 @@ class PathSolver(object):
                     context, self.sym_packet, parser_op, fail, pos, new_pos,
                     constraints)
 
-                if skip_select:
+                if fail:
                     break
 
             if next_node == P4_HLIR.PACKET_TOO_SHORT:
@@ -177,20 +174,22 @@ class PathSolver(object):
                 self.sym_packet.set_max_length(simplify(new_pos - 8))
                 break
 
-            if skip_select:
-                continue
+            if fail:
+                assert path_transition.next_state == 'sink'
+                break
 
             underflow = any(context.get_stack_parsed_count(f.header_name) == 0
                             for f in parse_state.stack_field_key_elems())
             if isinstance(path_transition, ParserErrorTransition):
                 assert path_transition.op_idx is None
                 assert path_transition.error_str == 'StackOutOfBounds'
+                assert path_transition.next_state == 'sink'
                 if not underflow:
                     # On an error path but no underflow: unsatisfiable.
                     return False
-                # Otherwise, the path so far is satisfiable, and we have no
-                # further constraints to impose.
-                continue
+                # Otherwise, the complete path is satisfiable.
+                fail = path_transition.error_str
+                break
             elif underflow:
                 # Underflow but not an error path: unsatisfiable.
                 return False
