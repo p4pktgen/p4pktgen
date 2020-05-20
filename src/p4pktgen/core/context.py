@@ -12,21 +12,6 @@ from z3 import *
 from p4pktgen.config import Config
 
 
-class ContextVar(object):
-    def __init__(self):
-        pass
-
-
-class Field(ContextVar):
-    def __init__(self, header, field):
-        super(ContextVar, self).__init__()
-        self.header = header
-        self.field = field
-
-    def __eq__(self, other):
-        return self.header == other.header and self.header == other.header
-
-
 class Variables(object):
     """Helper class for creating variables used to model input data.  It
     encapsulates the handling of the randomization of solutions found for
@@ -125,15 +110,12 @@ class Context:
         self.source_info = None
 
     def register_field(self, field):
-        self.fields[self.field_to_var(field)] = field
+        var_name = (field.header.name, field.name)
+        self.fields[var_name] = field
 
     def fresh_var(self, prefix, size):
         Context.next_id += 1
         return self.variables.new('{}_{}'.format(prefix, Context.next_id), size)
-
-    def field_to_var(self, field):
-        assert field.header is not None
-        return (field.header.name, field.name)
 
     def insert(self, field, sym_val):
         self.set_field_value(field.header.name, field.name, sym_val)
