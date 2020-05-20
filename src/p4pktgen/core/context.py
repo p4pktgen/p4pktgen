@@ -79,7 +79,7 @@ class Context:
         # Maps P4 variables to SMT expressions
         self.var_to_smt_val = {}
 
-        self.fields = {}
+        self.fields = {}  # {(header_name, field_name): HLIR_Field, ...}
         # XXX: unify errors
         self.uninitialized_reads = []
         self.invalid_header_writes = []
@@ -214,9 +214,6 @@ class Context:
 
     def get_header_field(self, header_name, header_field):
         return self.get_var((header_name, header_field))
-
-    def get_header_field_size(self, header_name, header_field):
-        return self.get_header_field(header_name, header_field).size()
 
     def get_last_header_field(self, header_name, header_field, size):
         # XXX: size should not be a param
