@@ -718,6 +718,21 @@ class CheckSystem:
         assert len(table_configs[0][0]) > 0, "Config has no commands"
 
 
+    def check_empty_control_graph(self, config):
+        # This test checks that p4pktgen can handle programs with empty control
+        # graphs.
+        # Cannot test against switch as switch will not add the No-Op node to
+        # the path and the assert comparing expected path with switch path will
+        # fail.
+        load_test_config(run_simple_switch=False, **config)
+        results = run_test('examples/empty_control.json')
+        expected_results = {
+            ('start', 'sink', ('fake_init_table', u'No-Op')):
+                TestPathResult.SUCCESS
+        }
+        assert results == expected_results
+
+
 class CheckRandomization(object):
     @pytest.mark.parametrize('consolidate', [False, True],
                              ids=lambda x: 'consolidated' if x else 'default')

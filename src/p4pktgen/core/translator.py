@@ -627,7 +627,8 @@ class Translator(object):
             # in the 'const entries' list, and we want them _to_ match
             # the current entry being considered.
             raise Exception('ConstActionTransition is not yet supported')
-
+        elif transition.transition_type == TransitionType.NOOP_TRANSITION:
+            pass
         else:
             raise Exception('Transition type {} not supported!'.format(
                 transition.transition_type))
