@@ -81,8 +81,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
         return edges
 
     def generate_test_case(self, control_path, is_complete_control_path):
-        self.path_solver.push()
-
         expected_path = list(
             self.path_solver.translator.expected_path(self.parser_path,
                                                       control_path)
@@ -218,6 +216,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
         return VisitResult.CONTINUE
 
     def visit(self, control_path, is_complete_control_path):
+        self.path_solver.push()
         result = self.generate_test_case(control_path, is_complete_control_path)
 
         if result == TestPathResult.SUCCESS and is_complete_control_path:
