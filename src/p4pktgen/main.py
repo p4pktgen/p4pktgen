@@ -9,6 +9,8 @@ from core.solver import PathSolver
 from p4pktgen.core.consolidator import TableConsolidatedSolver
 from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
 from p4pktgen.core.strategy import EdgeLabels, TLUBFParserVisitor, LeastUsedPaths, EdgeCoverageGraphVisitor
+from p4pktgen.hlir.transition import NoopTransition
+from p4pktgen.util.graph import Graph
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.util.visualization import generate_graphviz_graph
@@ -276,6 +278,22 @@ def path_tuple(parser_path, control_path):
     )
 
 
+def create_noop_control_graph():
+    graph = Graph()
+    v_start = 'fake_init_table'
+    edge = NoopTransition(v_start, None)
+    graph.add_edge(edge.src, edge.dst, edge)
+    return v_start, graph
+
+
+def get_control_graph(top):
+    if top.in_pipeline.init_table_name is None:
+        return create_noop_control_graph()
+    start_node = top.in_pipeline.init_table_name
+    control_graph = top.in_graph
+    return start_node, control_graph
+
+
 def generate_test_cases(input_file):
     top = P4_Top()
     top.load_json_file(input_file)
@@ -298,6 +316,8 @@ def generate_test_cases(input_file):
     if Config().get_do_consolidate_tables():
         table_solver = TableConsolidatedSolver(input_file, top.in_pipeline,
                                                test_case_writer)
+
+    start_node, control_graph = get_control_graph(top)
 
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
         top.in_graph.count_all_paths(top.in_pipeline.init_table_name)
@@ -345,7 +365,7 @@ def generate_test_cases(input_file):
 
         graph_visitor = None
         if Config().get_try_least_used_branches_first():
-            graph_visitor = EdgeCoverageGraphVisitor(top.in_graph, labels, path_solver, parser_path,
+            graph_visitor = EdgeCoverageGraphVisitor(control_graph, labels, path_solver, parser_path,
                                                      top.in_source_info_to_node_name,
                                                      results, test_case_writer)
         else:
@@ -353,7 +373,7 @@ def generate_test_cases(input_file):
                                                      top.in_source_info_to_node_name,
                                                      results, test_case_writer)
 
-        top.in_graph.visit_all_paths(top.in_pipeline.init_table_name, None, graph_visitor)
+        control_graph.visit_all_paths(start_node, None, graph_visitor)
 
         # Check if we generated enough test cases
         if Statistics().num_test_cases == Config().get_num_test_cases():

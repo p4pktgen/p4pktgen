@@ -3,7 +3,8 @@ from p4pktgen.util.graph import Edge
 
 TransitionType = Enum(
     'TransitionType',
-    'PARSER_ERROR_TRANSITION ACTION_TRANSITION CONST_ACTION_TRANSITION BOOL_TRANSITION'
+    'PARSER_ERROR_TRANSITION ACTION_TRANSITION CONST_ACTION_TRANSITION'
+    ' BOOL_TRANSITION NOOP_TRANSITION'
 )
 
 
@@ -118,3 +119,22 @@ class BoolTransition(Transition):
     def __hash__(self):
         # XXX: hack for test cases
         return hash((self.val, self.source_info))
+
+
+class NoopTransition(Transition):
+    """Used to represent empty control graphs.  Does not represent a real
+    node or transition."""
+    def __init__(self, src, dest):
+        super(NoopTransition, self).__init__(TransitionType.NOOP_TRANSITION,
+                                             src, dest)
+
+    def __repr__(self):
+        return u'\'No-Op\''
+
+    def __eq__(self, other):
+        if isinstance(other, NoopTransition):
+            return True
+        return other == 'No-Op'
+
+    def __hash__(self):
+        return hash('No-Op')
