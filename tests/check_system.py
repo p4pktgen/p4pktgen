@@ -303,6 +303,29 @@ class CheckSystem:
         assert results == expected_results
 
 
+    def check_user_metadata(self):
+        # This test case checks that we can solve for values of input metadata.
+
+        # There's no plumbing from the solved metadata to simple_switch, so
+        # disable it.
+        Config().load_test_defaults(solve_for_metadata=True,
+                                    run_simple_switch=False)
+
+        results = process_json_file('examples/user-metadata.json')
+        expected_results = {
+            ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'node_4', (False, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui')))):
+            TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'node_4', (True, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui'))), (u'tbl_usermetadata84', u'usermetadata84')):
+            TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'tbl_usermetadata82', u'usermetadata82'), (u'node_4', (False, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui')))):
+            TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'tbl_usermetadata82', u'usermetadata82'), (u'node_4', (True, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui'))), (u'tbl_usermetadata84', u'usermetadata84')):
+            TestPathResult.SUCCESS,
+
+        }
+        assert results == expected_results
+
+
     # Fill in expected results for this test case, and change name to
     # have prefix 'check_' instead of 'xfail_', after p4pktgen has
     # been modified to generate correct results for it.  It generates
