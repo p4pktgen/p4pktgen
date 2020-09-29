@@ -80,16 +80,15 @@ class Packet(object):
             packet_size = simplify(sum(length
                                        for (length, _) in self.extract_vars))
         else:
-            packet_size = 0
+            packet_size = Config().get_min_packet_len_generated()
 
         # Constrain the packet length according to the lengths of the
         # extractions and any external constraints imposed on the length.
-        if self.max_length is None and self.extract_vars:
+        if self.max_length is None:
             constraints.append(self.packet_size_var == packet_size)
         else:
             constraints.append(self.packet_size_var >= packet_size)
-            if self.max_length is not None:
-                constraints.append(self.packet_size_var <= self.max_length)
+            constraints.append(self.packet_size_var <= self.max_length)
 
         # N.B. Variable-length extractions do not need to be constrained
         # explicitly to their specified sizes.  The correct number of bits from
