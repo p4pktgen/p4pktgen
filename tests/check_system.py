@@ -726,6 +726,28 @@ class CheckSystem:
         results = run_test('examples/empty_control.json')
         expected_results = {
             ('start', 'sink', ('fake_init_table', u'No-Op')):
+            TestPathResult.SUCCESS
+        }
+        assert results == expected_results
+
+
+    def check_empty_parser_graph(self, config):
+        # This test checks that p4pktgen can handle programs with empty parser
+        # graphs and produces packets of reasonable size.
+        # Note: If the bug this test targets recurrs this test may take a very
+        # long time to complete, and generate an enormous packet.
+        # Cannot test against switch, for same reasons as empty_control test.
+        load_test_config(run_simple_switch=False, **config)
+        results = run_test('examples/empty_parser.json')
+
+        # Empty parser should result in small packets.
+        payloads = get_packet_payloads(read_test_cases())
+        assert len(payloads) == 1
+        # Note, payloads are hex strings, 2 chars = 1 byte.
+        assert len(payloads[0]) == 2
+        # Graph is less important than payloads, but still check.
+        expected_results = {
+            ('start', 'sink', ('fake_init_table', u'No-Op')):
                 TestPathResult.SUCCESS
         }
         assert results == expected_results
