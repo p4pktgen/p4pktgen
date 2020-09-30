@@ -401,6 +401,9 @@ class Graph:
             last_node = current_path[-1].dst
             is_full_path = (last_node == v_end)
 
+            # Backtrack to common ancestor edge of last path.  Assumes that such
+            # an edge exists, and the current path is that ancestor, plus
+            # exactly one additional edge.
             for i in range(last_len - len(current_path) + 1):
                 graph_visitor.backtrack()
             last_len = len(current_path)
