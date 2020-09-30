@@ -222,11 +222,10 @@ class PathCoverageGraphVisitor(GraphVisitor):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
                 len(self.parser_path + control_path))
-            if not Config().get_try_least_used_branches_first():
-                for e in control_path:
-                    if Statistics().stats_per_control_path_edge[e] == 0:
-                        Statistics().num_covered_edges += 1
-                    Statistics().stats_per_control_path_edge[e] += 1
+            for e in control_path:
+                if Statistics().stats_per_control_path_edge[e] == 0:
+                    Statistics().num_covered_edges += 1
+                Statistics().stats_per_control_path_edge[e] += 1
         if result == TestPathResult.NO_PACKET_FOUND:
             Statistics().avg_unsat_path_len.record(
                 len(self.parser_path + control_path))
@@ -246,8 +245,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
                 #assert False
             self.results[path] = result
             if result == TestPathResult.SUCCESS and is_complete_control_path:
-                for x in control_path:
-                    Statistics().stats_per_control_path_edge[x] += 1
                 now = time.time()
                 # Use real time to avoid printing these details
                 # too often in the output log.
