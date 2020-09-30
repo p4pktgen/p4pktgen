@@ -62,10 +62,11 @@ class ParserGraphVisitor(GraphVisitor):
     def backtrack(self):
         pass
 
-class PathCoverageGraphVisitor(GraphVisitor):
+
+class ControlGraphVisitor(GraphVisitor):
     def __init__(self, path_solver, table_solver, parser_path, source_info_to_node_name,
                  results, test_case_writer):
-        super(PathCoverageGraphVisitor, self).__init__()
+        super(ControlGraphVisitor, self).__init__()
         self.path_solver = path_solver
         self.table_solver = table_solver
         self.parser_path = parser_path
@@ -73,9 +74,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
         self.results = results
         self.test_case_writer = test_case_writer
         self.stats_per_traversal = defaultdict(int)
-
-    def preprocess_edges(self, path, edges):
-        return edges
 
     def generate_test_case(self, control_path, is_complete_control_path):
         expected_path = list(
@@ -194,28 +192,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
         logging.info("END   %s: %s" % (logging_str, result) )
         return result
 
-    def visit_result(self, result):
-        if Statistics().num_test_cases == Config().get_num_test_cases():
-            return VisitResult.ABORT
-
-        tmp_num = Config().get_max_paths_per_parser_path()
-        if tmp_num is not None \
-                and self.stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num:
-            # logging.info("Already found %d packets for parser path %d of %d."
-            #              "  Backing off so we can get to next parser path ASAP"
-            #              "" % (self.stats_per_traversal[TestPathResult.SUCCESS],
-            #                    parser_path_num, len(parser_paths)))
-           return VisitResult.BACKTRACK
-
-        if result != TestPathResult.SUCCESS:
-            return VisitResult.BACKTRACK
-
-        return VisitResult.CONTINUE
-
-    def visit(self, control_path, is_complete_control_path):
-        self.path_solver.push()
-        result = self.generate_test_case(control_path, is_complete_control_path)
-
+    def record_stats(self, control_path, is_complete_control_path, result):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
                 len(self.parser_path + control_path))
@@ -255,6 +232,33 @@ class PathCoverageGraphVisitor(GraphVisitor):
             Statistics().stats[result] += 1
             self.stats_per_traversal[result] += 1
 
+    def visit_result(self, result):
+        if Statistics().num_test_cases == Config().get_num_test_cases():
+            return VisitResult.ABORT
+
+        tmp_num = Config().get_max_paths_per_parser_path()
+        if tmp_num is not None \
+                and self.stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num:
+            # logging.info("Already found %d packets for parser path %d of %d."
+            #              "  Backing off so we can get to next parser path ASAP"
+            #              "" % (self.stats_per_traversal[TestPathResult.SUCCESS],
+            #                    parser_path_num, len(parser_paths)))
+           return VisitResult.BACKTRACK
+
+        if result != TestPathResult.SUCCESS:
+            return VisitResult.BACKTRACK
+
+        return VisitResult.CONTINUE
+
+
+class PathCoverageGraphVisitor(ControlGraphVisitor):
+    def preprocess_edges(self, _path, edges):
+        return edges
+
+    def visit(self, control_path, is_complete_control_path):
+        self.path_solver.push()
+        result = self.generate_test_case(control_path, is_complete_control_path)
+        self.record_stats(control_path, is_complete_control_path, result)
         return self.visit_result(result)
 
     def backtrack(self):
