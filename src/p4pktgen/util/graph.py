@@ -17,34 +17,14 @@ class Edge(object):
 
 
 class GraphVisitor(object):
-    def __init__(self):
-        self.all_paths = []
-
     def preprocess_edges(self, path, edges):
-        return edges
+        raise NotImplementedError()
 
     def visit(self, path, is_complete_path):
-        return VisitResult.CONTINUE
+        raise NotImplementedError()
 
     def backtrack(self):
-        pass
-
-
-class AllPathsGraphVisitor(GraphVisitor):
-    def __init__(self):
-        super(AllPathsGraphVisitor, self).__init__()
-        self.all_paths = []
-
-    def preprocess_edges(self, path, edges):
-        return edges
-
-    def visit(self, path, is_complete_path):
-        if is_complete_path:
-            self.all_paths.append(path)
-        return VisitResult.CONTINUE
-
-    def backtrack(self):
-        pass
+        raise NotImplementedError()
 
 
 class Graph:
