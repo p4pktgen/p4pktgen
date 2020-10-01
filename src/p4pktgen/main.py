@@ -8,7 +8,7 @@ from config import Config
 from core.solver import PathSolver
 from p4pktgen.core.consolidator import TableConsolidatedSolver
 from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
-from p4pktgen.core.strategy import EdgeLabels, TLUBFParserVisitor, LeastUsedPaths, EdgeCoverageGraphVisitor
+from p4pktgen.core.strategy import EdgeCoverageGraphVisitor
 from p4pktgen.hlir.transition import NoopTransition
 from p4pktgen.util.graph import Graph
 from p4pktgen.util.statistics import Statistics
@@ -320,7 +320,6 @@ def generate_test_cases(input_file):
     Statistics().init()
 
     # XXX: move
-    labels = defaultdict(lambda: EdgeLabels.UNVISITED)
     path_solver = PathSolver(input_file, top, top.in_pipeline)
     results = OrderedDict()
 
@@ -341,13 +340,6 @@ def generate_test_cases(input_file):
         top.in_graph.count_all_paths(top.in_pipeline.init_table_name)
     num_parser_path_edges = top.parser_graph.num_edges()
     Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges
-
-    if Config().get_try_least_used_branches_first():
-        p_visitor = TLUBFParserVisitor(top.in_graph, labels, path_solver, top.in_source_info_to_node_name, results,
-                                       test_case_writer, top.in_pipeline)
-        lup = LeastUsedPaths(top.hlir, top.parser_graph, top.hlir.parsers['parser'].init_state, p_visitor)
-        lup.visit()
-        exit(0)
 
     graph_visitor = ParserGraphVisitor(top.hlir)
     top.parser_graph.visit_all_paths(top.hlir.parsers['parser'].init_state, 'sink',
@@ -381,11 +373,10 @@ def generate_test_cases(input_file):
             # Skip unsatisfiable parser paths
             continue
 
-        graph_visitor = None
-        if Config().get_try_least_used_branches_first():
-            graph_visitor = EdgeCoverageGraphVisitor(control_graph, labels, path_solver, parser_path,
+        if Config().get_edge_coverage():
+            graph_visitor = EdgeCoverageGraphVisitor(path_solver, table_solver, parser_path,
                                                      top.in_source_info_to_node_name,
-                                                     results, test_case_writer)
+                                                     results, test_case_writer, top.in_graph)
         else:
             graph_visitor = PathCoverageGraphVisitor(path_solver, table_solver, parser_path,
                                                      top.in_source_info_to_node_name,
