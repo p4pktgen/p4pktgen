@@ -173,6 +173,15 @@ def main():
         action='store_true',
         default=False)
     parser.add_argument(
+        '-ec',
+        '--edge-coverage',
+        dest='edge_coverage',
+        action='store_true',
+        default=False,
+        help=
+        """With this option given, produce test cases aiming to visit every control graph edge in one successful test case per parser path.  Attempts to minimise the number of edges visited to achieve this on a best-effort basis."""
+    )
+    parser.add_argument(
         '-gg',
         '--generate-graphs',
         dest='generate_graphs',
