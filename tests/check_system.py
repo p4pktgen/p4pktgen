@@ -833,6 +833,65 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    def check_edge_coverage_simple(self, config):
+        # This test checks that p4pktgen, when in edge coverage mode, produces
+        # fewer paths than in path coverage mode (the default) on graphs where
+        # full edge coverage can be obtained with fewer paths.
+        path_results = [
+            (('start', 'sink', (u'node_2', (True, (u'edge_coverage_simple.p4', 56, u'h.a.data == 0'))), (u'tbl_edge_coverage_simple57', u'edge_coverage_simple57'), (u'node_5', (True, (u'edge_coverage_simple.p4', 63, u'h.b.data == 0'))), (u'tbl_edge_coverage_simple64', u'edge_coverage_simple64')), TestPathResult.SUCCESS),
+            (('start', 'sink', (u'node_2', (True, (u'edge_coverage_simple.p4', 56, u'h.a.data == 0'))), (u'tbl_edge_coverage_simple57', u'edge_coverage_simple57'), (u'node_5', (False, (u'edge_coverage_simple.p4', 63, u'h.b.data == 0'))), (u'tbl_edge_coverage_simple67', u'edge_coverage_simple67')), TestPathResult.SUCCESS),
+            (('start', 'sink', (u'node_2', (False, (u'edge_coverage_simple.p4', 56, u'h.a.data == 0'))), (u'tbl_edge_coverage_simple60', u'edge_coverage_simple60'), (u'node_5', (True, (u'edge_coverage_simple.p4', 63, u'h.b.data == 0'))), (u'tbl_edge_coverage_simple64', u'edge_coverage_simple64')), TestPathResult.SUCCESS),
+            (('start', 'sink', (u'node_2', (False, (u'edge_coverage_simple.p4', 56, u'h.a.data == 0'))), (u'tbl_edge_coverage_simple60', u'edge_coverage_simple60'), (u'node_5', (False, (u'edge_coverage_simple.p4', 63, u'h.b.data == 0'))), (u'tbl_edge_coverage_simple67', u'edge_coverage_simple67')), TestPathResult.SUCCESS),
+        ]
+        path_cov_expected_results = {k: v for (k, v) in path_results}
+        edge_cov_expected_results = {k: v for (k, v) in path_results[:3]}  # We happen to know that it is the 4th (a!=0 & b!=0) path that is examined last and therefore skipped.
+
+        load_test_config(**config)
+        path_cov_results = run_test('examples/edge_coverage_simple.json')
+        assert path_cov_results == path_cov_expected_results
+
+        Config().edge_coverage = True
+        edge_cov_results = run_test('examples/edge_coverage_simple.json')
+        assert edge_cov_results == edge_cov_expected_results
+
+    def check_edge_coverage_ordering(self, config):
+        # This test checks that p4pktgen, when in edge coverage mode,
+        # prioritizes edges that have not yet been included in a successful
+        # path.
+        load_test_config(**config)
+        Config().edge_coverage = True
+        results = run_test('examples/edge_coverage_ordering.json')
+        expected_results = {
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering89', u'edge_coverage_ordering89'), (u'ingress.table1', u'ingress.set0')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering89', u'edge_coverage_ordering89'), (u'ingress.table1', u'ingress.set1')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering89', u'edge_coverage_ordering89'), (u'ingress.table1', u'ingress.set2')): TestPathResult.INVALID_HEADER_WRITE,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering89', u'edge_coverage_ordering89'), (u'ingress.table1', u'ingress.set3')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering89', u'edge_coverage_ordering89'), (u'ingress.table1', u'ingress.set4')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering92', u'edge_coverage_ordering92'), (u'ingress.table1', u'ingress.set2')): TestPathResult.INVALID_HEADER_WRITE,
+            ('start', 'sink', (u'node_2', (False, (u'edge_coverage_ordering.p4', 88, u'h.a.data == 0'))), (u'tbl_edge_coverage_ordering92', u'edge_coverage_ordering92'), (u'ingress.table1', u'ingress.set0')): TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
+
+    def check_edge_coverage_unsat(self, config):
+        # This test checks that p4pktgen, when in edge coverage mode, correctly
+        # backtracks from unsatisfiable paths and attempts them again when
+        # reached through other paths.
+        load_test_config(**config)
+        Config().edge_coverage = True
+        results = run_test('examples/edge_coverage_unsat.json')
+        expected_results = {
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat66', u'edge_coverage_unsat66'), (u'node_5', (True, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat66', u'edge_coverage_unsat66'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (True, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_8', (True, (u'edge_coverage_unsat.p4', 80, u'h.b.data == 0'))), (u'tbl_edge_coverage_unsat81', u'edge_coverage_unsat81')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat66', u'edge_coverage_unsat66'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (True, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_8', (False, (u'edge_coverage_unsat.p4', 80, u'h.b.data == 0'))), (u'node_10', (True, (u'edge_coverage_unsat.p4', 82, u'h.b.data == 1'))), (u'tbl_edge_coverage_unsat83', u'edge_coverage_unsat83')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat66', u'edge_coverage_unsat66'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (True, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_8', (False, (u'edge_coverage_unsat.p4', 80, u'h.b.data == 0'))), (u'node_10', (False, (u'edge_coverage_unsat.p4', 82, u'h.b.data == 1'))), (u'tbl_edge_coverage_unsat85', u'edge_coverage_unsat85')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat66', u'edge_coverage_unsat66'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (False, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u'node_2', (False, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat69', u'edge_coverage_unsat69'), (u'node_5', (True, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u'node_2', (False, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat69', u'edge_coverage_unsat69'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (False, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_13', (True, (u'edge_coverage_unsat.p4', 89, u'h.b.data == 0'))), (u'tbl_edge_coverage_unsat90', u'edge_coverage_unsat90')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat69', u'edge_coverage_unsat69'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (False, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_13', (False, (u'edge_coverage_unsat.p4', 89, u'h.b.data == 0'))), (u'node_15', (False, (u'edge_coverage_unsat.p4', 91, u'h.b.data == 1'))), (u'tbl_edge_coverage_unsat94', u'edge_coverage_unsat94')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat69', u'edge_coverage_unsat69'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (False, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_13', (False, (u'edge_coverage_unsat.p4', 89, u'h.b.data == 0'))), (u'node_15', (True, (u'edge_coverage_unsat.p4', 91, u'h.b.data == 1'))), (u'tbl_edge_coverage_unsat92', u'edge_coverage_unsat92')): TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
+
 
 class CheckRandomization(object):
     @pytest.mark.parametrize('consolidate', [False, True],
