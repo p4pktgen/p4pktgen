@@ -1,6 +1,4 @@
-from collections import OrderedDict, defaultdict
-import copy
-import json
+from collections import defaultdict
 import time
 import logging
 from random import shuffle
@@ -13,8 +11,7 @@ from p4pktgen.config import Config
 from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
-from p4pktgen.hlir.transition import (ActionTransition, ParserTransition,
-                                      ParserErrorTransition)
+from p4pktgen.hlir.transition import ParserErrorTransition
 
 
 def record_path_result(result, is_complete_control_path):
