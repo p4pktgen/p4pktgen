@@ -265,110 +265,68 @@ class PathCoverageGraphVisitor(ControlGraphVisitor):
         self.path_solver.pop()
 
 
-EdgeLabels = Enum('EdgeLabels', 'UNVISITED VISITED DONE')
 
-class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
-    def __init__(self, graph, labels, path_solver, parser_path, source_info_to_node_name,
-                 results, test_case_writer):
-        super(EdgeCoverageGraphVisitor, self).__init__(path_solver, parser_path, source_info_to_node_name, results, test_case_writer)
-
+class EdgeCoverageGraphVisitor(ControlGraphVisitor):
+    def __init__(self, path_solver, table_solver, parser_path, source_info_to_node_name,
+                 results, test_case_writer, graph):
+        super(EdgeCoverageGraphVisitor, self).__init__(
+            path_solver, table_solver, parser_path, source_info_to_node_name,
+            results, test_case_writer
+        )
         self.graph = graph
-        self.labels = labels
-        self.ccc = 0
+        self.done_edges = set()  # {edge}
+        self.edge_visits = defaultdict(int)  # {edge: visit_count}
 
-    def preprocess_edges(self, path, edges):
-        if Config().get_random_tlubf():
-            shuffle(edges)
-            return edges
-
-        custom_order = sorted(
-                edges, key=lambda t: Statistics().stats_per_control_path_edge[t])
-        return reversed(custom_order)
-
-        visited_es = []
-        unvisited_es = []
-
-        path_has_new_edges = False
-        for e in path:
-            if self.labels[e] == EdgeLabels.UNVISITED:
-                path_has_new_edges = True
-                break
-
+    def preprocess_edges(self, _path, edges):
+        # List non-done edges first, then done edges, with each group sorted by
+        # absolute visit count.
+        done_edges = []
+        non_done_edges = []
         for e in edges:
-            label = self.labels[e] 
-            if label == EdgeLabels.UNVISITED:
-                unvisited_es.append(e)
-            elif label == EdgeLabels.VISITED:
-                visited_es.append(e)
-            else:
-                assert label == EdgeLabels.DONE
-                if path_has_new_edges:
-                    visited_es.append(e)
+            l = done_edges if e in self.done_edges else non_done_edges
+            l.append(e)
+        least_visits_order = \
+            sorted(non_done_edges, key=lambda e: self.edge_visits[e]) + \
+            sorted(done_edges, key=lambda e: self.edge_visits[e])
 
-        # shuffle(visited_es)
-        #shuffle(unvisited_es)
-        return list(reversed(visited_es)) + list(reversed(unvisited_es))
+        # List is added to a LIFO stack, so reverse the list.
+        return reversed(least_visits_order)
 
     def visit(self, control_path, is_complete_control_path):
-        visit_result = super(EdgeCoverageGraphVisitor, self).visit(control_path, is_complete_control_path)
+        self.path_solver.push()
 
-        if visit_result == VisitResult.CONTINUE and is_complete_control_path:
-            is_done = True
-            for e in reversed(control_path):
-                label = self.labels[e]
-                if label == EdgeLabels.UNVISITED:
-                    Statistics().num_covered_edges += 1
-                    self.labels[e] = EdgeLabels.VISITED
+        # Skip any path that leads to a done branch and who's edges have already
+        # all been visited.
+        if control_path[-1] in self.done_edges \
+                and all(self.edge_visits[e] > 0 for e in control_path):
+            return VisitResult.BACKTRACK
 
-                if is_done and label != EdgeLabels.DONE:
-                    all_out_es_done = True
-                    for oe in self.graph.get_neighbors(e.dst):
-                        if self.labels[oe] != EdgeLabels.DONE:
-                            all_out_es_done = False
-                            break
+        result = self.generate_test_case(control_path, is_complete_control_path)
+        self.record_stats(control_path, is_complete_control_path, result)
 
-                    if all_out_es_done:
-                        for ie in self.graph.get_in_edges(e.dst):
-                            if self.labels[ie] == EdgeLabels.VISITED:
-                                Statistics().num_done += 1
-                                self.labels[ie] = EdgeLabels.DONE
-                    else:
-                        is_done = False
+        # Only increment counts and done edges if a non-error test case was
+        # generated.  We want successful test cases in order to consider an edge
+        # visited, or done.
+        if record_test_case(result, is_complete_control_path) \
+                and result == TestPathResult.SUCCESS:
+            assert is_complete_control_path
+            # Increment visit counts
+            for edge in control_path:
+                self.edge_visits[edge] += 1
 
-            Statistics().dump()
-            print(len(set(self.labels.keys())))
-            visit_result = VisitResult.ABORT
+            # Mark final edge as done
+            self.done_edges.add(control_path[-1])
 
-            """
-            c = 0
-            for k, v in self.labels.items():
-                if v == EdgeLabels.UNVISITED:
-                    print(k)
-                    c += 1
-                if c == 10:
-                    break
+            # Mark all edges along graph with all child edges done as done.
+            for edge in reversed(control_path[:-1]):
+                child_edges = self.graph.get_neighbors(edge.dst)
+                if all(ce in self.done_edges for ce in child_edges):
+                    self.done_edges.add(edge)
 
-            self.ccc = 0
-            """
+        return self.visit_result(result)
 
-        """
-        if visit_result == VisitResult.CONTINUE and not is_complete_control_path:
-            path_has_new_edges = False
-            for e in control_path:
-                if self.labels[e] == EdgeLabels.UNVISITED:
-                    path_has_new_edges = True
-                    break
-
-            if path_has_new_edges:
-                self.ccc = 0
-
-        if visit_result == VisitResult.BACKTRACK:
-            self.ccc += 1
-        if self.ccc == 100:
-            visit_result = VisitResult.ABORT
-        """
-
-        return visit_result
+    def backtrack(self):
+        self.path_solver.pop()
 
 class LeastUsedPaths(ParserGraphVisitor):
     def __init__(self, hlir, graph, start, visitor):
