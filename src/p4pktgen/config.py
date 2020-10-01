@@ -24,6 +24,7 @@ class Config:
         self.max_test_cases_per_path = args.max_test_cases_per_path
         self.num_test_cases = args.num_test_cases
         self.try_least_used_branches_first = args.try_least_used_branches_first
+        self.edge_coverage = args.edge_coverage
         self.conditional_opt = args.conditional_opt
         self.table_opt = args.table_opt
         self.incremental = args.incremental
@@ -84,6 +85,9 @@ class Config:
 
     def get_try_least_used_branches_first(self):
         return self.try_least_used_branches_first
+
+    def get_edge_coverage(self):
+        return self.edge_coverage
 
     def get_conditional_opt(self):
         return self.conditional_opt

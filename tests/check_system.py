@@ -60,6 +60,7 @@ def load_test_config(no_packet_length_errs=True,
     config.max_test_cases_per_path = 1
     config.num_test_cases = None
     config.try_least_used_branches_first = False
+    config.edge_coverage = False
     config.conditional_opt = True
     config.table_opt = True
     config.incremental = True
