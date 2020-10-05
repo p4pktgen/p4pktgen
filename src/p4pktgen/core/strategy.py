@@ -20,6 +20,12 @@ def record_path_result(result, is_complete_control_path):
     return False
 
 
+def ge_than_not_none(lhs, rhs):
+    if rhs is None or lhs is None:
+        return False
+    return lhs >= rhs
+
+
 class ParserGraphVisitor(GraphVisitor):
     def __init__(self, hlir):
         super(ParserGraphVisitor, self).__init__()
@@ -73,7 +79,7 @@ class ControlGraphVisitor(GraphVisitor):
         self.source_info_to_node_name = source_info_to_node_name
         self.results = results
         self.test_case_writer = test_case_writer
-        self.stats_per_traversal = defaultdict(int)
+        self.success_path_count = 0
 
     def generate_test_case(self, control_path, is_complete_control_path):
         expected_path = list(
@@ -220,6 +226,7 @@ class ControlGraphVisitor(GraphVisitor):
             self.results[path] = result
             if result == TestPathResult.SUCCESS and is_complete_control_path:
                 now = time.time()
+                self.success_path_count += 1
                 # Use real time to avoid printing these details
                 # too often in the output log.
                 if now - Statistics(
@@ -230,19 +237,15 @@ class ControlGraphVisitor(GraphVisitor):
                     Statistics(
                     ).last_time_printed_stats_per_control_path_edge = now
             Statistics().stats[result] += 1
-            self.stats_per_traversal[result] += 1
+
 
     def visit_result(self, result):
-        if Statistics().num_test_cases == Config().get_num_test_cases():
+        if ge_than_not_none(Statistics().num_test_cases,
+                            Config().get_num_test_cases()):
             return VisitResult.ABORT
 
-        tmp_num = Config().get_max_paths_per_parser_path()
-        if tmp_num is not None \
-                and self.stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num:
-            # logging.info("Already found %d packets for parser path %d of %d."
-            #              "  Backing off so we can get to next parser path ASAP"
-            #              "" % (self.stats_per_traversal[TestPathResult.SUCCESS],
-            #                    parser_path_num, len(parser_paths)))
+        if ge_than_not_none(self.success_path_count,
+                            Config().get_max_paths_per_parser_path()):
            return VisitResult.BACKTRACK
 
         if result != TestPathResult.SUCCESS:
