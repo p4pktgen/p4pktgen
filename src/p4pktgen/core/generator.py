@@ -66,13 +66,12 @@ class TestCaseGenerator(object):
         start_node, control_graph = self.get_control_graph()
 
         # XXX: move
-        path_count = defaultdict(int)
-
+        parser_path_edge_count = defaultdict(int)
         for i_path, parser_path in enumerate(parser_paths):
             for e in parser_path:
-                if path_count[e] == 0:
+                if parser_path_edge_count[e] == 0:
                     Statistics().num_covered_edges += 1
-                path_count[e] += 1
+                parser_path_edge_count[e] += 1
             logging.info("Analyzing parser_path %d of %d: %s"
                          "" % (i_path, len(parser_paths), parser_path))
             if not path_solver.generate_parser_constraints(parser_path):
@@ -119,4 +118,3 @@ class TestCaseGenerator(object):
             print('{{ {} }}'.format(', '.join(str_items)))
 
         return results
-
