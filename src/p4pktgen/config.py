@@ -23,12 +23,10 @@ class Config:
         self.max_paths_per_parser_path = args.max_paths_per_parser_path
         self.max_test_cases_per_path = args.max_test_cases_per_path
         self.num_test_cases = args.num_test_cases
-        self.try_least_used_branches_first = args.try_least_used_branches_first
         self.edge_coverage = args.edge_coverage
         self.conditional_opt = args.conditional_opt
         self.table_opt = args.table_opt
         self.incremental = args.incremental
-        self.random_tlubf = args.random_tlubf
         self.output_path = './test-case'
         self.extract_vl_variation = args.extract_vl_variation
         self.consolidate_tables = args.consolidate_tables
@@ -83,9 +81,6 @@ class Config:
     def get_num_test_cases(self):
         return self.num_test_cases
 
-    def get_try_least_used_branches_first(self):
-        return self.try_least_used_branches_first
-
     def get_edge_coverage(self):
         return self.edge_coverage
 
@@ -97,9 +92,6 @@ class Config:
 
     def get_incremental(self):
         return self.incremental
-
-    def get_random_tlubf(self):
-        return self.random_tlubf
 
     def get_output_json_path(self):
         return self.output_path + '.json'

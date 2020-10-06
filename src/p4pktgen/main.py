@@ -159,20 +159,6 @@ def main():
         default=None,
         help="""Number of test cases to generate""")
     parser.add_argument(
-        '-tlubf',
-        '--try-least-used-branches-first',
-        dest='try_least_used_branches_first',
-        action='store_true',
-        default=False,
-        help=
-        """This option is only expected to be useful if you specify options that limit the number of paths generated to fewer than all of them, e.g. --max-paths-per-parser-path.  When enabled, then whenever multiple branches are considered for evaluation (e.g. the true/false branch of an if statement, or the multiple actions possible when applying a table), they will be considered in order from least used to most used, where by 'used' we mean how many times that edge of the control path has appeared in previously generated complete paths with result SUCCESS.  This may help in covering more branches in the code.  Without this option, the default behavior is to always consider these possibilities in the same order every time the branch is considered."""
-    )
-    parser.add_argument(
-        '--random-tlubf',
-        dest='random_tlubf',
-        action='store_true',
-        default=False)
-    parser.add_argument(
         '-ec',
         '--edge-coverage',
         dest='edge_coverage',
