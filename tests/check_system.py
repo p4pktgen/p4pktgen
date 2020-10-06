@@ -24,7 +24,6 @@ def load_test_config(no_packet_length_errs=True,
     config.show_parser_paths = False
     config.no_packet_length_errs = no_packet_length_errs
     config.run_simple_switch = run_simple_switch
-    config.random_tlubf = False
 
     # Physical Ethernet ports have a minimum frame size of 64
     # bytes, which is 14 bytes of header, 46 bytes of payload,
@@ -59,7 +58,6 @@ def load_test_config(no_packet_length_errs=True,
     config.max_paths_per_parser_path = None
     config.max_test_cases_per_path = 1
     config.num_test_cases = None
-    config.try_least_used_branches_first = False
     config.edge_coverage = False
     config.conditional_opt = True
     config.table_opt = True
