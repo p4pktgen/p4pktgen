@@ -1,16 +1,11 @@
 from __future__ import print_function
 import argparse
 import logging
-from collections import defaultdict, OrderedDict
 
 from p4_top import P4_Top
 from config import Config
-from core.solver import PathSolver
-from p4pktgen.core.consolidator import TableConsolidatedSolver
-from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
-from p4pktgen.core.strategy import EdgeCoverageGraphVisitor
-from p4pktgen.hlir.transition import NoopTransition
-from p4pktgen.util.graph import Graph
+from p4pktgen.core.strategy import ParserGraphVisitor
+from p4pktgen.core.generator import TestCaseGenerator
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
 from p4pktgen.util.visualization import generate_graphviz_graph
@@ -270,57 +265,12 @@ def print_parser_paths(parser_paths):
             print(p)
 
 
-def path_tuple(parser_path, control_path):
-    """Returns a tuple structure of strings and Transition objects representing
-    the vertices traversed by a path.  Note that the mapping is not injective,
-    because a pair of vertices may be joined by multiple edges."""
-    return tuple(
-        [n.src for n in parser_path] +
-        ['sink'] +
-        [(n.src, n) for n in control_path]
-    )
-
-
-def create_noop_control_graph():
-    graph = Graph()
-    v_start = 'fake_init_table'
-    edge = NoopTransition(v_start, None)
-    graph.add_edge(edge.src, edge.dst, edge)
-    return v_start, graph
-
-
-def get_control_graph(top):
-    if top.in_pipeline.init_table_name is None:
-        return create_noop_control_graph()
-    start_node = top.in_pipeline.init_table_name
-    control_graph = top.in_graph
-    return start_node, control_graph
-
-
 def generate_test_cases(input_file):
     top = P4_Top()
     top.load_json_file(input_file)
 
     top.build_graph()
     top.load_extern_backends()
-    Statistics().init()
-
-    # XXX: move
-    path_solver = PathSolver(input_file, top, top.in_pipeline)
-    results = OrderedDict()
-
-    # TBD: Make this filename specifiable via command line option
-    test_case_writer = TestCaseWriter(
-        Config().get_output_json_path(),
-        Config().get_output_pcap_path()
-    )
-
-    table_solver = None
-    if Config().get_do_consolidate_tables():
-        table_solver = TableConsolidatedSolver(input_file, top.in_pipeline,
-                                               test_case_writer)
-
-    start_node, control_graph = get_control_graph(top)
 
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
         top.in_graph.count_all_paths(top.in_pipeline.init_table_name)
@@ -343,60 +293,8 @@ def generate_test_cases(input_file):
                  "" % (len(parser_paths) * num_control_paths, num_control_path_nodes,
                        num_parser_path_edges + num_control_path_edges))
 
-    # XXX: move
-    path_count = defaultdict(int)
-
-    for i_path, parser_path in enumerate(parser_paths):
-        for e in parser_path:
-            if path_count[e] == 0:
-                Statistics().num_covered_edges += 1
-            path_count[e] += 1
-        logging.info("Analyzing parser_path %d of %d: %s"
-                     "" % (i_path, len(parser_paths), parser_path))
-        if not path_solver.generate_parser_constraints(parser_path):
-            logging.info("Could not find any packet to satisfy parser path: %s"
-                         "" % (parser_path))
-            # Skip unsatisfiable parser paths
-            continue
-
-        if Config().get_edge_coverage():
-            graph_visitor = EdgeCoverageGraphVisitor(path_solver, table_solver, parser_path,
-                                                     top.in_source_info_to_node_name,
-                                                     results, test_case_writer, top.in_graph)
-        else:
-            graph_visitor = PathCoverageGraphVisitor(path_solver, table_solver, parser_path,
-                                                     top.in_source_info_to_node_name,
-                                                     results, test_case_writer)
-
-        control_graph.visit_all_paths(start_node, None, graph_visitor)
-
-        # Check if we generated enough test cases
-        if Statistics().num_test_cases == Config().get_num_test_cases():
-            break
-
-    if Config().get_do_consolidate_tables():
-        table_solver.flush()
-
-    logging.info("Final statistics on use of control path edges:")
-    Statistics().log_control_path_stats(
-        Statistics().stats_per_control_path_edge, Statistics().num_control_path_edges)
-    test_case_writer.cleanup()
-    path_solver.cleanup()
-
-    Statistics().dump()
-    Statistics().cleanup()
-
-    for result, count in Statistics().stats.items():
-        print('{}: {}'.format(result, count))
-
-    if Config().get_dump_test_case():
-        str_items = []
-        for (parser_path, control_path), v in results.items():
-            str_items.append('{}: {}'.format(path_tuple(parser_path,
-                                                        control_path), v))
-        print('{{ {} }}'.format(', '.join(str_items)))
-
-    return results
+    generator = TestCaseGenerator(input_file, top)
+    return generator.generate_test_cases_for_parser_paths(parser_paths)
 
 
 if __name__ == '__main__':
