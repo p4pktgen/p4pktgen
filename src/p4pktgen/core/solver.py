@@ -358,24 +358,20 @@ class PathSolver(object):
             assert self.solver_result == sat
         return constraints
 
-    def generate_test_case(self, expected_path,
-                           parser_path, control_path, is_complete_control_path,
-                           source_info_to_node_name):
+    def generate_test_case(self, path, source_info_to_node_name):
         context = self.current_context()
         model = self.solver.model() if self.solver_result == sat else None
 
         start_time = time.time()
         result, test_case, payloads = \
             self.test_case_builder.build_for_path(
-                context, model, self.sym_packet, expected_path,
-                parser_path, control_path, is_complete_control_path,
-                self.path_id
+                context, model, self.sym_packet, path
             )
 
         if Config().get_run_simple_switch():
             result = self.test_case_builder.run_simple_switch(
-                expected_path, test_case, payloads,
-                is_complete_control_path, source_info_to_node_name)
+                path.expected_path, test_case, payloads,
+                path.is_complete, source_info_to_node_name)
 
         self.total_switch_time += time.time() - start_time
 

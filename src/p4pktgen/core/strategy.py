@@ -3,6 +3,7 @@ import time
 import logging
 
 from p4pktgen.config import Config
+from p4pktgen.core.path import Path
 from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
@@ -81,14 +82,12 @@ class ControlGraphVisitor(GraphVisitor):
             self.path_solver.translator.expected_path(self.parser_path,
                                                       control_path)
         )
-        path_id = self.path_solver.path_id
 
-        logging_str = "%d Exp path (len %d+%d=%d) complete_path %s: %s" % \
-            (path_id, len(self.parser_path), len(control_path),
-             len(self.parser_path) + len(control_path),
-             is_complete_control_path, expected_path)
+        path = Path(self.path_solver.path_id, expected_path,
+                    self.parser_path, control_path, is_complete_control_path)
+
         logging.info("")
-        logging.info("BEGIN %s" % logging_str)
+        logging.info("BEGIN %s" % str(path))
 
         time2 = time.time()
         self.path_solver.add_path_constraints(control_path)
@@ -101,7 +100,7 @@ class ControlGraphVisitor(GraphVisitor):
             # Path trivially found to be satisfiable and not complete.
             # No test cases required.
             logging.info("Path trivially found to be satisfiable and not complete.")
-            logging.info("END   %s" % logging_str)
+            logging.info("END   %s" % str(path))
             return result
 
         results = []
@@ -126,10 +125,7 @@ class ControlGraphVisitor(GraphVisitor):
             time4 = time.time()
 
             result, test_case, packet_list = self.path_solver.generate_test_case(
-                expected_path=expected_path,
-                parser_path=self.parser_path,
-                control_path=control_path,
-                is_complete_control_path=is_complete_control_path,
+                path=path,
                 source_info_to_node_name=self.source_info_to_node_name,
             )
             time5 = time.time()
@@ -149,11 +145,9 @@ class ControlGraphVisitor(GraphVisitor):
                 # TODO: refactor path_solver to allow extraction of result &
                 # record_test_case without building test case.
                 self.table_solver.add_path(
-                    path_id, self.path_solver.constraints + [random_constraints],
+                    path, self.path_solver.constraints + [random_constraints],
                     self.path_solver.current_context(),
-                    self.path_solver.sym_packet,
-                    expected_path, self.parser_path, control_path,
-                    is_complete_control_path
+                    self.path_solver.sym_packet
                 )
                 break
 
@@ -190,7 +184,7 @@ class ControlGraphVisitor(GraphVisitor):
         if not Config().get_incremental():
             self.path_solver.solver.reset()
 
-        logging.info("END   %s: %s" % (logging_str, result) )
+        logging.info("END   %s: %s" % (str(path), result) )
         return result
 
     def record_stats(self, control_path, is_complete_control_path, result):
