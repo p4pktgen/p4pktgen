@@ -211,10 +211,8 @@ class TestCaseBuilder(object):
         return table_config
 
     @staticmethod
-    def build(
-            model, sym_packet, expected_path, parser_path, control_path,
-            is_complete_control_path, path_id, input_metadata,
-            uninitialized_reads, invalid_header_writes, table_config):
+    def build(model, sym_packet, path, input_metadata,
+              uninitialized_reads, invalid_header_writes, table_config):
         """Should take only explicit references to all variables to ensure that
         none are missed when separating paths for consolidated solving."""
 
@@ -263,11 +261,11 @@ class TestCaseBuilder(object):
                             "source_info", source_info_to_dict(source_info))]))
             else:
                 assert len(payload) >= Config().get_min_packet_len_generated()
-                logging.info('Found packet for path: {}'.format(expected_path))
+                logging.info('Found packet for path: {}'.format(path.expected_path))
                 result = TestPathResult.SUCCESS
         else:
             logging.info(
-                'Unable to find packet for path: {}'.format(expected_path))
+                'Unable to find packet for path: {}'.format(path.expected_path))
             result = TestPathResult.NO_PACKET_FOUND
 
         if packet_hexstr is None:
@@ -302,15 +300,15 @@ class TestCaseBuilder(object):
         # represented as separate parts in JSON, e.g. nested lists or
         # dicts of strings, numbers, booleans.
         test_case = OrderedDict([
-            ("log_file_id", path_id),
+            ("log_file_id", path.id),
             ("result", result.name),
-            ("expected_path", map(str, expected_path)),
-            ("complete_path", is_complete_control_path),
+            ("expected_path", map(str, path.expected_path)),
+            ("complete_path", path.is_complete),
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
             # ("expected_output_packets", TBD),
-            ("parser_path_len", len(parser_path)),
-            ("ingress_path_len", len(control_path)),
+            ("parser_path_len", len(path.parser_path)),
+            ("ingress_path_len", len(path.control_path)),
         ])
         if uninitialized_read_data:
             test_case["uninitialized_read_data"] = uninitialized_read_data
@@ -329,8 +327,8 @@ class TestCaseBuilder(object):
         test_case["time_sec_solve"] = None
         test_case["time_sec_simulate_packet"] = None
 
-        test_case["parser_path"] = map(str, parser_path)
-        test_case["ingress_path"] = map(str, control_path)
+        test_case["parser_path"] = map(str, path.parser_path)
+        test_case["ingress_path"] = map(str, path.control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data
 
         payloads = []
@@ -339,15 +337,12 @@ class TestCaseBuilder(object):
 
         return result, test_case, payloads
 
-    def build_for_path(self, context, model, sym_packet, expected_path,
-                       parser_path, control_path, is_complete_control_path,
-                       path_id):
+    def build_for_path(self, context, model, sym_packet, path):
         return self.build(
-            model, sym_packet, expected_path, parser_path, control_path,
-            is_complete_control_path, path_id,
+            model, sym_packet, path,
             context.input_metadata, context.uninitialized_reads,
             context.invalid_header_writes,
-            self.table_config_for_path(context, model, control_path)
+            self.table_config_for_path(context, model, path.control_path)
         )
 
     def run_simple_switch(self, expected_path, test_case, payloads,

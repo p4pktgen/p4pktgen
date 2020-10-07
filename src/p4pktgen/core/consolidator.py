@@ -301,15 +301,13 @@ class TableConsolidatedSolver(ConsolidatedSolver):
                 for entry_config in self.build_table_entry_configs(model)
             ]
 
-        sym_packet, expected_path, parser_path, control_path, \
-            is_complete_control_path, input_metadata, \
+        sym_packet, path, input_metadata, \
             uninitialized_reads, invalid_header_writes, \
             _table_data = path_data
 
         result, test_case, payloads = \
             self.test_case_builder.build(
-                model, sym_packet, expected_path, parser_path, control_path,
-                is_complete_control_path, path_id,
+                model, sym_packet, path,
                 input_metadata, uninitialized_reads,
                 invalid_header_writes,
                 self.table_setup_cmds
@@ -317,8 +315,8 @@ class TableConsolidatedSolver(ConsolidatedSolver):
 
         # Should not be possible to get a bad test case from the model for any
         # of the paths.
-        assert record_test_case(result, is_complete_control_path), \
-            (result, is_complete_control_path)
+        assert record_test_case(result, path.is_complete), \
+            (result, path.is_complete)
         return test_case, payloads
 
     def consolidated_vars(self, table_name, action_name,
@@ -388,7 +386,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         return constraints
 
     def _try_add_path(self, path_id, constraints, path_data):
-        table_data = path_data[8]
+        table_data = path_data[5]
 
         # Generate copy of path constraints with added constraints linking path
         # table keys and parameters to consolidated variables.
@@ -402,10 +400,8 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         return super(TableConsolidatedSolver, self)._try_add_path(
             path_id, new_constraints, path_data)
 
-    def add_path(self, path_id, constraints, context, sym_packet,
-                 expected_path, parser_path, control_path,
-                 is_complete_control_path):
-        prefix = 'path{}/'.format(path_id)
+    def add_path(self, path, constraints, context, sym_packet):
+        prefix = 'path{}/'.format(path.id)
         var_mapping = {}  # {old_param: new_param, ... }
 
         new_constraints = \
@@ -433,13 +429,12 @@ class TableConsolidatedSolver(ConsolidatedSolver):
             for var_name, var in context.input_metadata.iteritems()
         }
         path_data = (
-            new_sym_packet, expected_path, parser_path, control_path,
-            is_complete_control_path, input_metadata,
+            new_sym_packet, path, input_metadata,
             context.uninitialized_reads, context.invalid_header_writes,
             table_data
         )
 
-        self._add_path(path_id, new_constraints, path_data)
+        self._add_path(path.id, new_constraints, path_data)
         self.add_pending_table_sym_vals()
 
     def add_final_constraints(self):
