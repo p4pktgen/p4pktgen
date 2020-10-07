@@ -112,9 +112,9 @@ class ControlGraphVisitor(GraphVisitor):
         # TODO: Remove this once these two options are made compatible
         assert not (do_consolidate_tables and max_path_test_cases != 1)
 
-        while True:
-            self.path_solver.solve_path()
-
+        result = self.path_solver.solve_path()
+        first_result = result
+        while result != TestPathResult.NO_PACKET_FOUND:
             # Choose values for randomization variables.
             random_constraints = []
             fix_random = is_complete_control_path
@@ -124,8 +124,8 @@ class ControlGraphVisitor(GraphVisitor):
 
             time4 = time.time()
 
-            result, test_case, packet_list = self.path_solver.generate_test_case(
-                path=path,
+            test_case, packet_list = self.path_solver.generate_test_case(
+                path=path, result=result,
                 source_info_to_node_name=self.source_info_to_node_name,
             )
             time5 = time.time()
@@ -167,8 +167,7 @@ class ControlGraphVisitor(GraphVisitor):
             # path, or have exhausted possible packets for this path, move on.
             # Using '!=' rather than '<' here as None/0 represents no maximum.
             if Statistics().num_test_cases == max_test_cases \
-                    or len(results) == max_path_test_cases \
-                    or result == TestPathResult.NO_PACKET_FOUND:
+                    or len(results) == max_path_test_cases:
                 break
 
             if not self.path_solver.constrain_last_extract_vl_lengths(extract_vl_variation):
@@ -178,14 +177,13 @@ class ControlGraphVisitor(GraphVisitor):
                 if max_path_test_cases == 0:
                     break
 
-        # Take result of first loop.
-        result = results[0]
+            result = self.path_solver.solve_path()
 
         if not Config().get_incremental():
             self.path_solver.solver.reset()
 
-        logging.info("END   %s: %s" % (str(path), result) )
-        return result
+        logging.info("END   %s: %s" % (str(path), first_result) )
+        return first_result
 
     def record_stats(self, control_path, is_complete_control_path, result):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
