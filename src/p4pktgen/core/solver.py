@@ -341,7 +341,19 @@ class PathSolver(object):
         self.solver_result = self.solver.check()
         Statistics().num_solver_calls += 1
         Statistics().solver_time.stop()
-        return self.solver_result
+
+        context = self.current_context()
+        if self.solver_result != sat:
+            result = TestPathResult.NO_PACKET_FOUND
+        elif context.uninitialized_reads:
+            result = TestPathResult.UNINITIALIZED_READ
+        elif context.invalid_header_writes:
+            result = TestPathResult.INVALID_HEADER_WRITE
+        else:
+            result = TestPathResult.SUCCESS
+
+        self.result_history[-2].append(result)
+        return result
 
     def fix_random_constraints(self):
         """Fixes values for random displacement variables.  Call this when a
@@ -358,25 +370,26 @@ class PathSolver(object):
             assert self.solver_result == sat
         return constraints
 
-    def generate_test_case(self, path, source_info_to_node_name):
+    def generate_test_case(self, path, result, source_info_to_node_name):
         context = self.current_context()
         model = self.solver.model() if self.solver_result == sat else None
 
         start_time = time.time()
-        result, test_case, payloads = \
+        build_result, test_case, payloads = \
             self.test_case_builder.build_for_path(
                 context, model, self.sym_packet, path
             )
+        assert build_result == result
 
         if Config().get_run_simple_switch():
-            result = self.test_case_builder.run_simple_switch(
+            test_result = self.test_case_builder.run_simple_switch(
                 path.expected_path, test_case, payloads,
                 path.is_complete, source_info_to_node_name)
+            assert test_result == result
 
         self.total_switch_time += time.time() - start_time
 
-        self.result_history[-2].append(result)
-        return (result, test_case, payloads)
+        return (test_case, payloads)
 
     def constrain_last_extract_vl_lengths(self, condition):
         """This function adds constraints to the solver preventing it from
