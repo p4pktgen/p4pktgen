@@ -408,7 +408,12 @@ class Graph:
                 graph_visitor.backtrack()
             last_len = len(current_path)
 
-            visit_result = graph_visitor.visit(current_path, is_full_path)
+            visit_result, path_data = graph_visitor.visit(current_path, is_full_path)
+            if path_data is not None:
+                # There can be no path to yield if it is unsatisfiable, or no
+                # state has been created to return (e.g. quick_solve).
+                yield path_data
+
             if visit_result == VisitResult.CONTINUE and not is_full_path:
                 for e in graph_visitor.preprocess_edges(current_path,
                         self.get_neighbors(last_node)):

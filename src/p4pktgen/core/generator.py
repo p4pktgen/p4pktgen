@@ -1,10 +1,12 @@
 import logging
+import time
 
 from collections import defaultdict, OrderedDict
 
 from p4pktgen.config import Config
 from p4pktgen.core.strategy import PathCoverageGraphVisitor, EdgeCoverageGraphVisitor
 from p4pktgen.core.solver import PathSolver
+from p4pktgen.core.test_cases import record_test_case
 from p4pktgen.core.consolidator import TableConsolidatedSolver
 from p4pktgen.hlir.transition import NoopTransition
 from p4pktgen.util.graph import Graph
@@ -29,6 +31,13 @@ def path_tuple(parser_path, control_path):
         ['sink'] +
         [(n.src, n) for n in control_path]
     )
+
+
+def enough_test_cases():
+    max_test_cases = Config().get_num_test_cases()
+    if max_test_cases is None or max_test_cases <= 0:
+        return False
+    return Statistics().num_test_cases >= max_test_cases
 
 
 class TestCaseGenerator(object):
@@ -81,18 +90,62 @@ class TestCaseGenerator(object):
                 continue
 
             if Config().get_edge_coverage():
-                graph_visitor = EdgeCoverageGraphVisitor(path_solver, table_solver, parser_path,
-                                                         self.top.in_source_info_to_node_name,
-                                                         results, test_case_writer, control_graph)
+                graph_visitor = EdgeCoverageGraphVisitor(path_solver, parser_path,
+                                                         results, control_graph)
             else:
-                graph_visitor = PathCoverageGraphVisitor(path_solver, table_solver, parser_path,
-                                                         self.top.in_source_info_to_node_name,
-                                                         results, test_case_writer)
+                graph_visitor = PathCoverageGraphVisitor(path_solver, parser_path,
+                                                         results)
 
-            control_graph.visit_all_paths(start_node, None, graph_visitor)
+            max_path_test_cases = Config().get_max_test_cases_per_path()
+            do_consolidate_tables = Config().get_do_consolidate_tables()
 
-            # Check if we generated enough test cases
-            if Statistics().num_test_cases == Config().get_num_test_cases():
+            # TODO: Remove this once these two options are made compatible
+            assert not (do_consolidate_tables and max_path_test_cases != 1)
+
+            for path_model in control_graph.visit_all_paths(start_node, None, graph_visitor):
+                # Skip any paths that wouldn't generate anything useful
+                if not record_test_case(path_model.result,
+                                        path_model.path.is_complete):
+                    continue
+
+                for i_solution, path_solution in enumerate(path_model.solutions()):
+                    time4 = time.time()
+                    # TODO: Really ugly, as it no longer needs the solver itself, but
+                    #  there's still machinery the class that we're using for the next
+                    #  few commits.
+                    test_case, packet_list = path_solver.generate_test_case(
+                        path_solution=path_solution,
+                        source_info_to_node_name=self.top.in_source_info_to_node_name,
+                    )
+                    time5 = time.time()
+
+                    if do_consolidate_tables:
+                        # TODO: refactor path_solver to allow extraction of result &
+                        #  record_test_case without building test case.
+                        table_solver.add_path(path_solution)
+                        break
+
+                    test_case["time_sec_generate_ingress_constraints"] = path_model.time_sec_generate_ingress_constraints
+                    test_case["time_sec_solve"] = path_solution.time_sec_solve
+                    test_case["time_sec_simulate_packet"] = time5 - time4
+
+                    # Doing file writing here enables getting at least
+                    # some test case output data for p4pktgen runs that
+                    # the user kills before it completes, e.g. because it
+                    # takes too long to complete.
+                    test_case_writer.write(test_case, packet_list)
+                    Statistics().num_test_cases += 1
+                    logging.info("Generated %d test cases for path" % (i_solution + 1,))
+
+                    # If we have produced enough test cases overall, enough for this
+                    # path, or have exhausted possible packets for this path, move on.
+                    if enough_test_cases() or (i_solution + 1) == max_path_test_cases:
+                        break
+
+                if enough_test_cases():
+                    break
+
+            if enough_test_cases():
                 break
 
         if Config().get_do_consolidate_tables():

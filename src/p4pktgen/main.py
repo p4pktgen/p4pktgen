@@ -278,9 +278,11 @@ def generate_test_cases(input_file):
     Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges
 
     graph_visitor = ParserGraphVisitor(top.hlir)
-    top.parser_graph.visit_all_paths(top.hlir.parsers['parser'].init_state, 'sink',
-                                     graph_visitor)
-    parser_paths = graph_visitor.all_paths
+    parser_paths = [
+        path for path in
+        top.parser_graph.visit_all_paths(top.hlir.parsers['parser'].init_state,
+                                         'sink', graph_visitor)
+    ]
 
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
