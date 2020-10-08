@@ -370,14 +370,17 @@ class PathSolver(object):
             assert self.solver_result == sat
         return constraints
 
-    def generate_test_case(self, path, result, source_info_to_node_name):
-        context = self.current_context()
-        model = self.solver.model() if self.solver_result == sat else None
+    def generate_test_case(self, path_solution, source_info_to_node_name):
+        path = path_solution.path
+        result = path_solution.result
+        context = path_solution.context
+        sym_packet = path_solution.sym_packet
+        model = path_solution.model
 
         start_time = time.time()
         build_result, test_case, payloads = \
             self.test_case_builder.build_for_path(
-                context, model, self.sym_packet, path
+                context, model, sym_packet, path
             )
         assert build_result == result
 
