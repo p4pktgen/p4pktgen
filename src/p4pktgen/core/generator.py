@@ -6,7 +6,7 @@ from collections import defaultdict, OrderedDict
 from p4pktgen.config import Config
 from p4pktgen.core.strategy import PathCoverageGraphVisitor, EdgeCoverageGraphVisitor
 from p4pktgen.core.solver import PathSolver
-from p4pktgen.core.test_cases import record_test_case
+from p4pktgen.core.test_cases import TestCaseBuilder, record_test_case
 from p4pktgen.core.consolidator import TableConsolidatedSolver
 from p4pktgen.hlir.transition import NoopTransition
 from p4pktgen.util.graph import Graph
@@ -44,6 +44,8 @@ class TestCaseGenerator(object):
     def __init__(self, input_file, top):
         self.input_file = input_file
         self.top = top
+        self.test_case_builder = TestCaseBuilder(input_file, top.in_pipeline)
+        self.total_switch_time = 0.0
 
     def get_control_graph(self):
         if self.top.in_pipeline.init_table_name is None:
@@ -52,12 +54,35 @@ class TestCaseGenerator(object):
         control_graph = self.top.in_graph
         return start_node, control_graph
 
+    def generate_test_case_for_path(self, path_solution):
+        path = path_solution.path
+        context = path_solution.context
+        sym_packet = path_solution.sym_packet
+        model = path_solution.model
+
+        start_time = time.time()
+        build_result, test_case, payloads = \
+            self.test_case_builder.build_for_path(
+                context, model, sym_packet, path
+            )
+        assert build_result == path_solution.result
+
+        if Config().get_run_simple_switch():
+            test_result = self.test_case_builder.run_simple_switch(
+                path.expected_path, test_case, payloads,
+                path.is_complete, self.top.in_source_info_to_node_name)
+            assert test_result == path_solution.result
+
+        self.total_switch_time += time.time() - start_time
+
+        return (test_case, payloads)
+
 
     def generate_test_cases_for_parser_paths(self, parser_paths):
         Statistics().init()
 
         # XXX: move
-        path_solver = PathSolver(self.input_file, self.top, self.top.in_pipeline)
+        path_solver = PathSolver(self.top, self.top.in_pipeline)
         results = OrderedDict()
 
         # TBD: Make this filename specifiable via command line option
@@ -110,13 +135,7 @@ class TestCaseGenerator(object):
 
                 for i_solution, path_solution in enumerate(path_model.solutions()):
                     time4 = time.time()
-                    # TODO: Really ugly, as it no longer needs the solver itself, but
-                    #  there's still machinery the class that we're using for the next
-                    #  few commits.
-                    test_case, packet_list = path_solver.generate_test_case(
-                        path_solution=path_solution,
-                        source_info_to_node_name=self.top.in_source_info_to_node_name,
-                    )
+                    test_case, packet_list = self.generate_test_case_for_path(path_solution)
                     time5 = time.time()
 
                     if do_consolidate_tables:
@@ -155,7 +174,6 @@ class TestCaseGenerator(object):
         Statistics().log_control_path_stats(
             Statistics().stats_per_control_path_edge, Statistics().num_control_path_edges)
         test_case_writer.cleanup()
-        path_solver.cleanup()
 
         Statistics().dump()
         Statistics().cleanup()
