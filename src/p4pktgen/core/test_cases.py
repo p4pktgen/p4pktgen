@@ -1,6 +1,4 @@
-import os
 import logging
-import tempfile
 
 from enum import Enum
 

@@ -2,10 +2,8 @@
 # - Print out which values were used for constraints.
 
 from collections import defaultdict
-import logging
 from contextlib import contextmanager
 import random
-import time
 
 from z3 import *
 

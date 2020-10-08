@@ -1,11 +1,6 @@
 from collections import defaultdict
 import time
 import logging
-from random import shuffle
-import operator
-import random
-
-from enum import Enum
 
 from p4pktgen.config import Config
 from p4pktgen.core.test_cases import TestPathResult, record_test_case
