@@ -21,24 +21,31 @@ class Path(object):
 
 
 class PathSolution(object):
-    def __init__(self, path, result, constraints, context, sym_packet, model):
+    def __init__(self, path, result, constraints, context, sym_packet, model,
+                 time_sec_solve=None):
         self.path = path
         self.result = result
         self.constraints = constraints
         self.context = context
         self.sym_packet = sym_packet
         self.model = model
+        self.time_sec_solve=time_sec_solve
 
 
 class PathModel(object):
-    def __init__(self, path, result, path_solver):
+    def __init__(self, path, result, path_solver,
+                 time_sec_generate_ingress_constraints=None,
+                 time_sec_initial_solve=None):
         self.path = path
         self.result = result
         self.path_solver = path_solver
+        self.time_sec_generate_ingress_constraints = time_sec_generate_ingress_constraints
+        self.time_sec_initial_solve = time_sec_initial_solve
 
     def solutions(self):
         extract_vl_variation = Config().get_extract_vl_variation()
         current_result = self.result
+        solve_time = self.time_sec_initial_solve
         while current_result != TestPathResult.NO_PACKET_FOUND:
             assert current_result == self.result
 
@@ -56,6 +63,7 @@ class PathModel(object):
                     self.path_solver.current_context(),
                     self.path_solver.sym_packet,
                     self.path_solver.solver.model(),
+                    time_sec_solve=solve_time,
                 )
                 yield path_solution
             finally:
@@ -71,4 +79,6 @@ class PathModel(object):
                 if not Config().get_max_test_cases_per_path():
                     break
 
+            time2 = time.time()
             current_result = self.path_solver.solve_path()
+            solve_time = time.time()

@@ -26,7 +26,6 @@ class ParserGraphVisitor(GraphVisitor):
     def __init__(self, hlir):
         super(ParserGraphVisitor, self).__init__()
         self.hlir = hlir
-        self.all_paths = []
 
     def count(self, stack_counts, state_name):
         if state_name != 'sink':
@@ -58,26 +57,23 @@ class ParserGraphVisitor(GraphVisitor):
 
     def visit(self, path, is_complete_path):
         if is_complete_path:
-            self.all_paths.append(path)
-        return VisitResult.CONTINUE
+            return VisitResult.CONTINUE, path
+        else:
+            return VisitResult.CONTINUE, None
 
     def backtrack(self):
         pass
 
 
 class ControlGraphVisitor(GraphVisitor):
-    def __init__(self, path_solver, table_solver, parser_path, source_info_to_node_name,
-                 results, test_case_writer):
+    def __init__(self, path_solver, parser_path, results):
         super(ControlGraphVisitor, self).__init__()
         self.path_solver = path_solver
-        self.table_solver = table_solver
         self.parser_path = parser_path
-        self.source_info_to_node_name = source_info_to_node_name
         self.results = results
-        self.test_case_writer = test_case_writer
         self.success_path_count = 0
 
-    def generate_test_case(self, control_path, is_complete_control_path):
+    def solve_path(self, control_path, is_complete_control_path):
         expected_path = list(
             self.path_solver.translator.expected_path(self.parser_path,
                                                       control_path)
@@ -89,9 +85,12 @@ class ControlGraphVisitor(GraphVisitor):
         logging.info("")
         logging.info("BEGIN %s" % str(path))
 
-        time2 = time.time()
+        if not Config().get_incremental():
+            self.path_solver.solver.reset()
+
+        time1 = time.time()
         self.path_solver.add_path_constraints(control_path)
-        time3 = time.time()
+        time2 = time.time()
 
         result = self.path_solver.try_quick_solve(control_path, is_complete_control_path)
         if result == TestPathResult.SUCCESS:
@@ -101,64 +100,18 @@ class ControlGraphVisitor(GraphVisitor):
             # No test cases required.
             logging.info("Path trivially found to be satisfiable and not complete.")
             logging.info("END   %s" % str(path))
-            return result
-
-        max_test_cases = Config().get_num_test_cases()
-        max_path_test_cases = Config().get_max_test_cases_per_path()
-        do_consolidate_tables = Config().get_do_consolidate_tables()
-
-        # TODO: Remove this once these two options are made compatible
-        assert not (do_consolidate_tables and max_path_test_cases != 1)
+            return result, None
 
         result = self.path_solver.solve_path()
-
-        path_model = PathModel(path, result, self.path_solver)
-        for i_solution, path_solution in enumerate(path_model.solutions()):
-            time4 = time.time()
-            # TODO: Really ugly, as it no longer needs the solver itself, but
-            #  there's still machinery the class that we're using for the next
-            #  few commits.
-            test_case, packet_list = self.path_solver.generate_test_case(
-                path_solution=path_solution,
-                source_info_to_node_name=self.source_info_to_node_name,
-            )
-            time5 = time.time()
-
-            # If this result wouldn't be recorded, subsequent ones won't be
-            # either, so move on.
-            if not record_test_case(result, is_complete_control_path):
-                break
-
-            if do_consolidate_tables:
-                # TODO: refactor path_solver to allow extraction of result &
-                #  record_test_case without building test case.
-                self.table_solver.add_path(path_solution)
-                break
-
-            test_case["time_sec_generate_ingress_constraints"] = time3 - time2
-            test_case["time_sec_solve"] = time4 - time3
-            test_case["time_sec_simulate_packet"] = time5 - time4
-
-            # Doing file writing here enables getting at least
-            # some test case output data for p4pktgen runs that
-            # the user kills before it completes, e.g. because it
-            # takes too long to complete.
-            self.test_case_writer.write(test_case, packet_list)
-            Statistics().num_test_cases += 1
-            logging.info("Generated %d test cases for path" % (i_solution + 1,))
-
-            # If we have produced enough test cases overall, enough for this
-            # path, or have exhausted possible packets for this path, move on.
-            # Using '!=' rather than '<' here as None/0 represents no maximum.
-            if Statistics().num_test_cases == max_test_cases \
-                    or (i_solution + 1) == max_path_test_cases:
-                break
-
-        if not Config().get_incremental():
-            self.path_solver.solver.reset()
+        time3 = time.time()
 
         logging.info("END   %s: %s" % (str(path), result) )
-        return result
+        path_model = PathModel(
+            path, result, self.path_solver,
+            time_sec_generate_ingress_constraints=time2 - time1,
+            time_sec_initial_solve=time3-time2
+        )
+        return result, path_model
 
     def record_stats(self, control_path, is_complete_control_path, result):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
@@ -202,10 +155,7 @@ class ControlGraphVisitor(GraphVisitor):
 
 
     def visit_result(self, result):
-        if ge_than_not_none(Statistics().num_test_cases,
-                            Config().get_num_test_cases()):
-            return VisitResult.ABORT
-
+        # TODO: Fix this option.
         if ge_than_not_none(self.success_path_count,
                             Config().get_max_paths_per_parser_path()):
            return VisitResult.BACKTRACK
@@ -222,9 +172,9 @@ class PathCoverageGraphVisitor(ControlGraphVisitor):
 
     def visit(self, control_path, is_complete_control_path):
         self.path_solver.push()
-        result = self.generate_test_case(control_path, is_complete_control_path)
-        self.record_stats(control_path, is_complete_control_path, result)
-        return self.visit_result(result)
+        path_result, path_model = self.solve_path(control_path, is_complete_control_path)
+        self.record_stats(control_path, is_complete_control_path, path_result)
+        return self.visit_result(path_result), path_model
 
     def backtrack(self):
         self.path_solver.pop()
@@ -232,11 +182,9 @@ class PathCoverageGraphVisitor(ControlGraphVisitor):
 
 
 class EdgeCoverageGraphVisitor(ControlGraphVisitor):
-    def __init__(self, path_solver, table_solver, parser_path, source_info_to_node_name,
-                 results, test_case_writer, graph):
+    def __init__(self, path_solver, parser_path, results, graph):
         super(EdgeCoverageGraphVisitor, self).__init__(
-            path_solver, table_solver, parser_path, source_info_to_node_name,
-            results, test_case_writer
+            path_solver, parser_path, results
         )
         self.graph = graph
         self.done_edges = set()  # {edge}
@@ -264,16 +212,16 @@ class EdgeCoverageGraphVisitor(ControlGraphVisitor):
         # all been visited.
         if control_path[-1] in self.done_edges \
                 and all(self.edge_visits[e] > 0 for e in control_path):
-            return VisitResult.BACKTRACK
+            return VisitResult.BACKTRACK, None
 
-        result = self.generate_test_case(control_path, is_complete_control_path)
-        self.record_stats(control_path, is_complete_control_path, result)
+        path_result, path_model = self.solve_path(control_path, is_complete_control_path)
+        self.record_stats(control_path, is_complete_control_path, path_result)
 
         # Only increment counts and done edges if a non-error test case was
         # generated.  We want successful test cases in order to consider an edge
         # visited, or done.
-        if record_test_case(result, is_complete_control_path) \
-                and result == TestPathResult.SUCCESS:
+        if record_test_case(path_result, is_complete_control_path) \
+                and path_result == TestPathResult.SUCCESS:
             assert is_complete_control_path
             # Increment visit counts
             for edge in control_path:
@@ -288,7 +236,7 @@ class EdgeCoverageGraphVisitor(ControlGraphVisitor):
                 if all(ce in self.done_edges for ce in child_edges):
                     self.done_edges.add(edge)
 
-        return self.visit_result(result)
+        return self.visit_result(path_result), path_model
 
     def backtrack(self):
         self.path_solver.pop()
