@@ -10,7 +10,7 @@ from z3 import *
 from p4pktgen.core.context import Context
 from p4pktgen.core.packet import Packet
 from p4pktgen.core.translator import Translator
-from p4pktgen.core.test_cases import TestCaseBuilder, TestPathResult
+from p4pktgen.core.test_cases import TestPathResult
 from p4pktgen.hlir.transition import *
 from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *
@@ -22,15 +22,13 @@ class PathSolver(object):
     allow an incremental approach with backtracking and efficient solving of
     graph edges."""
 
-    def __init__(self, json_file, p4top, pipeline):
+    def __init__(self, p4top, pipeline):
         self.solver = SolverFor('QF_UFBV')
         self.solver.push()
         self.solver_result = None
         self.hlir = p4top.hlir
         self.pipeline = pipeline
         self.translator = Translator(p4top, pipeline)
-        self.test_case_builder = TestCaseBuilder(json_file, pipeline)
-        self.total_switch_time = 0.0
 
         # List of contexts along control path.  First element is context at
         # start of control path.  context_history may be appended to arbitrarily
@@ -70,9 +68,6 @@ class PathSolver(object):
         self.context_history = self.context_history[:old_len]
         self.result_history.pop()
         self.constraints.pop()
-
-    def cleanup(self):
-        pass
 
     def init_context(self):
         assert len(self.context_history) == 1
@@ -369,30 +364,6 @@ class PathSolver(object):
             self.solve_path()
             assert self.solver_result == sat
         return constraints
-
-    def generate_test_case(self, path_solution, source_info_to_node_name):
-        path = path_solution.path
-        result = path_solution.result
-        context = path_solution.context
-        sym_packet = path_solution.sym_packet
-        model = path_solution.model
-
-        start_time = time.time()
-        build_result, test_case, payloads = \
-            self.test_case_builder.build_for_path(
-                context, model, sym_packet, path
-            )
-        assert build_result == result
-
-        if Config().get_run_simple_switch():
-            test_result = self.test_case_builder.run_simple_switch(
-                path.expected_path, test_case, payloads,
-                path.is_complete, source_info_to_node_name)
-            assert test_result == result
-
-        self.total_switch_time += time.time() - start_time
-
-        return (test_case, payloads)
 
     def constrain_last_extract_vl_lengths(self, condition):
         """This function adds constraints to the solver preventing it from
