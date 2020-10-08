@@ -400,16 +400,18 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         return super(TableConsolidatedSolver, self)._try_add_path(
             path_id, new_constraints, path_data)
 
-    def add_path(self, path, constraints, context, sym_packet):
+    def add_path(self, path_solution):
+        path = path_solution.path
         prefix = 'path{}/'.format(path.id)
         var_mapping = {}  # {old_param: new_param, ... }
 
-        new_constraints = \
-            path_specific_constraints(prefix, constraints, var_mapping)
+        new_constraints = path_specific_constraints(
+            prefix, path_solution.constraints, var_mapping)
 
-        new_sym_packet = \
-            path_specific_packet(prefix, sym_packet, var_mapping)
+        new_sym_packet = path_specific_packet(
+            prefix, path_solution.sym_packet, var_mapping)
 
+        context = path_solution.context
         table_names = context.table_key_values.keys()
         assert set(table_names) == set(context.table_runtime_data.keys())
         table_data = {}
@@ -428,6 +430,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
             var_name: path_specific_expr(prefix, var, var_mapping)
             for var_name, var in context.input_metadata.iteritems()
         }
+
         path_data = (
             new_sym_packet, path, input_metadata,
             context.uninitialized_reads, context.invalid_header_writes,

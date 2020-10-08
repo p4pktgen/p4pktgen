@@ -3,7 +3,7 @@ import time
 import logging
 
 from p4pktgen.config import Config
-from p4pktgen.core.path import Path
+from p4pktgen.core.path import Path, PathModel
 from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
@@ -103,8 +103,6 @@ class ControlGraphVisitor(GraphVisitor):
             logging.info("END   %s" % str(path))
             return result
 
-        results = []
-        extract_vl_variation = Config().get_extract_vl_variation()
         max_test_cases = Config().get_num_test_cases()
         max_path_test_cases = Config().get_max_test_cases_per_path()
         do_consolidate_tables = Config().get_do_consolidate_tables()
@@ -113,29 +111,19 @@ class ControlGraphVisitor(GraphVisitor):
         assert not (do_consolidate_tables and max_path_test_cases != 1)
 
         result = self.path_solver.solve_path()
-        first_result = result
-        while result != TestPathResult.NO_PACKET_FOUND:
-            # Choose values for randomization variables.
-            random_constraints = []
-            fix_random = is_complete_control_path
-            if fix_random:
-                self.path_solver.push()
-                random_constraints = self.path_solver.fix_random_constraints()
 
+        path_model = PathModel(path, result, self.path_solver)
+        for i_solution, path_solution in enumerate(path_model.solutions()):
             time4 = time.time()
-
+            # TODO: Really ugly, as it no longer needs the solver itself, but
+            #  there's still machinery the class that we're using for the next
+            #  few commits.
             test_case, packet_list = self.path_solver.generate_test_case(
-                path=path, result=result,
+                path_solution=path_solution,
                 source_info_to_node_name=self.source_info_to_node_name,
             )
             time5 = time.time()
 
-            # Clear the constraints on the values of the randomization
-            # variables.
-            if fix_random:
-                self.path_solver.pop()
-
-            results.append(result)
             # If this result wouldn't be recorded, subsequent ones won't be
             # either, so move on.
             if not record_test_case(result, is_complete_control_path):
@@ -143,12 +131,8 @@ class ControlGraphVisitor(GraphVisitor):
 
             if do_consolidate_tables:
                 # TODO: refactor path_solver to allow extraction of result &
-                # record_test_case without building test case.
-                self.table_solver.add_path(
-                    path, self.path_solver.constraints + [random_constraints],
-                    self.path_solver.current_context(),
-                    self.path_solver.sym_packet
-                )
+                #  record_test_case without building test case.
+                self.table_solver.add_path(path_solution)
                 break
 
             test_case["time_sec_generate_ingress_constraints"] = time3 - time2
@@ -161,29 +145,20 @@ class ControlGraphVisitor(GraphVisitor):
             # takes too long to complete.
             self.test_case_writer.write(test_case, packet_list)
             Statistics().num_test_cases += 1
-            logging.info("Generated %d test cases for path" % len(results))
+            logging.info("Generated %d test cases for path" % (i_solution + 1,))
 
             # If we have produced enough test cases overall, enough for this
             # path, or have exhausted possible packets for this path, move on.
             # Using '!=' rather than '<' here as None/0 represents no maximum.
             if Statistics().num_test_cases == max_test_cases \
-                    or len(results) == max_path_test_cases:
+                    or (i_solution + 1) == max_path_test_cases:
                 break
-
-            if not self.path_solver.constrain_last_extract_vl_lengths(extract_vl_variation):
-                # Special case: unbounded numbers of test cases are only
-                # safe when we're building up constraints on VL-extraction
-                # lengths, or else we'll loop forever.
-                if max_path_test_cases == 0:
-                    break
-
-            result = self.path_solver.solve_path()
 
         if not Config().get_incremental():
             self.path_solver.solver.reset()
 
-        logging.info("END   %s: %s" % (str(path), first_result) )
-        return first_result
+        logging.info("END   %s: %s" % (str(path), result) )
+        return result
 
     def record_stats(self, control_path, is_complete_control_path, result):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
