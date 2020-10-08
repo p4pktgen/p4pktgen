@@ -1,8 +1,5 @@
-import logging
-
 from z3 import *
 
-from p4pktgen.config import Config
 from p4pktgen.hlir.transition import *
 from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *

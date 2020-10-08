@@ -1,10 +1,9 @@
 from z3 import *
 
-import logging
-
 from p4pktgen.config import Config
 from p4pktgen.core.context import Variables
 from p4pktgen.util.bitvec import equalize_bv_size, LShREq
+
 
 class Packet(object):
     """The symbolic representation of a packet."""

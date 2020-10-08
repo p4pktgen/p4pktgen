@@ -3,14 +3,10 @@
 # - Position is a 32-bit integer right now. Smaller/larger?
 # - Move to smt-switch
 
-import copy
-import logging
 import time
 
-from enum import Enum
 from z3 import *
 
-from p4pktgen.config import Config
 from p4pktgen.core.context import Context
 from p4pktgen.core.packet import Packet
 from p4pktgen.core.translator import Translator
@@ -19,7 +15,6 @@ from p4pktgen.hlir.transition import *
 from p4pktgen.hlir.type_value import *
 from p4pktgen.p4_hlir import *
 from p4pktgen.util.statistics import Statistics, Timer
-from p4pktgen.util.table import Table
 
 
 class PathSolver(object):
