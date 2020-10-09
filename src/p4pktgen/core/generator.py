@@ -44,8 +44,19 @@ class TestCaseGenerator(object):
     def __init__(self, input_file, top):
         self.input_file = input_file
         self.top = top
-        self.test_case_builder = TestCaseBuilder(input_file, top.in_pipeline)
         self.total_switch_time = 0.0
+
+        self.test_case_builder = TestCaseBuilder(input_file, top.in_pipeline)
+        # TBD: Make this filename specifiable via command line option
+        self.test_case_writer = TestCaseWriter(Config().get_output_json_path(),
+                                               Config().get_output_pcap_path())
+        self.table_solver = None
+        if Config().get_do_consolidate_tables():
+            # TODO: Remove this once these two options are made compatible
+            assert Config().get_max_test_cases_per_path() == 1
+            self.table_solver = \
+                TableConsolidatedSolver(self.input_file, self.top.in_pipeline,
+                                        self.test_case_writer)
 
     def get_control_graph(self):
         if self.top.in_pipeline.init_table_name is None:
@@ -66,6 +77,8 @@ class TestCaseGenerator(object):
                 context, model, sym_packet, path
             )
         assert build_result == path_solution.result
+        test_case["time_sec_generate_ingress_constraints"] = path_solution.time_sec_generate_ingress_constraints
+        test_case["time_sec_solve"] = path_solution.time_sec_solve
 
         if Config().get_run_simple_switch():
             test_result = self.test_case_builder.run_simple_switch(
@@ -101,30 +114,24 @@ class TestCaseGenerator(object):
             if record_test_case(path_model.result, path_model.path.is_complete):
                 yield path_model
 
+    def process_path_solution(self, path_solution):
+        if self.table_solver is not None:
+            self.table_solver.add_path(path_solution)
+            return
+
+        pre_sim_time = time.time()
+        test_case, packet_list = self.generate_test_case_for_path(path_solution)
+        test_case["time_sec_simulate_packet"] = time.time() - pre_sim_time
+
+        self.test_case_writer.write(test_case, packet_list)
+        Statistics().num_test_cases += 1
+
     def generate_test_cases_for_parser_paths(self, parser_paths):
         Statistics().init()
 
         # XXX: move
         path_solver = PathSolver(self.top, self.top.in_pipeline)
         results = OrderedDict()
-
-        # TBD: Make this filename specifiable via command line option
-        test_case_writer = TestCaseWriter(
-            Config().get_output_json_path(),
-            Config().get_output_pcap_path()
-        )
-
-        do_consolidate_tables = Config().get_do_consolidate_tables()
-        table_solver = None
-        if do_consolidate_tables:
-            table_solver = \
-                TableConsolidatedSolver(self.input_file, self.top.in_pipeline,
-                                        test_case_writer)
-
-        max_path_test_cases = Config().get_max_test_cases_per_path()
-
-        # TODO: Remove this once these two options are made compatible
-        assert not (do_consolidate_tables and max_path_test_cases != 1)
 
         # XXX: move
         parser_path_edge_count = defaultdict(int)
@@ -139,31 +146,13 @@ class TestCaseGenerator(object):
             for path_model in self.iterate_paths_for_parser_path(
                     parser_path, results=results, path_solver=path_solver):
                 for i_solution, path_solution in enumerate(path_model.solutions()):
-                    time4 = time.time()
-                    test_case, packet_list = self.generate_test_case_for_path(path_solution)
-                    time5 = time.time()
-
-                    if do_consolidate_tables:
-                        # TODO: refactor path_solver to allow extraction of result &
-                        #  record_test_case without building test case.
-                        table_solver.add_path(path_solution)
-                        break
-
-                    test_case["time_sec_generate_ingress_constraints"] = path_model.time_sec_generate_ingress_constraints
-                    test_case["time_sec_solve"] = path_solution.time_sec_solve
-                    test_case["time_sec_simulate_packet"] = time5 - time4
-
-                    # Doing file writing here enables getting at least
-                    # some test case output data for p4pktgen runs that
-                    # the user kills before it completes, e.g. because it
-                    # takes too long to complete.
-                    test_case_writer.write(test_case, packet_list)
-                    Statistics().num_test_cases += 1
-                    logging.info("Generated %d test cases for path" % (i_solution + 1,))
+                    self.process_path_solution(path_solution)
+                    logging.info("Processed %d solutions for path" % (i_solution + 1,))
 
                     # If we have produced enough test cases overall, enough for this
                     # path, or have exhausted possible packets for this path, move on.
-                    if enough_test_cases() or (i_solution + 1) == max_path_test_cases:
+                    if enough_test_cases() or \
+                            (i_solution + 1) == Config().get_max_test_cases_per_path():
                         break
 
                 if enough_test_cases():
@@ -172,13 +161,13 @@ class TestCaseGenerator(object):
             if enough_test_cases():
                 break
 
-        if Config().get_do_consolidate_tables():
-            table_solver.flush()
+        if self.table_solver is not None:
+            self.table_solver.flush()
 
         logging.info("Final statistics on use of control path edges:")
         Statistics().log_control_path_stats(
             Statistics().stats_per_control_path_edge, Statistics().num_control_path_edges)
-        test_case_writer.cleanup()
+        self.test_case_writer.cleanup()
 
         Statistics().dump()
         Statistics().cleanup()
