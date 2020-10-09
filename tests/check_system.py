@@ -195,45 +195,48 @@ class CheckSystem:
         }
         assert results == expected_results
 
+    # This program and results are used by various tests.
+    demo9b_expected_results = {
+        ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.UNINITIALIZED_READ,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
+        TestPathResult.SUCCESS,
+        ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
+        TestPathResult.SUCCESS
+    }
+
     def check_demo9b(self, config):
         load_test_config(**config)
         results = run_test('examples/demo9b.json')
-        expected_results = {
-            ('start', 'parse_ethernet', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_tcp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv4', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.UNINITIALIZED_READ,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (True, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6')))):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_tcp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (False, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act_0', u'act_0')):
-            TestPathResult.SUCCESS,
-            ('start', 'parse_ethernet', 'parse_ipv6', 'parse_udp', 'sink', (u'node_2', (False, (u'demo9b.p4', 157, u'hdr.ipv6.version != 6'))), (u'node_3', (True, (u'demo9b.p4', 160, u'hdr.ethernet.srcAddr == 123456'))), (u'tbl_act', u'act')):
-            TestPathResult.SUCCESS
-        }
+        expected_results = self.demo9b_expected_results
         assert results == expected_results
 
     def check_config_table(self, config):
@@ -890,6 +893,19 @@ class CheckSystem:
             ('start', 'sink', (u'node_2', (False, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat69', u'edge_coverage_unsat69'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (False, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_13', (False, (u'edge_coverage_unsat.p4', 89, u'h.b.data == 0'))), (u'node_15', (False, (u'edge_coverage_unsat.p4', 91, u'h.b.data == 1'))), (u'tbl_edge_coverage_unsat94', u'edge_coverage_unsat94')): TestPathResult.SUCCESS,
             ('start', 'sink', (u'node_2', (False, (u'edge_coverage_unsat.p4', 65, u'h.a.data == 0'))), (u'tbl_edge_coverage_unsat69', u'edge_coverage_unsat69'), (u'node_5', (False, (u'edge_coverage_unsat.p4', 72, u'h.x.data == 5'))), (u'node_7', (False, (u'edge_coverage_unsat.p4', 79, u'h.a.data == 0'))), (u'node_13', (False, (u'edge_coverage_unsat.p4', 89, u'h.b.data == 0'))), (u'node_15', (True, (u'edge_coverage_unsat.p4', 91, u'h.b.data == 1'))), (u'tbl_edge_coverage_unsat92', u'edge_coverage_unsat92')): TestPathResult.SUCCESS,
         }
+        assert results == expected_results
+
+    def check_demo9b_limit_num_test_cases(self, config):
+        load_test_config(**config)
+        Config().num_test_cases = 7
+        results = run_test('examples/demo9b.json')
+        expected_results_items = sorted(self.demo9b_expected_results.items())
+        # Through experimentation we happen to know that these are the first 7
+        # test cases to be generated with the default config.
+        expected_items_indexes = [9, 10, 12, 13, 14, 15, 16]
+        expected_results_items = [expected_results_items[i]
+                                  for i in expected_items_indexes]
+        expected_results = {k: v for k, v in expected_results_items}
         assert results == expected_results
 
 
