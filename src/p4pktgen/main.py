@@ -194,6 +194,14 @@ def main():
         """With this option given, consolidate test-cases around common tables up to the maximum value given (omit value for unlimited).  Currently incompatible with max_test_cases_per_path != 1."""
     )
     parser.add_argument(
+        '-rr', '--round-robin-parser-paths',
+        dest='round_robin_parser_paths',
+        action='store_true',
+        default=False,
+        help=
+        """With this option given, round robin over parser paths when generating test cases.  Note that this may use large amounts of memory on jobs with many parser paths."""
+    )
+    parser.add_argument(
         '-rnd', '--randomize',
         dest='randomize',
         action='store_true',

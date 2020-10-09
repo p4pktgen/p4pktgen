@@ -1,7 +1,7 @@
 import logging
 import time
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict, deque
 
 from p4pktgen.config import Config
 from p4pktgen.core.strategy import PathCoverageGraphVisitor, EdgeCoverageGraphVisitor
@@ -162,12 +162,51 @@ class TestCaseGenerator(object):
 
         return results
 
+    def generate_test_cases_round_robin(self, parser_paths):
+        results = OrderedDict()
+        max_path_test_cases = Config().get_max_test_cases_per_path()
+
+        # Generates PathSolutions for a parser path
+        def solution_generator(parser_path):
+            for path_model in self.iterate_paths_for_parser_path(
+                    parser_path, results=results):
+                for i_solution, path_solution in enumerate(path_model.solutions()):
+                    yield path_solution
+                    # If we have produced enough test cases overall, enough for this
+                    # path, or have exhausted possible packets for this path, move on.
+                    if enough_test_cases() or (i_solution + 1) == max_path_test_cases:
+                        break
+                if enough_test_cases():
+                    break
+
+        solution_generators = deque()
+        for i_path, parser_path in enumerate(parser_paths):
+            self.count_parser_path_edges(parser_path)
+            logging.info("Analyzing parser_path %d of %d: %s"
+                         "" % (i_path, len(parser_paths), parser_path))
+            solution_generators.append(solution_generator(parser_path))
+
+        while solution_generators:
+            try:
+                path_solution = solution_generators[0].next()
+            except StopIteration:
+                solution_generators.popleft()
+                continue
+            self.process_path_solution(path_solution)
+            solution_generators.rotate(-1)  # Equivalent to x.append(x.popleft())
+            if enough_test_cases():
+                    break
+        return results
+
     def generate_test_cases_for_parser_paths(self, parser_paths):
         Statistics().init()
         self.total_switch_time = 0.0
         self.parser_path_edge_count = defaultdict(int)
 
-        results = self.generate_test_cases_linearly(parser_paths)
+        if Config().get_round_robin_parser_paths():
+            results = self.generate_test_cases_round_robin(parser_paths)
+        else:
+            results = self.generate_test_cases_linearly(parser_paths)
 
         if self.table_solver is not None:
             self.table_solver.flush()

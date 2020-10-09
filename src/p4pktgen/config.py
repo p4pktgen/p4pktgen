@@ -28,6 +28,7 @@ class Config:
         self.table_opt = args.table_opt
         self.incremental = args.incremental
         self.output_path = './test-case'
+        self.round_robin_parser_paths = args.round_robin_parser_paths
         self.extract_vl_variation = args.extract_vl_variation
         self.consolidate_tables = args.consolidate_tables
         self.randomize = args.randomize
@@ -98,6 +99,9 @@ class Config:
 
     def get_output_pcap_path(self):
         return self.output_path + '.pcap'
+
+    def get_round_robin_parser_paths(self):
+        return self.round_robin_parser_paths
 
     def get_extract_vl_variation(self):
         if self.extract_vl_variation is None or \
