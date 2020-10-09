@@ -63,6 +63,7 @@ def load_test_config(no_packet_length_errs=True,
     config.table_opt = True
     config.incremental = True
     config.output_path = './test-case'
+    config.round_robin_parser_paths = False
     config.extract_vl_variation = None
     config.consolidate_tables = None
     config.randomize = randomize
