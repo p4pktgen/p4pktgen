@@ -77,6 +77,29 @@ class TestCaseGenerator(object):
 
         return (test_case, payloads)
 
+    def iterate_paths_for_parser_path(self, parser_path, results,
+                                      path_solver=None):
+        if path_solver is None:
+            path_solver = PathSolver(self.top, self.top.in_pipeline)
+
+        if not path_solver.generate_parser_constraints(parser_path):
+            logging.info("Could not find any packet to satisfy parser path: %s"
+                         "" % (parser_path))
+            # Skip unsatisfiable parser paths
+            return
+
+        start_node, control_graph = self.get_control_graph()
+        if Config().get_edge_coverage():
+            graph_visitor = EdgeCoverageGraphVisitor(path_solver, parser_path,
+                                                     results, control_graph)
+        else:
+            graph_visitor = PathCoverageGraphVisitor(path_solver, parser_path,
+                                                     results)
+
+        for path_model in control_graph.visit_all_paths(start_node, None, graph_visitor):
+            # Only paths that will generate something useful
+            if record_test_case(path_model.result, path_model.path.is_complete):
+                yield path_model
 
     def generate_test_cases_for_parser_paths(self, parser_paths):
         Statistics().init()
@@ -91,13 +114,17 @@ class TestCaseGenerator(object):
             Config().get_output_pcap_path()
         )
 
+        do_consolidate_tables = Config().get_do_consolidate_tables()
         table_solver = None
-        if Config().get_do_consolidate_tables():
+        if do_consolidate_tables:
             table_solver = \
                 TableConsolidatedSolver(self.input_file, self.top.in_pipeline,
                                         test_case_writer)
 
-        start_node, control_graph = self.get_control_graph()
+        max_path_test_cases = Config().get_max_test_cases_per_path()
+
+        # TODO: Remove this once these two options are made compatible
+        assert not (do_consolidate_tables and max_path_test_cases != 1)
 
         # XXX: move
         parser_path_edge_count = defaultdict(int)
@@ -108,31 +135,9 @@ class TestCaseGenerator(object):
                 parser_path_edge_count[e] += 1
             logging.info("Analyzing parser_path %d of %d: %s"
                          "" % (i_path, len(parser_paths), parser_path))
-            if not path_solver.generate_parser_constraints(parser_path):
-                logging.info("Could not find any packet to satisfy parser path: %s"
-                             "" % (parser_path))
-                # Skip unsatisfiable parser paths
-                continue
 
-            if Config().get_edge_coverage():
-                graph_visitor = EdgeCoverageGraphVisitor(path_solver, parser_path,
-                                                         results, control_graph)
-            else:
-                graph_visitor = PathCoverageGraphVisitor(path_solver, parser_path,
-                                                         results)
-
-            max_path_test_cases = Config().get_max_test_cases_per_path()
-            do_consolidate_tables = Config().get_do_consolidate_tables()
-
-            # TODO: Remove this once these two options are made compatible
-            assert not (do_consolidate_tables and max_path_test_cases != 1)
-
-            for path_model in control_graph.visit_all_paths(start_node, None, graph_visitor):
-                # Skip any paths that wouldn't generate anything useful
-                if not record_test_case(path_model.result,
-                                        path_model.path.is_complete):
-                    continue
-
+            for path_model in self.iterate_paths_for_parser_path(
+                    parser_path, results=results, path_solver=path_solver):
                 for i_solution, path_solution in enumerate(path_model.solutions()):
                     time4 = time.time()
                     test_case, packet_list = self.generate_test_case_for_path(path_solution)
