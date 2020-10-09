@@ -45,6 +45,7 @@ class TestCaseGenerator(object):
         self.input_file = input_file
         self.top = top
         self.total_switch_time = 0.0
+        self.parser_path_edge_count = defaultdict(int)
 
         self.test_case_builder = TestCaseBuilder(input_file, top.in_pipeline)
         # TBD: Make this filename specifiable via command line option
@@ -57,6 +58,12 @@ class TestCaseGenerator(object):
             self.table_solver = \
                 TableConsolidatedSolver(self.input_file, self.top.in_pipeline,
                                         self.test_case_writer)
+
+    def count_parser_path_edges(self, parser_path):
+        for e in parser_path:
+            if self.parser_path_edge_count[e] == 0:
+                Statistics().num_covered_edges += 1
+            self.parser_path_edge_count[e] += 1
 
     def get_control_graph(self):
         if self.top.in_pipeline.init_table_name is None:
@@ -126,20 +133,12 @@ class TestCaseGenerator(object):
         self.test_case_writer.write(test_case, packet_list)
         Statistics().num_test_cases += 1
 
-    def generate_test_cases_for_parser_paths(self, parser_paths):
-        Statistics().init()
-
-        # XXX: move
+    def generate_test_cases_linearly(self, parser_paths):
         path_solver = PathSolver(self.top, self.top.in_pipeline)
         results = OrderedDict()
 
-        # XXX: move
-        parser_path_edge_count = defaultdict(int)
         for i_path, parser_path in enumerate(parser_paths):
-            for e in parser_path:
-                if parser_path_edge_count[e] == 0:
-                    Statistics().num_covered_edges += 1
-                parser_path_edge_count[e] += 1
+            self.count_parser_path_edges(parser_path)
             logging.info("Analyzing parser_path %d of %d: %s"
                          "" % (i_path, len(parser_paths), parser_path))
 
@@ -160,6 +159,15 @@ class TestCaseGenerator(object):
 
             if enough_test_cases():
                 break
+
+        return results
+
+    def generate_test_cases_for_parser_paths(self, parser_paths):
+        Statistics().init()
+        self.total_switch_time = 0.0
+        self.parser_path_edge_count = defaultdict(int)
+
+        results = self.generate_test_cases_linearly(parser_paths)
 
         if self.table_solver is not None:
             self.table_solver.flush()
