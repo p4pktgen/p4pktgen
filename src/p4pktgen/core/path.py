@@ -22,6 +22,7 @@ class Path(object):
 
 class PathSolution(object):
     def __init__(self, path, result, constraints, context, sym_packet, model,
+                 time_sec_generate_ingress_constraints=None,
                  time_sec_solve=None):
         self.path = path
         self.result = result
@@ -29,6 +30,7 @@ class PathSolution(object):
         self.context = context
         self.sym_packet = sym_packet
         self.model = model
+        self.time_sec_generate_ingress_constraints = time_sec_generate_ingress_constraints
         self.time_sec_solve=time_sec_solve
 
 
@@ -63,6 +65,7 @@ class PathModel(object):
                     self.path_solver.current_context(),
                     self.path_solver.sym_packet,
                     self.path_solver.solver.model(),
+                    time_sec_generate_ingress_constraints=self.time_sec_generate_ingress_constraints,
                     time_sec_solve=solve_time,
                 )
                 yield path_solution
