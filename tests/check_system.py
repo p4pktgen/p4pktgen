@@ -909,6 +909,27 @@ class CheckSystem:
         expected_results = {k: v for k, v in expected_results_items}
         assert results == expected_results
 
+    def check_demo9b_round_robin(self, config):
+        load_test_config(**config)
+        Config().round_robin_parser_paths = True
+        results = run_test('examples/demo9b.json')
+        expected_results = self.demo9b_expected_results
+        assert results == expected_results
+
+    def check_demo9b_round_robin_limited(self, config):
+        load_test_config(**config)
+        Config().round_robin_parser_paths = True
+        Config().num_test_cases = 7  # There are 7 parser paths in demo9b
+        results = run_test('examples/demo9b.json')
+        expected_results_items = sorted(self.demo9b_expected_results.items())
+        # Through experimentation we happen to know that these are the first
+        # test cases on each of the 7 parser paths.
+        expected_items_indexes = [0, 2, 4, 6, 9, 12, 15]
+        expected_results_items = [expected_results_items[i]
+                                  for i in expected_items_indexes]
+        expected_results = {k: v for k, v in expected_results_items}
+        assert results == expected_results
+
 
 class CheckRandomization(object):
     @pytest.mark.parametrize('consolidate', [False, True],
