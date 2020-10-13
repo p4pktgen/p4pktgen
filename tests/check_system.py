@@ -70,13 +70,28 @@ def load_test_config(no_packet_length_errs=True,
     config.extern_definitions = None
 
 
-def run_test(json_filename):
-    return {
-        tuple(Translator.expected_path(parser_path, control_path,
-                                       substitute_errors=False)): result
-        for ((parser_path, control_path), result) in
-            generate_test_cases(json_filename).iteritems()
-    }
+def run_test(json_filename, results_as_list=False):
+    results = generate_test_cases(json_filename).items()
+    if results_as_list:
+        const_results = [
+            (
+                tuple(Translator.expected_path(parser_path, control_path,
+                                               substitute_errors=False)),
+                result
+            ) for ((parser_path, control_path), result) in results
+        ]
+        # Sort only based on path, not on result.
+        return sorted(const_results, key=lambda x: x[0])
+    else:
+        const_results = {
+            tuple(Translator.expected_path(parser_path, control_path,
+                                           substitute_errors=False)): result
+            for ((parser_path, control_path), result) in results
+        }
+        # Parallel edges can be represented by identical expected_path strings.
+        # Use result_as_list in these cases.
+        assert len(results) == len(const_results)
+        return const_results
 
 
 def read_test_cases():
