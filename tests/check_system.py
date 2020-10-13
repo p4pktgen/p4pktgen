@@ -70,6 +70,15 @@ def load_test_config(no_packet_length_errs=True,
     config.extern_definitions = None
 
 
+def result_counts(results_list):
+    # Count the number of repeated paths in a results list.
+    counts = {}
+    for path, result in results_list:
+        key = (path, str(result))
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 def run_test(json_filename, results_as_list=False):
     results = generate_test_cases(json_filename).items()
     if results_as_list:
@@ -502,18 +511,35 @@ class CheckSystem:
         }
         assert results == expected_results
 
-    # Fill in expected results for this test case, and change name to
-    # have prefix 'check_' instead of 'xfail_', after p4pktgen has
-    # been modified to generate correct results for it.  It generates
-    # incorrect results for this program now, because p4pktgen does
-    # not correctly handle multiple possible transitions from parser
-    # state A to parser state B.
-    def xfail_parser_parallel_paths(self, config):
+    # Note that many of the parser paths enter "parse_b" on separate edges.
+    # The parser portions of the stringified expected_paths are currently
+    # indistinguishable.  They do, however, have differing constraints and so
+    # may get different results on different control paths.
+    parser_parallel_path_expected_results = [
+        (('start', 'sink', (u'node_2', (True, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01')))), TestPathResult.NO_PACKET_FOUND),
+        (('start', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (True, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03')))), TestPathResult.NO_PACKET_FOUND),
+        (('start', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (False, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03')))), TestPathResult.SUCCESS),
+        (('start', 'parse_b', 'sink', (u'node_2', (True, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01')))), TestPathResult.NO_PACKET_FOUND),
+        (('start', 'parse_b', 'sink', (u'node_2', (True, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01')))), TestPathResult.NO_PACKET_FOUND),
+        (('start', 'parse_b', 'sink', (u'node_2', (True, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01')))), TestPathResult.SUCCESS),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01')))), TestPathResult.NO_PACKET_FOUND),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (True, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03'))), (u'node_4', (True, (u'parser-parallel-paths.p4', 54, u'h.b.data == 0x00'))), (u'tbl_parserparallelpaths55', u'parserparallelpaths55')), TestPathResult.SUCCESS),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (True, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03'))), (u'node_4', (True, (u'parser-parallel-paths.p4', 54, u'h.b.data == 0x00'))), (u'tbl_parserparallelpaths55', u'parserparallelpaths55')), TestPathResult.SUCCESS),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (True, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03'))), (u'node_4', (False, (u'parser-parallel-paths.p4', 54, u'h.b.data == 0x00')))), TestPathResult.SUCCESS),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (True, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03'))), (u'node_4', (False, (u'parser-parallel-paths.p4', 54, u'h.b.data == 0x00')))), TestPathResult.SUCCESS),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (False, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03')))), TestPathResult.NO_PACKET_FOUND),
+        (('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths.p4', 52, u'h.a.data == 0x01'))), (u'node_3', (False, (u'parser-parallel-paths.p4', 53, u'h.a.data == 0x02 || h.a.data == 0x03')))), TestPathResult.NO_PACKET_FOUND),
+    ]
+
+
+    def check_parser_parallel_paths(self, config):
         load_test_config(**config)
-        results = run_test('examples/parser-parallel-paths.json')
-        expected_results = {
-        }
-        assert results == expected_results
+        results = run_test('examples/parser-parallel-paths.json', results_as_list=True)
+        # Difficult to compare lists directly as sorting affects Transition
+        # classes and plain strings/bools etc. differently.
+        expected_counts = result_counts(self.parser_parallel_path_expected_results)
+        counts = result_counts(results)
+        assert counts == expected_counts
 
 
     @pytest.mark.parametrize("epl", [True, False], ids=["with_epl",
