@@ -543,6 +543,39 @@ class CheckSystem:
         assert counts == expected_counts
 
 
+    def check_parser_parallel_paths_collapsed(self, config):
+        load_test_config(**config)
+        Config().collapse_parser_paths = True
+        results = run_test('examples/parser-parallel-paths.json', results_as_list=True)
+        # The full expected results has many duplicates.  We expect to find one
+        # unique path for each duplicated path (or sub-path).  We expect the
+        # path result to be SUCCESS if any of the duplicates were SUCCESS.
+        expected_items_indexes = [0, 1, 2, 5, 7, 9, 11]
+        expected_counts = result_counts([
+            self.parser_parallel_path_expected_results[i]
+            for i in expected_items_indexes
+        ])
+        results_counts = result_counts(results)
+        assert expected_counts == results_counts
+
+
+    def check_complex_parser_parallel_paths_collapsed(self, config):
+        load_test_config(**config)
+        Config().collapse_parser_paths = True
+        results = run_test('examples/parser-parallel-paths-complex.json')
+        # We only care about paths that traversed 'parse_b' and we happen to
+        # know that these paths will not have duplicates.
+        parse_b_expected_results = {
+            ('start', 'parse_b', 'sink', (u'node_2', (True, (u'parser-parallel-paths-complex.p4', 80, u'h.a.data & 0x0f == 0x03'))), (u'node_3', (True, (u'parser-parallel-paths-complex.p4', 81, u'h.a.data & 0xf0 == 0x20'))), (u'tbl_parserparallelpathscomplex82', u'parserparallelpathscomplex82')): TestPathResult.SUCCESS,
+            ('start', 'parse_b', 'sink', (u'node_2', (True, (u'parser-parallel-paths-complex.p4', 80, u'h.a.data & 0x0f == 0x03'))), (u'node_3', (False, (u'parser-parallel-paths-complex.p4', 81, u'h.a.data & 0xf0 == 0x20')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths-complex.p4', 80, u'h.a.data & 0x0f == 0x03'))), (u'node_6', (True, (u'parser-parallel-paths-complex.p4', 88, u'h.a.data & 0x0f == 0x07'))), (u'node_7', (True, (u'parser-parallel-paths-complex.p4', 89, u'h.a.data & 0xf0 == 0x80')))): TestPathResult.NO_PACKET_FOUND,
+            ('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths-complex.p4', 80, u'h.a.data & 0x0f == 0x03'))), (u'node_6', (True, (u'parser-parallel-paths-complex.p4', 88, u'h.a.data & 0x0f == 0x07'))), (u'node_7', (False, (u'parser-parallel-paths-complex.p4', 89, u'h.a.data & 0xf0 == 0x80'))), (u'tbl_parserparallelpathscomplex93', u'parserparallelpathscomplex93')): TestPathResult.SUCCESS,
+            ('start', 'parse_b', 'sink', (u'node_2', (False, (u'parser-parallel-paths-complex.p4', 80, u'h.a.data & 0x0f == 0x03'))), (u'node_6', (False, (u'parser-parallel-paths-complex.p4', 88, u'h.a.data & 0x0f == 0x07')))): TestPathResult.SUCCESS,
+        }
+        parse_b_results = {k: v for k, v in results.items() if k[1] == 'parse_b'}
+        assert parse_b_expected_results == parse_b_results
+
+
     @pytest.mark.parametrize("epl", [True, False], ids=["with_epl",
                                                         "without_epl"])
     def check_header_stack_too_many_extracts(self, config, epl):
