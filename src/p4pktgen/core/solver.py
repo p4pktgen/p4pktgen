@@ -106,6 +106,72 @@ class PathSolver(object):
         self.result_history[0] = []
         self.constraints[0] = []
 
+    def parser_transition_constraints(self, transition, all_transitions,
+                                      sym_transition_key):
+        assert isinstance(transition, ParserTransition)
+        constraints = []
+
+        # Make sure that we are not hitting any of the cases before the
+        # case that we care about
+        other_constraints = []
+        for other_transition in all_transitions:
+            if other_transition != transition:
+                other_constraints.append(
+                    self.translator.parser_transition_key_constraint(
+                        sym_transition_key, other_transition.value,
+                        other_transition.mask
+                    )
+                )
+            else:
+                break
+
+        logging.debug("Other constraints: {}".format(other_constraints))
+        if other_constraints:
+            constraints.append(Not(Or(other_constraints)))
+
+        # The constraint for the case that we are interested in
+        if transition.value is not None:
+            constraint = self.translator.parser_transition_key_constraint(
+                sym_transition_key, transition.value, transition.mask)
+            constraints.append(constraint)
+
+        return constraints
+
+    def parser_composite_transition_constraints(self, transition, all_transitions,
+                                                sym_transition_key):
+        assert isinstance(transition, ParserCompositeTransition)
+        constraints = []
+
+        # Exclude cases hit before any components
+        i_first_component = None
+        other_constraints = []
+        for i_transition, other_transition in enumerate(all_transitions):
+            if other_transition not in transition.components:
+                assert other_transition.value is not None, \
+                    "Reached default transition before first component transition"
+                other_constraints.append(
+                    self.translator.parser_transition_key_constraint(
+                        sym_transition_key, other_transition.value,
+                        other_transition.mask
+                    )
+                )
+            else:
+                i_first_component = i_transition
+                break
+
+        assert i_first_component is not None
+        logging.debug("Other constraints (Composite): {}".format(other_constraints))
+        if other_constraints:
+            constraints.append(Not(Or(other_constraints)))
+
+        component_constraints = [
+            And(self.parser_transition_constraints(component, all_transitions[i_first_component:],
+                                                   sym_transition_key))
+            for component in transition.components
+        ]
+        constraints.append(Or(component_constraints))
+        return constraints
+
     def generate_parser_constraints(self, parser_path):
         parser_constraints_gen_timer = Timer('parser_constraints_gen')
         parser_constraints_gen_timer.start()
@@ -124,8 +190,9 @@ class PathSolver(object):
         logging.info('path = {}'.format(', '.join(
             [str(n) for n in list(parser_path)])))
         for path_transition in parser_path:
-            assert isinstance(path_transition, ParserTransition) or isinstance(
-                path_transition, ParserErrorTransition)
+            assert isinstance(path_transition, ParserTransition) \
+                    or isinstance(path_transition, ParserCompositeTransition) \
+                    or isinstance(path_transition, ParserErrorTransition)
 
             node = path_transition.src
             next_node = path_transition.dst
@@ -137,9 +204,9 @@ class PathSolver(object):
 
             for op_idx, parser_op in enumerate(parse_state.parser_ops):
                 oob = self.translator.parser_op_oob(context, parser_op)
-                if isinstance(
-                        path_transition, ParserErrorTransition
-                ) and op_idx == path_transition.op_idx and path_transition.next_state == 'sink':
+                if isinstance(path_transition, ParserErrorTransition) \
+                        and op_idx == path_transition.op_idx \
+                        and path_transition.next_state == 'sink':
                     fail = path_transition.error_str
 
                     if not oob and fail == 'StackOutOfBounds':
@@ -206,30 +273,13 @@ class PathSolver(object):
 
                 # XXX: is this check really necessary?
                 if len(sym_transition_key) > 0:
-                    # Make sure that we are not hitting any of the cases before the
-                    # case that we care about
-                    other_constraints = []
-                    for current_transition in parse_state.transitions:
-                        if current_transition != path_transition:
-                            other_constraints.append(
-                                self.translator.parser_transition_key_constraint(
-                                    sym_transition_key, current_transition.
-                                    value, current_transition.mask
-                                )
-                            )
-                        else:
-                            break
-
-                    constraints.append(Not(Or(other_constraints)))
-                    logging.debug(
-                        "Other constraints: {}".format(other_constraints))
-
-                    # The constraint for the case that we are interested in
-                    if path_transition.value is not None:
-                        constraint = self.translator.parser_transition_key_constraint(
-                            sym_transition_key, path_transition.value,
-                            path_transition.mask)
-                        constraints.append(constraint)
+                    if isinstance(path_transition, ParserCompositeTransition):
+                        new_constraints = self.parser_composite_transition_constraints(
+                            path_transition, parse_state.transitions, sym_transition_key)
+                    else:
+                        new_constraints = self.parser_transition_constraints(
+                            path_transition, parse_state.transitions, sym_transition_key)
+                    constraints.extend(new_constraints)
 
                 logging.debug(sym_transition_key)
                 pos = simplify(new_pos)

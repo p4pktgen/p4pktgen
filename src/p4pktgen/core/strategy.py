@@ -7,7 +7,7 @@ from p4pktgen.core.path import Path, PathModel
 from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
-from p4pktgen.hlir.transition import ParserErrorTransition
+from p4pktgen.hlir.transition import ParserTransition, ParserCompositeTransition, ParserErrorTransition
 
 
 def record_path_result(result, is_complete_control_path):
@@ -42,18 +42,39 @@ class ParserGraphVisitor(GraphVisitor):
             for e in path_prefix:
                 self.count(stack_counts, e.dst)
 
-        # Check whether the path so far involves an extraction beyond the end
-        # of a header stack.  In this case, the only legal onward transitions
-        # are error transitions.  If there are no such transitions, the
-        # returned list will be empty, which will cause the caller to drop the
-        # current path-prefix entirely.
+        edges = onward_edges
+
         if any(self.hlir.get_header_stack(stack).size < count
                for stack, count in stack_counts.iteritems()):
-            return [edge for edge in onward_edges
-                    if isinstance(edge, ParserErrorTransition)]
+            # If the path so far involves an extraction beyond the end of a
+            # header stack, the only legal onward transitions are error
+            # transitions.  If there are no such transitions, the returned list
+            # will be empty, which will cause the caller to drop the current
+            # path-prefix entirely.
+            edges = [edge for edge in edges
+                     if isinstance(edge, ParserErrorTransition)]
+        elif Config().get_collapse_parser_paths():
+            # Collapse any parallel transitions into a single edge with merged
+            # constraints.  Note that although the nodes on either side of the
+            # new edge are part of the graph, the edge itself is not.
+            good_edges = [edge for edge in edges
+                          if isinstance(edge, ParserTransition)]
+            other_edges = [edge for edge in edges
+                          if not isinstance(edge, ParserTransition)]
 
-        # Otherwise, no further filtering is necessary.
-        return list(onward_edges)
+            good_edges_by_next_state = defaultdict(list)
+            for edge in good_edges:
+                good_edges_by_next_state[edge.next_state_name].append(edge)
+
+            edges = other_edges
+            for grouped_edges in good_edges_by_next_state.values():
+                if len(grouped_edges) == 1:
+                    edges.append(grouped_edges[0])
+                else:
+                    assert len(grouped_edges) > 1
+                    edges.append(ParserCompositeTransition(grouped_edges))
+
+        return edges
 
     def visit(self, path, is_complete_path):
         if is_complete_path:
