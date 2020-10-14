@@ -46,6 +46,27 @@ class ParserTransition(Edge):
                     self.mask == other.mask) and (self.value == other.value)
 
 
+class ParserCompositeTransition(Edge):
+    """
+    Class representing parallel P4 parser transitions that have been merged.
+    """
+    def __init__(self, components):
+        # Check that edges are parallel parser transitions
+        assert all(isinstance(t, ParserTransition) for t in components)
+        assert len(components) > 0
+        src = components[0].src
+        dst = components[0].dst
+        for c in components[1:]:
+            assert c.src == src and c.dst == dst
+        self.components = components
+        super(ParserCompositeTransition, self).__init__(src, dst)
+
+    def __eq__(self, other):
+        if isinstance(other, ParserTransition):
+            return other in self.component_edges
+        return super(ParserCompositeTransition, self).__eq__(other)
+
+
 class ParserErrorTransition(Transition):
     def __init__(self, state_name, op, op_idx, next_state, error_str):
         super(ParserErrorTransition, self).__init__(

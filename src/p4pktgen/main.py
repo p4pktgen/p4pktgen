@@ -202,6 +202,14 @@ def main():
         """With this option given, round robin over parser paths when generating test cases.  Note that this may use large amounts of memory on jobs with many parser paths."""
     )
     parser.add_argument(
+        '-cpp', '--collapse-parser-paths',
+        dest='collapse_parser_paths',
+        action='store_true',
+        default=False,
+        help=
+        """With this option given, collapse parallel transitions in the parser graph into a single transition."""
+    )
+    parser.add_argument(
         '-rnd', '--randomize',
         dest='randomize',
         action='store_true',
