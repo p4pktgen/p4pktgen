@@ -196,17 +196,14 @@ def main():
     elif args.silent:
         logging.getLogger().setLevel(logging.ERROR)
 
-    # Build the IR
-    assert args.format in ['json', 'p4']
+    assert args.format == 'json', 'Only json input format is currently supported'
 
-    if args.format == 'json':
-        process_json_file(
-            args.input_file,
-            debug=args.debug,
-            generate_graphs=args.generate_graphs)
-    else:
-        # XXX: revisit
-        top.build_from_p4(args.input_file, args.flags)
+    # Build the IR
+    process_json_file(
+        args.input_file,
+        debug=args.debug,
+        generate_graphs=args.generate_graphs
+    )
 
 
 def break_into_lines(s, max_len=40):
