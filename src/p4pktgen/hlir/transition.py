@@ -40,7 +40,7 @@ class ParserTransition(Edge):
     def __eq__(self, other):
         return isinstance(
             other,
-            HLIR_Parser_Transition) and (self.type_ == other.type_) and (
+            ParserTransition) and (self.type_ == other.type_) and (
                 self.next_state_name == other.next_state_name) and (
                     self.mask == other.mask) and (self.value == other.value)
 

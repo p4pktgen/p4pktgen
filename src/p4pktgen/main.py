@@ -1,23 +1,16 @@
 from __future__ import print_function
 import argparse
-import collections
 import logging
 from collections import defaultdict, OrderedDict
-import sys
-import time
-from random import shuffle
-
-from graphviz import Digraph
 
 from p4_top import P4_Top
-from p4_hlir import P4_HLIR
 from config import Config
 from core.translator import Translator
-from p4pktgen.core.strategy import *
-from p4pktgen.core.translator import TestPathResult
+from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
+from p4pktgen.core.strategy import EdgeLabels, TLUBFParserVisitor, LeastUsedPaths, EdgeCoverageGraphVisitor
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.util.test_case_writer import TestCaseWriter
-from p4pktgen.hlir.transition import TransitionType, BoolTransition
+from p4pktgen.util.visualization import generate_graphviz_graph
 
 
 def main():
@@ -195,267 +188,105 @@ def main():
     #    format='%(levelname)s: [%(filename)s:%(lineno)s] %(message)s', level=logging.INFO)
     logging.basicConfig(
         format='%(levelname)s: %(message)s', level=logging.INFO)
-    if args.debug:
+    if Config().get_debug():
         logging.getLogger().setLevel(logging.DEBUG)
-    elif args.silent:
+    elif Config().get_silent():
         logging.getLogger().setLevel(logging.ERROR)
 
-    # Build the IR
-    assert args.format in ['json', 'p4']
+    assert args.format == 'json', 'Only json input format is currently supported'
 
-    if args.format == 'json':
-        process_json_file(
-            args.input_file,
-            debug=args.debug,
-            generate_graphs=args.generate_graphs)
-    else:
-        # XXX: revisit
-        top.build_from_p4(args.input_file, args.flags)
-
-
-def break_into_lines(s, max_len=40):
-    """Break s into lines, only at locations where there is whitespace in
-    s, at most `max_len` characters long.  Allow longer lines in
-    the returned string if there is no whitespace"""
-    words = s.split()
-    out_lines = []
-    cur_line = ""
-    for word in words:
-        if (len(cur_line) + 1 + len(word)) > max_len:
-            if len(cur_line) == 0:
-                out_lines.append(word)
-            else:
-                out_lines.append(cur_line)
-                cur_line = word
-        else:
-            if len(cur_line) > 0:
-                cur_line += " "
-            cur_line += word
-    if len(cur_line) > 0:
-        out_lines.append(cur_line)
-    return '\n'.join(out_lines)
-
-
-def generate_graphviz_graph(pipeline, graph, lcas={}):
-    dot = Digraph(comment=pipeline.name)
-    for node in graph.graph:
-        if node in lcas:
-            lca_str = str(lcas[node])
-            if node is None:
-                node_str = "null"
-            else:
-                node_str = str(node)
-            # By creating these edges with constraint "false",
-            # GraphViz will lay out the graph the same as if these
-            # edges did not exist, and then add these edges.  Without
-            # doing this, the node placement with these extra edges
-            # can be significantly different than without these edges,
-            # and make the control flow more difficult to see, as it
-            # isn't always top-to-bottom any longer.
-            dot.edge(
-                node_str,
-                lca_str,
-                color="orange",
-                style="dashed",
-                constraint="false")
-        if node is None:
-            continue
-        assert node in pipeline.conditionals or node in pipeline.tables
-        neighbors = graph.get_neighbors(node)
-        node_label_str = None
-        node_color = None
-        if node in pipeline.conditionals:
-            node_str = node
-            shape = 'oval'
-            if len(neighbors) > 0:
-                assert isinstance(neighbors[0], BoolTransition)
-                # True/False branch of the edge
-                assert isinstance(neighbors[0].val, bool)
-                si = neighbors[0].source_info
-                # Quick and dirty check for whether the condition uses
-                # a valid bit, but only for P4_16 programs, and only
-                # if the entire condition is in the source_fragment,
-                # which requires that the condition all be placed in
-                # one line in the actual P4_16 source file.
-                if (si is not None) and ('isValid' in si.source_fragment):
-                    node_color = "red"
-                node_label_str = ("%s (line %d)\n%s"
-                                  "" % (node_str,
-                                        -1 if si is None else si.line,
-                                        "" if si is None else
-                                        break_into_lines(si.source_fragment)))
-        else:
-            node_str = node
-            shape = 'box'
-        if node_label_str is None:
-            node_label_str = node_str
-        if node_color is None:
-            node_color = "black"
-        dot.node(node_str, node_label_str, shape=shape, color=node_color)
-        for t in neighbors:
-            transition = t
-            neighbor = t.dst
-            edge_label_str = ""
-            edge_color = "black"
-            edge_style = "solid"
-            if node in pipeline.conditionals:
-                if neighbor is None:
-                    neighbor_str = "null"
-                else:
-                    neighbor_str = str(neighbor)
-                assert isinstance(transition.val, bool)
-                edge_label_str = str(transition.val)
-                edge_style = "dashed"
-            else:
-                # Check for whether an action uses any add_header or
-                # remove_header primitive actions.  These correspond
-                # to the same named primitives in P4_14 programs, or
-                # to setValid() or setInvalid() method calls in P4_16 programs.
-                assert (transition.transition_type ==
-                        TransitionType.ACTION_TRANSITION
-                        or transition.transition_type ==
-                        TransitionType.CONST_ACTION_TRANSITION)
-
-                primitive_ops = [p.op for p in transition.action.primitives]
-                change_hdr_valid = (("add_header" in primitive_ops)
-                                    or ("remove_header" in primitive_ops))
-                if change_hdr_valid:
-                    edge_color = "green"
-                    add_header_count = 0
-                    remove_header_count = 0
-                    for op in primitive_ops:
-                        if op == "add_header":
-                            add_header_count += 1
-                        elif op == "remove_header":
-                            remove_header_count += 1
-                    edge_label_str = ""
-                    if add_header_count > 0:
-                        edge_label_str += "+%d" % (add_header_count)
-                    if remove_header_count > 0:
-                        edge_label_str += "-%d" % (remove_header_count)
-
-                if neighbor is None:
-                    neighbor_str = "null"
-                else:
-                    neighbor_str = str(neighbor)
-            assert isinstance(neighbor_str, str)
-            dot.edge(
-                node_str,
-                neighbor_str,
-                edge_label_str,
-                color=edge_color,
-                style=edge_style)
-    fname = '{}_dot.gv'.format(pipeline.name)
-    dot.render(fname, view=False)
-    logging.info("Wrote files %s and %s.pdf", fname, fname)
-
-def process_json_file(input_file, debug=False, generate_graphs=False):
-    top = P4_Top(debug)
-    top.build_from_json(input_file)
-
-    # Get the parser graph
-    hlir = P4_HLIR(debug, top.json_obj)
-    parser_graph = hlir.get_parser_graph()
-    # parser_sources, parser_sinks = parser_graph.get_sources_and_sinks()
-    # logging.debug("parser_graph has %d sources %s, %d sinks %s"
-    #               "" % (len(parser_sources), parser_sources, len(parser_sinks),
-    #                     parser_sinks))
-
-    assert 'ingress' in hlir.pipelines
-    in_pipeline = hlir.pipelines['ingress']
-    graph, source_info_to_node_name = in_pipeline.generate_CFG()
-    logging.debug(graph)
-    graph_sources, graph_sinks = graph.get_sources_and_sinks()
-    logging.debug("graph has %d sources %s, %d sinks %s"
-                  "" % (len(graph_sources), graph_sources, len(graph_sinks),
-                        graph_sinks))
-
-    # Graphviz visualization
-    if generate_graphs:
-        graph_lcas = {}
-        #tmp_time = time.time()
-        #for v in graph.get_nodes():
-        #    graph_lcas[v] = graph.lowest_common_ancestor(v)
-        #lca_comp_time = time.time() - tmp_time
-        #logging.info("%.3f sec to compute lowest common ancestors for ingress",
-        #             lca_comp_time)
-        generate_graphviz_graph(in_pipeline, graph, lcas=graph_lcas)
-        eg_pipeline = hlir.pipelines['egress']
-        eg_graph, eg_source_info_to_node_name = eg_pipeline.generate_CFG()
-        generate_graphviz_graph(eg_pipeline, eg_graph)
+    # Generate visualizations if requested.  Do not generate test cases.
+    if args.generate_graphs:
+        generate_visualizations(args.input_file)
         return
 
+    # Build the IR
+    generate_test_cases(args.input_file)
+
+
+def generate_visualizations(input_file):
+    top = P4_Top()
+    top.load_json_file(input_file)
+    top.build_graph(ingress=True, egress=True)
+    graph_lcas = {}
+    generate_graphviz_graph(top.in_pipeline, top.in_graph, lcas=graph_lcas)
+    generate_graphviz_graph(top.eg_pipeline, top.eg_graph)
+
+
+def print_parser_paths(parser_paths):
+    parser_paths_with_len = {}
+    for p in parser_paths:
+        parser_paths_with_len.setdefault(len(p), []).append(p)
+    for plen in sorted(parser_paths_with_len.keys()):
+        logging.info("%6d parser paths with len %2d"
+                     "" % (len(parser_paths_with_len[plen]), plen))
+    for plen in sorted(parser_paths_with_len.keys()):
+        logging.info("Contents of %6d parser paths with len %2d:"
+                     "" % (len(parser_paths_with_len[plen]), plen))
+        i = 0
+        for p in parser_paths_with_len[plen]:
+            i += 1
+            logging.info("Path %d of %d with len %d:"
+                         "" % (i, len(parser_paths_with_len[plen]), plen))
+            print(p)
+
+
+def generate_test_cases(input_file):
+    top = P4_Top()
+    top.load_json_file(input_file)
+
+    top.build_graph()
     Statistics().init()
+
     # XXX: move
     labels = defaultdict(lambda: EdgeLabels.UNVISITED)
-    translator = Translator(input_file, hlir, in_pipeline)
+    translator = Translator(input_file, top.hlir, top.in_pipeline)
     results = OrderedDict()
+
     # TBD: Make this filename specifiable via command line option
-    test_case_writer = TestCaseWriter('test-cases.json', 'test.pcap')
+    test_case_writer = TestCaseWriter(
+        Config().get_output_json_path(),
+        Config().get_output_pcap_path()
+    )
 
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
-        graph.count_all_paths(in_pipeline.init_table_name)
-    num_parser_path_edges = parser_graph.num_edges()
-    Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges 
+        top.in_graph.count_all_paths(top.in_pipeline.init_table_name)
+    num_parser_path_edges = top.parser_graph.num_edges()
+    Statistics().num_control_path_edges = num_parser_path_edges + num_control_path_edges
 
     if Config().get_try_least_used_branches_first():
-        p_visitor = TLUBFParserVisitor(graph, labels, translator, source_info_to_node_name, results, test_case_writer, in_pipeline)
-        lup = LeastUsedPaths(hlir, parser_graph, hlir.parsers['parser'].init_state, p_visitor)
+        p_visitor = TLUBFParserVisitor(top.in_graph, labels, translator, top.in_source_info_to_node_name, results,
+                                       test_case_writer, top.in_pipeline)
+        lup = LeastUsedPaths(top.hlir, top.parser_graph, top.hlir.parsers['parser'].init_state, p_visitor)
         lup.visit()
         exit(0)
 
-    graph_visitor = ParserGraphVisitor(hlir)
-    parser_graph.visit_all_paths(hlir.parsers['parser'].init_state, 'sink',
-                                 graph_visitor)
+    graph_visitor = ParserGraphVisitor(top.hlir)
+    top.parser_graph.visit_all_paths(top.hlir.parsers['parser'].init_state, 'sink',
+                                     graph_visitor)
     parser_paths = graph_visitor.all_paths
-
-    num_parser_paths = len(parser_paths)
-    num_parser_path_nodes = 0
-    #num_parser_paths, num_parser_path_nodes, num_parser_path_edges = \
-    #    parser_graph.count_all_paths('start')
-    # print('\n'.join([str(p) for p in parser_paths]))
 
     max_path_len = max([len(p) for p in parser_paths])
     logging.info("Found %d parser paths, longest with length %d"
                  "" % (len(parser_paths), max_path_len))
     if Config().get_show_parser_paths():
-        parser_paths_with_len = collections.defaultdict(list)
-        for p in parser_paths:
-            parser_paths_with_len[len(p)].append(p)
-        for plen in sorted(parser_paths_with_len.keys()):
-            logging.info("%6d parser paths with len %2d"
-                         "" % (len(parser_paths_with_len[plen]), plen))
-        for plen in sorted(parser_paths_with_len.keys()):
-            logging.info("Contents of %6d parser paths with len %2d:"
-                         "" % (len(parser_paths_with_len[plen]), plen))
-            i = 0
-            for p in parser_paths_with_len[plen]:
-                i += 1
-                logging.info("Path %d of %d with len %d:"
-                             "" % (i, len(parser_paths_with_len[plen]), plen))
-                print(p)
+        print_parser_paths(parser_paths)
 
     logging.info("Counted %d paths, %d nodes, %d edges"
                  " in parser + ingress control flow graph"
-                 "" % (len(parser_paths) * num_control_paths, num_parser_path_nodes + num_control_path_nodes,
+                 "" % (len(parser_paths) * num_control_paths, num_control_path_nodes,
                        num_parser_path_edges + num_control_path_edges))
-
-    # The only reason first_time is a list is so we can mutate the
-    # global value inside of a sub-method.
-    first_time = [True]
-    parser_path_num = 0
 
     # XXX: move
     path_count = defaultdict(int)
 
-    for parser_path in parser_paths:
+    for i_path, parser_path in enumerate(parser_paths):
         for e in parser_path:
             if path_count[e] == 0:
                 Statistics().num_covered_edges += 1
             path_count[e] += 1
-        parser_path_num += 1
         logging.info("Analyzing parser_path %d of %d: %s"
-                     "" % (parser_path_num, len(parser_paths), parser_path))
+                     "" % (i_path, len(parser_paths), parser_path))
         if not translator.generate_parser_constraints(parser_path):
             logging.info("Could not find any packet to satisfy parser path: %s"
                          "" % (parser_path))
@@ -464,15 +295,15 @@ def process_json_file(input_file, debug=False, generate_graphs=False):
 
         graph_visitor = None
         if Config().get_try_least_used_branches_first():
-            graph_visitor = EdgeCoverageGraphVisitor(graph, labels, translator, parser_path,
-                                                     source_info_to_node_name,
+            graph_visitor = EdgeCoverageGraphVisitor(top.in_graph, labels, translator, parser_path,
+                                                     top.in_source_info_to_node_name,
                                                      results, test_case_writer)
         else:
             graph_visitor = PathCoverageGraphVisitor(translator, parser_path,
-                                                     source_info_to_node_name,
+                                                     top.in_source_info_to_node_name,
                                                      results, test_case_writer)
 
-        graph.visit_all_paths(in_pipeline.init_table_name, None, graph_visitor)
+        top.in_graph.visit_all_paths(top.in_pipeline.init_table_name, None, graph_visitor)
 
         # Check if we generated enough test cases
         if Statistics().num_test_cases == Config().get_num_test_cases():

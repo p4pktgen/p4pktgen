@@ -1,67 +1,58 @@
 from __future__ import print_function
+
+import logging
 import json
-from pprint import pprint
-import subprocess
 from collections import OrderedDict
+
+from p4_hlir import P4_HLIR
+
+
+def log_graph(name, graph):
+    logging.debug(graph)
+    graph_sources, graph_sinks = graph.get_sources_and_sinks()
+    logging.debug("graph %s has %d sources %s, %d sinks %s"
+                  "" % (name, len(graph_sources), graph_sources,
+                        len(graph_sinks), graph_sinks))
 
 
 class P4_Top():
-    """Top-level for P4_16 API. Takes input P4 device and generates JSON"""
+    """Top-level for P4_16 API. Takes input P4 JSON"""
 
-    # Standard Init stuff
-    def __init__(self, debug):
-
+    def __init__(self):
         # Set class variables
-        self.debug = debug
         self.json_file = None
         self.json_obj = None
 
-        # # Build parser graph
-        # self.graphs = P4_Graphs(self.debug, self.hlir)
-        # self.graphs.get_parser()
+        self.hlir = None
+        self.parser_graph = None
 
-    # Build P4 Top object from input .p4 device file
-    ## Still needs improvement ##
+        # Ingress graph, required for generating test cases
+        self.in_pipeline = None
+        self.in_graph = None
+        self.in_source_info_to_node_name = None
+        # Egress graph, only used for graph visualisation
+        self.eg_pipeline = None
+        self.eg_graph = None
+        self.eg_source_info_to_node_name = None
 
-    def build_from_p4(self, input_file, flags):
-        """
-        # Parse input_file
-        [name, version, extension] = input_file.split(".")
-        name = name.split("/")
-        outfile_name = "examples/" + name[-1] + "." + version + ".json"
+    def load_json_file(self, json_file):
+        self.json_file = json_file
+        self.json_obj = json.load(open(json_file),
+                                  object_pairs_hook=OrderedDict)
 
-        call_list = ["-o", outfile_name, input_file]
-        
-        # Parse Flags
-        if flags != None:
-            flags = flags.split(" ")
-            call_list = flags + call_list
+    def build_graph(self, ingress=True, egress=False):
+        # Get the parser graph
+        self.hlir = P4_HLIR(self.json_obj)
+        self.parser_graph = self.hlir.build_parser_graph()
 
-        # Add compiler call
-        call_list.insert(0, "p4c-bm2-ss")
+        if ingress:
+            assert 'ingress' in self.hlir.pipelines
+            self.in_pipeline = self.hlir.pipelines['ingress']
+            self.in_graph, self.in_source_info_to_node_name = self.in_pipeline.generate_CFG()
+            log_graph('ingress', self.in_graph)
 
-        if self.debug:
-            logging.debug("The compiler call was: " + str(call_list))
-
-        for path in self.graphs.paths:
-            generate_constraints(self.hlir, path, input_file)
-
-        # Make the command line call
-        subprocess.call(call_list)
-
-        # Output file destination
-        self.json_file = outfile_name
-        self.json_obj = self.load_json(self.json_file)
-        """
-
-    # Build P4 Top object from input .json file
-
-    def build_from_json(self, input_file):
-        # Output file destination
-        self.json_file = input_file
-        self.json_obj = self.load_json(self.json_file)
-
-    # Converts the JSON file to the OD we use as our IR
-    def load_json(self, input_file):
-        data = json.load(open(input_file), object_pairs_hook=OrderedDict)
-        return data
+        if egress:
+            assert 'egress' in self.hlir.pipelines
+            self.eg_pipeline = self.hlir.pipelines['egress']
+            self.eg_graph, self.eg_source_info_to_node_name = self.eg_pipeline.generate_CFG()
+            log_graph('egress', self.eg_graph)

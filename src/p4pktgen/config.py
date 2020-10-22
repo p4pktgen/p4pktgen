@@ -4,61 +4,6 @@ class Config:
     def __init__(self):
         self.__dict__ = self.__shared_state
 
-    def load_test_defaults(self,
-                           no_packet_length_errs=True,
-                           run_simple_switch=True,
-                           solve_for_metadata=False):
-        self.debug = False
-        self.silent = False
-        self.allow_uninitialized_reads = False
-        self.solve_for_metadata = solve_for_metadata
-        self.allow_invalid_header_writes = False
-        self.record_statistics = False
-        self.allow_unimplemented_primitives = False
-        self.dump_test_case = False
-        self.show_parser_paths = False
-        self.no_packet_length_errs = no_packet_length_errs
-        self.run_simple_switch = run_simple_switch
-        self.random_tlubf = False
-
-        # Physical Ethernet ports have a minimum frame size of 64
-        # bytes, which is 14 bytes of header, 46 bytes of payload,
-        # and 4 bytes of CRC (p4pktgen and simple_switch don't
-        # deal with the CRC).
-
-        # It appears that virtual Ethernet interfaces allow
-        # frames as short as 14 bytes, and perhaps shorter.
-
-        # Scapy's Ether() method does not support packets shorter than
-        # 6 bytes, but we no longer call Ether() on packets that
-        # p4pktgen creates, so it is not a problem to generate shorter
-        # packets.
-
-        # TBD exactly what sizes of packets are supported to be sent
-        # through a Linux virtual Ethernet interface.  It might be 60
-        # bytes, because of the minimum Ethernet frame size.
-
-        # The Ethernet minimum size does not seem to apply for packets
-        # sent to simple_switch via pcap files.
-
-        # TBD: Create the necessary constraints to use the values
-        # below as their names would imply.
-        self.min_packet_len_generated = 1
-        # TBD: Use this value in SMT variable creation to limit the
-        # size of the packet BitVec variable.
-        self.max_packet_len_generated = 1536
-
-        # None means no limit on the number of packets generated per
-        # parser path, other than the number of paths in the ingress
-        # control block.
-        self.max_paths_per_parser_path = None
-        self.num_test_cases = None
-        self.try_least_used_branches_first = False
-        self.hybrid_input = True
-        self.conditional_opt = True
-        self.table_opt = True
-        self.incremental = True
-
     def load_args(self, args):
         self.debug = args.debug
         self.silent = args.silent
@@ -83,6 +28,7 @@ class Config:
         self.table_opt = args.table_opt
         self.incremental = args.incremental
         self.random_tlubf = args.random_tlubf
+        self.output_path = './test-case'
 
     def get_debug(self):
         return self.debug
@@ -146,3 +92,9 @@ class Config:
 
     def get_random_tlubf(self):
         return self.random_tlubf
+
+    def get_output_json_path(self):
+        return self.output_path + '.json'
+
+    def get_output_pcap_path(self):
+        return self.output_path + '.pcap'
