@@ -37,6 +37,7 @@ script:
   - bash tools/install-thrift.sh
   - git clone https://github.com/p4lang/behavioral-model.git
   - cd behavioral-model
+  - git checkout c67f85d45feea5c31312c9a1e8a7063a976a1469  # Known to work with python 2
   - bash travis/install-nanomsg.sh
   - ./autogen.sh
   - ./configure 'CXXFLAGS=-Wno-sign-compare' 
