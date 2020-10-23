@@ -4,7 +4,7 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["Meta_t.meta_field", 24, false]
+        ["userMetadata.meta_field", 24, false]
       ]
     },
     {
@@ -68,13 +68,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6],
-    ["ParserInvalidArgument", 7]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["ParserInvalidArgument", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -116,7 +116,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "user-metadata.p4",
-        "line" : 73,
+        "line" : 27,
         "column" : 8,
         "source_fragment" : "deparser"
       },
@@ -131,7 +131,7 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "usermetadata82",
+      "name" : "usermetadata36",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
@@ -145,7 +145,7 @@
           ],
           "source_info" : {
             "filename" : "user-metadata.p4",
-            "line" : 82,
+            "line" : 36,
             "column" : 12,
             "source_fragment" : "mark_to_drop(standard_meta)"
           }
@@ -153,7 +153,7 @@
       ]
     },
     {
-      "name" : "usermetadata84",
+      "name" : "usermetadata38",
       "id" : 1,
       "runtime_data" : [],
       "primitives" : [
@@ -167,7 +167,7 @@
           ],
           "source_info" : {
             "filename" : "user-metadata.p4",
-            "line" : 84,
+            "line" : 38,
             "column" : 12,
             "source_fragment" : "mark_to_drop(standard_meta)"
           }
@@ -181,18 +181,18 @@
       "id" : 0,
       "source_info" : {
         "filename" : "user-metadata.p4",
-        "line" : 75,
+        "line" : 29,
         "column" : 8,
         "source_fragment" : "ingress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_usermetadata82",
+          "name" : "tbl_usermetadata36",
           "id" : 0,
           "source_info" : {
             "filename" : "user-metadata.p4",
-            "line" : 82,
+            "line" : 36,
             "column" : 12,
             "source_fragment" : "mark_to_drop(standard_meta)"
           },
@@ -204,10 +204,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0],
-          "actions" : ["usermetadata82"],
+          "actions" : ["usermetadata36"],
           "base_default_next" : "node_4",
           "next_tables" : {
-            "usermetadata82" : "node_4"
+            "usermetadata36" : "node_4"
           },
           "default_entry" : {
             "action_id" : 0,
@@ -217,11 +217,11 @@
           }
         },
         {
-          "name" : "tbl_usermetadata84",
+          "name" : "tbl_usermetadata38",
           "id" : 1,
           "source_info" : {
             "filename" : "user-metadata.p4",
-            "line" : 84,
+            "line" : 38,
             "column" : 12,
             "source_fragment" : "mark_to_drop(standard_meta)"
           },
@@ -233,10 +233,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [1],
-          "actions" : ["usermetadata84"],
+          "actions" : ["usermetadata38"],
           "base_default_next" : null,
           "next_tables" : {
-            "usermetadata84" : null
+            "usermetadata38" : null
           },
           "default_entry" : {
             "action_id" : 1,
@@ -253,7 +253,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "user-metadata.p4",
-            "line" : 81,
+            "line" : 35,
             "column" : 12,
             "source_fragment" : "h.e.soui != 0xf53"
           },
@@ -271,7 +271,7 @@
               }
             }
           },
-          "true_next" : "tbl_usermetadata82",
+          "true_next" : "tbl_usermetadata36",
           "false_next" : "node_4"
         },
         {
@@ -279,7 +279,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "user-metadata.p4",
-            "line" : 83,
+            "line" : 37,
             "column" : 12,
             "source_fragment" : "m.meta_field >> 8 == h.e.soui"
           },
@@ -297,7 +297,7 @@
                       "op" : ">>",
                       "left" : {
                         "type" : "field",
-                        "value" : ["scalars", "Meta_t.meta_field"]
+                        "value" : ["scalars", "userMetadata.meta_field"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -318,7 +318,7 @@
             }
           },
           "false_next" : null,
-          "true_next" : "tbl_usermetadata84"
+          "true_next" : "tbl_usermetadata38"
         }
       ]
     },
@@ -327,7 +327,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "user-metadata.p4",
-        "line" : 71,
+        "line" : 25,
         "column" : 8,
         "source_fragment" : "egress"
       },
