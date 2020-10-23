@@ -376,15 +376,14 @@ class CheckSystem:
 
         results = run_test('examples/user-metadata.json')
         expected_results = {
-            ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'node_4', (False, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui')))):
-            TestPathResult.SUCCESS,
-            ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'node_4', (True, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui'))), (u'tbl_usermetadata84', u'usermetadata84')):
-            TestPathResult.SUCCESS,
-            ('start', 'sink', (u'node_2', (True, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'tbl_usermetadata82', u'usermetadata82'), (u'node_4', (False, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui')))):
-            TestPathResult.SUCCESS,
-            ('start', 'sink', (u'node_2', (True, (u'user-metadata.p4', 81, u'h.e.soui != 0xf53'))), (u'tbl_usermetadata82', u'usermetadata82'), (u'node_4', (True, (u'user-metadata.p4', 83, u'm.meta_field >> 8 == h.e.soui'))), (u'tbl_usermetadata84', u'usermetadata84')):
-            TestPathResult.SUCCESS,
-
+            ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 35, u'h.e.soui != 0xf53'))), (u'node_4', (False, (u'user-metadata.p4', 37, u'm.meta_field >> 8 == h.e.soui')))):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'user-metadata.p4', 35, u'h.e.soui != 0xf53'))), (u'node_4', (True, (u'user-metadata.p4', 37, u'm.meta_field >> 8 == h.e.soui'))), (u'tbl_usermetadata38', u'usermetadata38')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'user-metadata.p4', 35, u'h.e.soui != 0xf53'))), (u'tbl_usermetadata36', u'usermetadata36'), (u'node_4', (False, (u'user-metadata.p4', 37, u'm.meta_field >> 8 == h.e.soui')))):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'user-metadata.p4', 35, u'h.e.soui != 0xf53'))), (u'tbl_usermetadata36', u'usermetadata36'), (u'node_4', (True, (u'user-metadata.p4', 37, u'm.meta_field >> 8 == h.e.soui'))), (u'tbl_usermetadata38', u'usermetadata38')):
+                TestPathResult.SUCCESS,
         }
         assert results == expected_results
 
