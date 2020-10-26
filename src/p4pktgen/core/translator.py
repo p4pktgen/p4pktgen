@@ -405,7 +405,11 @@ class Translator:
                                 ULT(sym_size,
                                     BitVecVal(sym_packet.max_packet_size, 32) -
                                     c_packet_size)))
-                        sym_packet.update_packet_size(c_packet_size + sym_size)
+                        # Perform the extraction in order to update the length
+                        # of the packet, but don't do anything with the
+                        # returned variable.
+                        sym_packet.extract(c_packet_size, field.size,
+                                           sym_size)
                         return new_pos
 
                     if field.name != '$valid$':
@@ -425,19 +429,13 @@ class Translator:
                 # XXX: deal with valid flags
                 if field_name != '$valid$':
                     if field.var_length:
-                        # This messes up the packet size somewhat
-                        field_val = sym_packet.extract(
-                            new_pos + extract_offset, field.size)
-                        ones = BitVecVal(-1, field.size)
-                        assert ones.size() >= sym_size.size()
+                        field_val = sym_packet.extract(new_pos + extract_offset,
+                                                       field.size, sym_size)
                         field_size_c = BitVecVal(field.size, sym_size.size())
-                        ones, shift_bits = equalize_bv_size(
-                            ones, field_size_c - sym_size)
-                        context.set_field_value(header_name, field_name,
-                                                field_val & (LShR(ones, shift_bits)))
                         constraints.append(ULE(sym_size, field_size_c))
                         context.record_extract_vl(header_name, field_name, sym_size)
-
+                        context.set_field_value(header_name, field_name,
+                                                field_val)
                         extract_offset += sym_size
                     else:
                         context.set_field_value(header_name, field_name,
@@ -807,7 +805,7 @@ class Translator:
         # XXX: workaround
         self.current_context().set_field_value('meta_meta', 'packet_len',
                                                self.sym_packet.packet_size_var)
-        constraints.append(self.sym_packet.get_length_constraint())
+        constraints.extend(self.sym_packet.get_packet_constraints())
         constraints.extend(self.current_context().get_name_constraints())
         self.solver.add(And(constraints))
 

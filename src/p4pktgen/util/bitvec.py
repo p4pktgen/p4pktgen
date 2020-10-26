@@ -11,3 +11,10 @@ def equalize_bv_size(*bvs):
     for bv in bvs:
         yield (z3.ZeroExt(target_size - bv.size(), bv)
                if bv.size() != target_size else bv)
+
+
+def LShREq(val, shift):
+    """Morally equivalent to z3.LShR, but zero-extends its arguments as
+    necessary so that the shift is well-defined.
+    """
+    return z3.LShR(*equalize_bv_size(val, shift))

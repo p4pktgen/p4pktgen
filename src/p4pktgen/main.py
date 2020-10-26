@@ -86,12 +86,6 @@ def main():
         default=False,
         help='Record statistics', )
     parser.add_argument(
-        '--no-hybrid-input',
-        dest='hybrid_input',
-        action='store_false',
-        default=True,
-        help='Do not use the hybrid input representation')
-    parser.add_argument(
         '--no-conditional-opt',
         dest='conditional_opt',
         action='store_false',
