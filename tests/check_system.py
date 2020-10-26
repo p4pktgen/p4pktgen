@@ -57,7 +57,6 @@ def load_test_config(no_packet_length_errs=True,
     config.max_test_cases_per_path = 1
     config.num_test_cases = None
     config.try_least_used_branches_first = False
-    config.hybrid_input = True
     config.conditional_opt = True
     config.table_opt = True
     config.incremental = True
@@ -532,7 +531,6 @@ class CheckSystem:
             lengths2.add(l2)
 
 
-    @pytest.mark.xfail(reason="Variable length extractions mask subsequent constant extractions")
     def check_extract_fixed_after_variable(self):
         # This test case checks that fixed-length extractions of regions
         # that follow immediately after a variably-extracted region are
