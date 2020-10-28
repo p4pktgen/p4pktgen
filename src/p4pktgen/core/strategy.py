@@ -84,7 +84,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
         self.path_solver = path_solver
         self.parser_path = parser_path
         self.source_info_to_node_name = source_info_to_node_name
-        self.path_count = 0
         self.results = results
         self.test_case_writer = test_case_writer
         self.stats_per_traversal = defaultdict(int)
@@ -93,13 +92,13 @@ class PathCoverageGraphVisitor(GraphVisitor):
         return edges
 
     def generate_test_case(self, control_path, is_complete_control_path):
-        self.path_count += 1
         self.path_solver.push()
 
         expected_path = self.path_solver.translator.expected_path(self.parser_path, control_path)
+        path_id = self.path_solver.path_id
 
         logging_str = "%d Exp path (len %d+%d=%d) complete_path %s: %s" % \
-            (self.path_count, len(self.parser_path), len(control_path),
+            (path_id, len(self.parser_path), len(control_path),
              len(self.parser_path) + len(control_path),
              is_complete_control_path, expected_path)
         logging.info("")
@@ -134,7 +133,6 @@ class PathCoverageGraphVisitor(GraphVisitor):
                 control_path=control_path,
                 is_complete_control_path=is_complete_control_path,
                 source_info_to_node_name=self.source_info_to_node_name,
-                count=self.path_count,
             )
             time5 = time.time()
 
