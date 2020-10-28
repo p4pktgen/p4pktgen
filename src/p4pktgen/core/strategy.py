@@ -9,7 +9,7 @@ import random
 from enum import Enum
 
 from p4pktgen.config import Config
-from p4pktgen.core.test_cases import TestPathResult
+from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.hlir.transition import ActionTransition, ParserTransition
@@ -17,15 +17,6 @@ from p4pktgen.hlir.transition import ActionTransition, ParserTransition
 
 def record_path_result(result, is_complete_control_path):
     if result != TestPathResult.SUCCESS or is_complete_control_path:
-        return True
-    return False
-
-
-def record_test_case(result, is_complete_control_path):
-    if result in [TestPathResult.UNINITIALIZED_READ,
-                  TestPathResult.INVALID_HEADER_WRITE]:
-        return True
-    if result == TestPathResult.SUCCESS and is_complete_control_path:
         return True
     return False
 
@@ -78,10 +69,11 @@ class ParserGraphVisitor(GraphVisitor):
         pass
 
 class PathCoverageGraphVisitor(GraphVisitor):
-    def __init__(self, path_solver, parser_path, source_info_to_node_name,
+    def __init__(self, path_solver, table_solver, parser_path, source_info_to_node_name,
                  results, test_case_writer):
         super(PathCoverageGraphVisitor, self).__init__()
         self.path_solver = path_solver
+        self.table_solver = table_solver
         self.parser_path = parser_path
         self.source_info_to_node_name = source_info_to_node_name
         self.results = results
@@ -122,6 +114,10 @@ class PathCoverageGraphVisitor(GraphVisitor):
         extract_vl_variation = Config().get_extract_vl_variation()
         max_test_cases = Config().get_num_test_cases()
         max_path_test_cases = Config().get_max_test_cases_per_path()
+        do_consolidate_tables = Config().get_do_consolidate_tables()
+
+        # TODO: Remove this once these two options are made compatible
+        assert not (do_consolidate_tables and max_path_test_cases != 1)
 
         while True:
             self.path_solver.solve_path()
@@ -141,6 +137,19 @@ class PathCoverageGraphVisitor(GraphVisitor):
             # either, so move on.
             if not record_test_case(result, is_complete_control_path):
                 break
+
+            if do_consolidate_tables:
+                # TODO: refactor path_solver to allow extraction of result &
+                # record_test_case without building test case.
+                self.table_solver.add_path(
+                    path_id, self.path_solver.constraints,
+                    self.path_solver.current_context(),
+                    self.path_solver.sym_packet,
+                    expected_path, self.parser_path, control_path,
+                    is_complete_control_path
+                )
+                break
+
             test_case["time_sec_generate_ingress_constraints"] = time3 - time2
             test_case["time_sec_solve"] = time4 - time3
             test_case["time_sec_simulate_packet"] = time5 - time4

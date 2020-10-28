@@ -30,6 +30,7 @@ class Config:
         self.random_tlubf = args.random_tlubf
         self.output_path = './test-case'
         self.extract_vl_variation = args.extract_vl_variation
+        self.consolidate_tables = args.consolidate_tables
 
     def get_debug(self):
         return self.debug
@@ -105,3 +106,9 @@ class Config:
                 self.extract_vl_variation.lower() == 'none':
             return None
         return self.extract_vl_variation
+
+    def get_consolidate_tables(self):
+        return self.consolidate_tables
+
+    def get_do_consolidate_tables(self):
+        return self.consolidate_tables is not None

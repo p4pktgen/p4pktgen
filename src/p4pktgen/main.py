@@ -6,6 +6,7 @@ from collections import defaultdict, OrderedDict
 from p4_top import P4_Top
 from config import Config
 from core.solver import PathSolver
+from p4pktgen.core.consolidator import TableConsolidatedSolver
 from p4pktgen.core.strategy import ParserGraphVisitor, PathCoverageGraphVisitor
 from p4pktgen.core.strategy import EdgeLabels, TLUBFParserVisitor, LeastUsedPaths, EdgeCoverageGraphVisitor
 from p4pktgen.util.statistics import Statistics
@@ -191,6 +192,16 @@ def main():
         none: no variation enforced."""
     )
     parser.add_argument(
+        '-ct', '--consolidate-tables',
+        dest='consolidate_tables',
+        type=int,
+        nargs='?',
+        default=None,
+        const=-1,
+        help=
+        """With this option given, consolidate test-cases around common tables up to the maximum value given (omit value for unlimited).  Currently incompatible with max_test_cases_per_path != 1."""
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
@@ -275,6 +286,11 @@ def generate_test_cases(input_file):
         Config().get_output_pcap_path()
     )
 
+    table_solver = None
+    if Config().get_do_consolidate_tables():
+        table_solver = TableConsolidatedSolver(input_file, top.in_pipeline,
+                                               test_case_writer)
+
     num_control_paths, num_control_path_nodes, num_control_path_edges = \
         top.in_graph.count_all_paths(top.in_pipeline.init_table_name)
     num_parser_path_edges = top.parser_graph.num_edges()
@@ -325,7 +341,7 @@ def generate_test_cases(input_file):
                                                      top.in_source_info_to_node_name,
                                                      results, test_case_writer)
         else:
-            graph_visitor = PathCoverageGraphVisitor(path_solver, parser_path,
+            graph_visitor = PathCoverageGraphVisitor(path_solver, table_solver, parser_path,
                                                      top.in_source_info_to_node_name,
                                                      results, test_case_writer)
 
@@ -334,6 +350,9 @@ def generate_test_cases(input_file):
         # Check if we generated enough test cases
         if Statistics().num_test_cases == Config().get_num_test_cases():
             break
+
+    if Config().get_do_consolidate_tables():
+        table_solver.flush()
 
     logging.info("Final statistics on use of control path edges:")
     Statistics().log_control_path_stats(
