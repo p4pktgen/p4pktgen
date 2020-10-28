@@ -14,6 +14,22 @@ from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
 from p4pktgen.hlir.transition import ActionTransition, ParserTransition
 
+
+def record_path_result(result, is_complete_control_path):
+    if result != TestPathResult.SUCCESS or is_complete_control_path:
+        return True
+    return False
+
+
+def record_test_case(result, is_complete_control_path):
+    if result in [TestPathResult.UNINITIALIZED_READ,
+                  TestPathResult.INVALID_HEADER_WRITE]:
+        return True
+    if result == TestPathResult.SUCCESS and is_complete_control_path:
+        return True
+    return False
+
+
 class ParserGraphVisitor(GraphVisitor):
     def __init__(self, hlir):
         super(ParserGraphVisitor, self).__init__()
@@ -95,13 +111,13 @@ class PathCoverageGraphVisitor(GraphVisitor):
 
         result = self.path_solver.try_quick_solve(control_path, is_complete_control_path)
         if result == TestPathResult.SUCCESS:
-            assert not is_complete_control_path
+            assert not (record_path_result(result, is_complete_control_path)
+                        or record_test_case(result, is_complete_control_path))
             # Path trivially found to be satisfiable and not complete.
             # No test cases required.
-            record_result = False
             logging.info("Path trivially found to be satisfiable and not complete.")
             logging.info("END   %s" % logging_str)
-            return result, record_result
+            return result
 
         results = []
         extract_vl_variation = Config().get_extract_vl_variation()
@@ -122,12 +138,10 @@ class PathCoverageGraphVisitor(GraphVisitor):
             )
             time5 = time.time()
 
-            record_result = (is_complete_control_path
-                             or (result != TestPathResult.SUCCESS))
-            results.append((result, record_result))
+            results.append(result)
             # If this result wouldn't be recorded, subsequent ones won't be
             # either, so move on.
-            if not record_result:
+            if not record_test_case(result, is_complete_control_path):
                 break
             test_case["time_sec_generate_ingress_constraints"] = time3 - time2
             test_case["time_sec_solve"] = time4 - time3
@@ -157,13 +171,13 @@ class PathCoverageGraphVisitor(GraphVisitor):
                     break
 
         # Take result of first loop.
-        result, record_result = results[0]
+        result = results[0]
 
         if not Config().get_incremental():
             self.path_solver.solver.reset()
 
         logging.info("END   %s: %s" % (logging_str, result) )
-        return result, record_result
+        return result
 
     def visit_result(self, result):
         if Statistics().num_test_cases == Config().get_num_test_cases():
@@ -184,8 +198,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
         return VisitResult.CONTINUE
 
     def visit(self, control_path, is_complete_control_path):
-        result, record_result = \
-            self.generate_test_case(control_path, is_complete_control_path)
+        result = self.generate_test_case(control_path, is_complete_control_path)
 
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
@@ -203,7 +216,7 @@ class PathCoverageGraphVisitor(GraphVisitor):
         if Config().get_record_statistics():
             Statistics().record(result, is_complete_control_path, self.path_solver)
 
-        if record_result:
+        if record_path_result(result, is_complete_control_path):
             path = (tuple(self.parser_path), tuple(control_path))
             if path in self.results and self.results[path] != result:
                 logging.error("result_path %s with result %s"
