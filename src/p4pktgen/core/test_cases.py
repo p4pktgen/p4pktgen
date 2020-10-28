@@ -16,6 +16,15 @@ TestPathResult = Enum(
 )
 
 
+def record_test_case(result, is_complete_control_path):
+    if result in [TestPathResult.UNINITIALIZED_READ,
+                  TestPathResult.INVALID_HEADER_WRITE]:
+        return True
+    if result == TestPathResult.SUCCESS and is_complete_control_path:
+        return True
+    return False
+
+
 # TBD: There is probably a better way to convert the params from
 # whatever type they are coming from the SMT solver, to something that
 # can be written out as JSON.  This seems to work, though.
