@@ -165,6 +165,24 @@ class PathCoverageGraphVisitor(GraphVisitor):
         logging.info("END   %s: %s" % (logging_str, result) )
         return result, record_result
 
+    def visit_result(self, result):
+        if Statistics().num_test_cases == Config().get_num_test_cases():
+            return VisitResult.ABORT
+
+        tmp_num = Config().get_max_paths_per_parser_path()
+        if tmp_num is not None \
+                and self.stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num:
+            # logging.info("Already found %d packets for parser path %d of %d."
+            #              "  Backing off so we can get to next parser path ASAP"
+            #              "" % (self.stats_per_traversal[TestPathResult.SUCCESS],
+            #                    parser_path_num, len(parser_paths)))
+           return VisitResult.BACKTRACK
+
+        if result != TestPathResult.SUCCESS:
+            return VisitResult.BACKTRACK
+
+        return VisitResult.CONTINUE
+
     def visit(self, control_path, is_complete_control_path):
         result, record_result = \
             self.generate_test_case(control_path, is_complete_control_path)
@@ -211,25 +229,11 @@ class PathCoverageGraphVisitor(GraphVisitor):
             Statistics().stats[result] += 1
             self.stats_per_traversal[result] += 1
 
-        visit_result = None
-        tmp_num = Config().get_max_paths_per_parser_path()
-        if (tmp_num
-                and self.stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num):
-            # logging.info("Already found %d packets for parser path %d of %d."
-            #              "  Backing off so we can get to next parser path ASAP"
-            #              "" % (self.stats_per_traversal[TestPathResult.SUCCESS],
-            #                    parser_path_num, len(parser_paths)))
-            visit_result = VisitResult.BACKTRACK
-        else:
-            visit_result = VisitResult.CONTINUE if result == TestPathResult.SUCCESS else VisitResult.BACKTRACK
-
-        if Statistics().num_test_cases == Config().get_num_test_cases():
-            visit_result = VisitResult.ABORT
-
-        return visit_result
+        return self.visit_result(result)
 
     def backtrack(self):
         self.path_solver.pop()
+
 
 EdgeLabels = Enum('EdgeLabels', 'UNVISITED VISITED DONE')
 
