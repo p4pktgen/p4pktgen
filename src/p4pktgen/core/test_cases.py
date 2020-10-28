@@ -205,7 +205,7 @@ class TestCaseBuilder(object):
     @staticmethod
     def build(
             model, sym_packet, expected_path, parser_path, control_path,
-            is_complete_control_path, count, input_metadata,
+            is_complete_control_path, path_id, input_metadata,
             uninitialized_reads, invalid_header_writes, table_config):
         """Should take only explicit references to all variables to ensure that
         none are missed when separating paths for consolidated solving."""
@@ -298,7 +298,7 @@ class TestCaseBuilder(object):
         # represented as separate parts in JSON, e.g. nested lists or
         # dicts of strings, numbers, booleans.
         test_case = OrderedDict([
-            ("log_file_id", count),
+            ("log_file_id", path_id),
             ("result", result.name),
             ("expected_path", map(str, expected_path)),
             ("complete_path", is_complete_control_path),
@@ -337,10 +337,10 @@ class TestCaseBuilder(object):
 
     def build_for_path(self, context, model, sym_packet, expected_path,
                        parser_path, control_path, is_complete_control_path,
-                       count):
+                       path_id):
         return self.build(
             model, sym_packet, expected_path, parser_path, control_path,
-            is_complete_control_path, count,
+            is_complete_control_path, path_id,
             context.input_metadata, context.uninitialized_reads,
             context.invalid_header_writes,
             self.table_config_for_path(context, model, control_path)

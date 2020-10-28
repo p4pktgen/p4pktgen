@@ -54,10 +54,14 @@ class PathSolver(object):
         # First element is constraints added by entire parser path.
         self.constraints = [[]]
 
+        # Increments whenever considering a control path (partial or complete)
+        self.path_id = -1
+
     def current_context(self):
         return self.context_history[-1]
 
     def push(self):
+        self.path_id += 1
         self.solver.push()
         self.context_history_lens.append(len(self.context_history))
         self.result_history.append([])
@@ -311,7 +315,7 @@ class PathSolver(object):
 
     def generate_test_case(self, expected_path,
                            parser_path, control_path, is_complete_control_path,
-                           source_info_to_node_name, count):
+                           source_info_to_node_name):
         context = self.current_context()
         model = self.solver.model() if self.solver_result == sat else None
 
@@ -319,7 +323,9 @@ class PathSolver(object):
         result, test_case, payloads = \
             self.test_case_builder.build_for_path(
                 context, model, self.sym_packet, expected_path,
-                parser_path, control_path, is_complete_control_path, count)
+                parser_path, control_path, is_complete_control_path,
+                self.path_id
+            )
 
         if Config().get_run_simple_switch():
             result = self.test_case_builder.run_simple_switch(
