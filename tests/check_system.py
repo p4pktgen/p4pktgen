@@ -92,6 +92,21 @@ def get_packet_payloads(test_cases):
     return [p[0] for p in payloads]
 
 
+def get_unique_table_configs(test_cases):
+    """Returns all unique table setup commands and table data for test cases."""
+    table_configs = [
+        (test_case['ss_cli_setup_cmds'], test_case['table_setup_cmd_data'])
+        for test_case in test_cases
+    ]
+
+    # Can't just use set() as cmd_data is unhashable (and important).
+    unique_table_configs = []
+    for table_config in table_configs:
+        if table_config not in unique_table_configs:
+            unique_table_configs.append(table_config)
+    return unique_table_configs
+
+
 def extract_payload_byte(payload, index):
     return int(payload[index * 2: (index + 1) * 2], 16)
 
@@ -575,14 +590,60 @@ class CheckSystem:
         assert results == expected_results
 
 
+    simple_table_expected_results = {
+        ('start', 'sink', (u'ingress.table1', u'ingress.setx')): TestPathResult.SUCCESS,
+        ('start', 'sink', (u'ingress.table1', u'ingress.noop')): TestPathResult.SUCCESS,
+    }
+
+
     @pytest.mark.xfail(reason="Table const default actions cause simple_switch to raise error.")
     def check_simple_table_with_const_default_action(self):
         # This test checks that a simple program with a table that has a const
         # default action can be tested with the simple switch.
         load_test_config(run_simple_switch=True)
         results = run_test('examples/simple-table.json')
+        assert results == self.simple_table_expected_results
+
+
+    def check_consolidated_simple_table(self):
+        # This test checks that consolidation of tables for a simple table
+        # program generates test-cases with only one table configuration.
+        load_test_config(run_simple_switch=False)
+        Config().consolidate_tables = -1
+        results = run_test('examples/simple-table.json')
+        assert results == self.simple_table_expected_results
+
+        test_cases = read_test_cases()
+        table_configs = get_unique_table_configs(test_cases)
+        assert len(test_cases) == 3
+        assert len(table_configs) == 1
+        assert len(table_configs[0][0]) > 0, "Config has no commands"
+
+
+    def check_consolidated_two_config_table(self):
+        # This test checks that consolidation of tables for a program that
+        # requires two configs to exercise.
+        load_test_config(run_simple_switch=False)
+        Config().consolidate_tables = -1
+        results = run_test('examples/two-config-table.json')
         expected_results = {
-            ('start', 'sink', (u'ingress.table1', u'ingress.setx')): TestPathResult.SUCCESS,
-            ('start', 'sink', (u'ingress.table1', u'ingress.noop')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'two-config-table.p4', 55, u'h.x.data == 0'))), (u'ingress.table1', u'ingress.setx'), (u'node_4', (True, (u'two-config-table.p4', 61, u'h.x.data == 1'))), (u'tbl_twoconfigtable62', u'twoconfigtable62')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'two-config-table.p4', 55, u'h.x.data == 0'))), (u'ingress.table1', u'ingress.setx'), (u'node_4', (False, (u'two-config-table.p4', 61, u'h.x.data == 1'))), (u'tbl_twoconfigtable65', u'twoconfigtable65')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (True, (u'two-config-table.p4', 55, u'h.x.data == 0'))), (u'ingress.table1', u'ingress.noop'), (u'node_4', (True, (u'two-config-table.p4', 61, u'h.x.data == 1')))):
+                TestPathResult.NO_PACKET_FOUND,
+            ('start', 'sink', (u'node_2', (True, (u'two-config-table.p4', 55, u'h.x.data == 0'))), (u'ingress.table1', u'ingress.noop'), (u'node_4', (False, (u'two-config-table.p4', 61, u'h.x.data == 1'))), (u'tbl_twoconfigtable65', u'twoconfigtable65')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'two-config-table.p4', 55, u'h.x.data == 0'))), (u'node_4', (True, (u'two-config-table.p4', 61, u'h.x.data == 1'))), (u'tbl_twoconfigtable62', u'twoconfigtable62')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'node_2', (False, (u'two-config-table.p4', 55, u'h.x.data == 0'))), (u'node_4', (False, (u'two-config-table.p4', 61, u'h.x.data == 1'))), (u'tbl_twoconfigtable65', u'twoconfigtable65')):
+                TestPathResult.SUCCESS
         }
         assert results == expected_results
+
+        test_cases = read_test_cases()
+        table_configs = get_unique_table_configs(test_cases)
+        assert len(test_cases) == 6
+        assert len(table_configs) == 2
+        assert len(table_configs[0][0]) > 0, "Config has no commands"
