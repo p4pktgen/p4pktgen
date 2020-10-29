@@ -572,3 +572,16 @@ class CheckSystem:
             ('start', 'sink', (u'node_2', (False, (u'narrow-extractions.p4', 42, u'h.narrow.n0 == 1 && h.narrow.n1 == 1 && h.narrow.n2 == 1 && ...'))), (u'node_4', (False, (u'narrow-extractions.p4', 46, u'h.narrow.n4 == 31'))), (u'node_6', (False, (u'narrow-extractions.p4', 49, u'h.narrow.n6 == 7')))): TestPathResult.SUCCESS,
         }
         assert results == expected_results
+
+
+    @pytest.mark.xfail(reason="Table const default actions cause simple_switch to raise error.")
+    def check_simple_table_with_const_default_action(self):
+        # This test checks that a simple program with a table that has a const
+        # default action can be tested with the simple switch.
+        load_test_config(run_simple_switch=True)
+        results = run_test('examples/simple-table.json')
+        expected_results = {
+            ('start', 'sink', (u'ingress.table1', u'ingress.setx')): TestPathResult.SUCCESS,
+            ('start', 'sink', (u'ingress.table1', u'ingress.noop')): TestPathResult.SUCCESS,
+        }
+        assert results == expected_results
