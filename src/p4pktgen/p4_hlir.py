@@ -1,11 +1,8 @@
 from __future__ import print_function
-import copy
-import json
 import logging
-from pprint import pprint
 from collections import defaultdict, OrderedDict
 
-from p4_utils import P4ParserOpsEnum
+from p4pktgen.p4_utils import P4ParserOpsEnum
 from p4pktgen.hlir.type_value import *
 from p4pktgen.hlir.transition import *
 from p4pktgen.util.graph import Graph, Edge

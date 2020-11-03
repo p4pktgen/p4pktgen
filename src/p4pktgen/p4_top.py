@@ -4,8 +4,8 @@ import logging
 import json
 from collections import OrderedDict
 
-from p4_hlir import P4_HLIR
-from hlir.externs import Externs
+from p4pktgen.p4_hlir import P4_HLIR
+from p4pktgen.hlir.externs import Externs
 
 
 def log_graph(name, graph):
