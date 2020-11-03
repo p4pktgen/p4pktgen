@@ -25,10 +25,10 @@ addons:
       - libgmp10
       - libjudydebian1
       - libpcap0.8
-      - python
-      - python-pip
-      - python-dev
-      - python-tk
+      - python3
+      - python3-pip
+      - python3-dev
+      - python3-tk
       - graphviz
 
 script:
@@ -47,7 +47,7 @@ script:
   - simple_switch --version
   - pip install --upgrade pip
   - pip install virtualenv
-  - virtualenv test-env --system-site-packages
+  - virtualenv test-env --python=python3 --system-site-packages
   - source test-env/bin/activate
   - pip install -r requirements.txt
   - python setup.py develop

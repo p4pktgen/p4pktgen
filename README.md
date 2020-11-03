@@ -32,7 +32,7 @@ is required to adapt the test cases to run on other implementations).
 
 ## Prerequisites
 
-- Python 2.7, pip
+- Python 3.6, pip
 - [p4c](https://github.com/p4lang/p4c)
 - `simple_switch` from the [behavioral-model](https://github.com/p4lang/behavioral-model) project
 
