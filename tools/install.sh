@@ -68,7 +68,7 @@ fi
 
 set -ex
 sudo apt-get install --yes virtualenv python-tk graphviz
-virtualenv my-venv --system-site-packages
+virtualenv my-venv --python=python3 --system-site-packages
 source my-venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
