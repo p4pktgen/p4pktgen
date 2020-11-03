@@ -2,8 +2,8 @@ from __future__ import print_function
 import argparse
 import logging
 
-from p4_top import P4_Top
-from config import Config
+from p4pktgen.p4_top import P4_Top
+from p4pktgen.config import Config
 from p4pktgen.core.strategy import ParserGraphVisitor
 from p4pktgen.core.generator import TestCaseGenerator
 from p4pktgen.util.statistics import Statistics
