@@ -11,7 +11,7 @@ def min_bits_for_uint(uint):
     # integer in binary.
     if uint == 0:
         return 1
-    assert isinstance(uint, int) or isinstance(uint, long)
+    assert isinstance(uint, int)
     assert uint > 0
 
     # This expression returns correct values up to somewhere near ((1
@@ -644,8 +644,8 @@ class Translator(object):
     @staticmethod
     def parser_transition_key_constraint(sym_transition_keys, value,
                                          mask):
-        # value should be int or long
-        # mask should be int, long, or None
+        # value should be int
+        # mask should be int or None
 
         # In the JSON file, if there are multiple fields in the
         # transition_key, then the values are packed in a particular
@@ -657,8 +657,8 @@ class Translator(object):
         # See https://github.com/p4lang/behavioral-model/issues/441 for a
         # reference to the relevant part of the behavioral-model JSON
         # spec.
-        assert isinstance(value, int) or isinstance(value, long)
-        assert isinstance(mask, int) or isinstance(mask, long) or mask is None
+        assert isinstance(value, int)
+        assert isinstance(mask, int) or mask is None
         assert len(sym_transition_keys) >= 1
         bitvecs = []
         sz_total = 0

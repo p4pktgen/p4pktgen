@@ -434,13 +434,11 @@ class P4_HLIR(object):
                     transition = P4_HLIR.parse_parser_transition(p4ps.name, k)
                     value_mask_tuple = (transition.value, transition.mask)
                     if value_mask_tuple in set_of_value_mask_tuples:
-                        if isinstance(transition.value, int) or isinstance(
-                                transition.value, long):
+                        if isinstance(transition.value, int):
                             show_value = "0x%x" % (transition.value)
                         else:
                             show_value = str(transition.value)
-                        if isinstance(transition.mask, int) or isinstance(
-                                transition.mask, long):
+                        if isinstance(transition.mask, int):
                             show_mask = "0x%x" % (transition.mask)
                         else:
                             show_mask = str(transition.mask)
