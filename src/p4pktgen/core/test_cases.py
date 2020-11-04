@@ -274,7 +274,7 @@ class TestCaseBuilder(object):
             input_metadata = {
                 '.'.join(var_name):
                     model.eval(value, model_completion=True).as_long()
-                for (var_name, value) in input_metadata.iteritems()
+                for (var_name, value) in input_metadata.items()
             }
             input_packets = [
                 OrderedDict([
