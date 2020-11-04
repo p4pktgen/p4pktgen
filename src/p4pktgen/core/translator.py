@@ -32,7 +32,7 @@ def min_bits_for_uint(uint):
         max_width = cur_width
 
     while min_width < max_width:
-        cur_width = (min_width + max_width) / 2
+        cur_width = (min_width + max_width) // 2
         max_value_of_cur_width = ((1 << cur_width) - 1)
         if uint <= max_value_of_cur_width:
             max_width = cur_width
@@ -664,7 +664,7 @@ class Translator(object):
         sz_total = 0
         for k in sym_transition_keys:
             sz_bits = k.size()
-            sz_bytes = (sz_bits + 7) / 8
+            sz_bytes = (sz_bits + 7) // 8
             sz_total += 8 * sz_bytes
             bitvecs.append(ZeroExt(8 * sz_bytes - sz_bits, k))
 
