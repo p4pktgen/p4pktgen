@@ -26,9 +26,9 @@ def record_test_case(result, is_complete_control_path):
 # TBD: There is probably a better way to convert the params from
 # whatever type they are coming from the SMT solver, to something that
 # can be written out as JSON.  This seems to work, though.
-def model_value_to_long(model_val):
+def model_value_to_int(model_val):
     try:
-        return long(str(model_val))
+        return int(str(model_val))
     except ValueError:
         # This can happen when trying to convert values that are
         # actually still variables in the model.  For example, when a
@@ -77,7 +77,7 @@ class TestCaseBuilder(object):
         priority = None
         for table_key, table_key_value in zip(table.key, key_values):
             key_field_name = '.'.join(table_key.target)
-            long_value = model_value_to_long(table_key_value)
+            int_value = model_value_to_int(table_key_value)
             if table_key.match_type == 'lpm':
                 bitwidth = table_key_value.size()
                 key_value_strs.append(
@@ -86,7 +86,7 @@ class TestCaseBuilder(object):
                     OrderedDict([
                         ('match_kind', 'lpm'),
                         ('key_field_name', key_field_name),
-                        ('value', long_value),
+                        ('value', int_value),
                         ('prefix_length', bitwidth),
                     ]))
             elif table_key.match_type == 'ternary':
@@ -101,7 +101,7 @@ class TestCaseBuilder(object):
                 key_data.append(
                     OrderedDict([('match_kind', 'ternary'), (
                         'key_field_name', key_field_name), (
-                            'value', long_value), (
+                            'value', int_value), (
                                 'mask', mask)]))
             elif table_key.match_type == 'range':
                 # Always use a range where the min and max
@@ -113,14 +113,14 @@ class TestCaseBuilder(object):
                 key_data.append(
                     OrderedDict([('match_kind', 'range'), (
                         'key_field_name', key_field_name
-                    ), ('min_value', long_value), (
-                        'max_value', long_value)]))
+                    ), ('min_value', int_value), (
+                        'max_value', int_value)]))
             elif table_key.match_type == 'exact':
                 key_value_strs.append(str(table_key_value))
                 key_data.append(
                     OrderedDict([('match_kind', 'exact'), (
                         'key_field_name', key_field_name), (
-                        'value', long_value)]))
+                        'value', int_value)]))
             else:
                 raise Exception('Match type {} not supported'.
                                 format(table_key.match_type))
@@ -149,7 +149,7 @@ class TestCaseBuilder(object):
         params2 = []
         param_vals = []
         for param_name, param_val in params:
-            param_val = model_value_to_long(param_val)
+            param_val = model_value_to_int(param_val)
             param_vals.append(param_val)
             params2.append(
                 OrderedDict(
