@@ -82,7 +82,7 @@ class HLIR_Header_Types(object):
         if contains_not_none(json_obj, 'max_length'):
             self.max_length = int(json_obj['max_length']) * 8
 
-            for field_name, field in self.fields.iteritems():
+            for field_name, field in self.fields.items():
                 if field.var_length:
                     field.size = self.max_length - fixed_length
         else:

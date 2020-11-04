@@ -45,7 +45,7 @@ class ParserGraphVisitor(GraphVisitor):
         edges = onward_edges
 
         if any(self.hlir.get_header_stack(stack).size < count
-               for stack, count in stack_counts.iteritems()):
+               for stack, count in stack_counts.items()):
             # If the path so far involves an extraction beyond the end of a
             # header stack, the only legal onward transitions are error
             # transitions.  If there are no such transitions, the returned list

@@ -42,7 +42,7 @@ class Externs(object):
 
     def load_instances(self, extern_instances):
         extern_definitions = Config().get_extern_definitions()
-        for name, instance in extern_instances.iteritems():
+        for name, instance in extern_instances.items():
             assert name in extern_definitions, \
                 "Extern definition not provided for '{}'".format(name)
             src_file = extern_definitions[name]

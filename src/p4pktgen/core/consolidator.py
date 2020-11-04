@@ -288,7 +288,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
                 pending_action_sym_vals = \
                     self.pending_table_action_sym_vals[table_name]
                 for action_name, sym_vals \
-                        in pending_action_sym_vals.iteritems():
+                        in pending_action_sym_vals.items():
                     assert action_name not in action_sym_vals
                     action_sym_vals[action_name] = sym_vals
         self.pending_table_action_sym_vals = {}
@@ -427,7 +427,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         # table keys and parameters to consolidated variables.
         new_constraints = list(constraints)
         for table_name, (action_name, path_sym_key, path_sym_params) \
-                in table_data.iteritems():
+                in table_data.items():
             new_constraints.append(self.consolidated_constraints(
                 table_name, action_name,
                 path_sym_key, path_sym_params))
@@ -463,7 +463,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
 
         input_metadata = {
             var_name: path_specific_expr(prefix, var, var_mapping)
-            for var_name, var in context.input_metadata.iteritems()
+            for var_name, var in context.input_metadata.items()
         }
 
         path_data = (
