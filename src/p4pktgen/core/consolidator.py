@@ -63,7 +63,7 @@ def path_specific_expr(prefix, expr, var_mapping):
         sub_map = {}
         for var in get_all_vars(expr):
             sub_map[var] = path_specific_var(prefix, var, var_mapping)
-        return z3.substitute(expr, sub_map.items())
+        return z3.substitute(expr, list(sub_map.items()))
 
 
 def path_specific_constraints(prefix, constraints, var_mapping):
