@@ -12,18 +12,22 @@ HIT_ID = -1
 MISS_ID = -2
 
 
+def contains_not_none(json_obj, key):
+    return key in json_obj and json_obj[key] is not None
+
+
 class HLIR_Meta(object):
     """Class to represent a P4 meta field"""
 
     def __init__(self, json_obj):
         # Set version, it should exist
-        if json_obj.has_key('version') and json_obj['version'] != None:
+        if contains_not_none(json_obj, 'version'):
             self.version = str(json_obj['version'])
         else:
             raise ValueError('Missing __meta__ version value')
 
         # Set compiler, it is optional
-        if json_obj.has_key('compiler') and json_obj['compiler'] != None:
+        if contains_not_none(json_obj, 'compiler'):
             self.compiler = str(json_obj['compiler'])
         else:
             self.compiler = None
@@ -34,13 +38,13 @@ class HLIR_Header_Types(object):
 
     def __init__(self, json_obj):
         # Set name, it should exist
-        if json_obj.has_key('name') and json_obj['name'] != None:
+        if contains_not_none(json_obj, 'name'):
             self.name = str(json_obj['name'])
         else:
             raise ValueError('Missing Header_Type name value')
 
         # Set id, it should exist
-        if json_obj.has_key('id') and json_obj['id'] != None:
+        if contains_not_none(json_obj, 'id'):
             self.id = int(json_obj['id'])
         else:
             raise ValueError('Missing Header_Type id value')
@@ -48,7 +52,7 @@ class HLIR_Header_Types(object):
         # Set fields, it should exist
         fixed_length = 0
         self.fields = OrderedDict()
-        if json_obj.has_key('fields') and json_obj['fields'] != None:
+        if contains_not_none(json_obj, 'fields'):
             for f in json_obj['fields']:
                 # sign is a header field is optional
                 assert (len(f) >= 2)
@@ -69,15 +73,13 @@ class HLIR_Header_Types(object):
             raise ValueError('Missing fields value in header type')
 
         # Set length_exp, it is optional
-        if json_obj.has_key(
-                'length_exp') and json_obj['length_exp'] != None:
+        if contains_not_none(json_obj, 'length_exp'):
             self.length_exp = int(json_obj['length_exp'])
         else:
             self.length_exp = None
 
         # Set max_length, it is optional
-        if json_obj.has_key(
-                'max_length') and json_obj['max_length'] != None:
+        if contains_not_none(json_obj, 'max_length'):
             self.max_length = int(json_obj['max_length']) * 8
 
             for field_name, field in self.fields.iteritems():
@@ -114,20 +116,19 @@ class HLIR_Headers(object):
 
     def __init__(self, json_obj):
         # Set name, it should exist
-        if json_obj.has_key('name') and json_obj['name'] != None:
+        if contains_not_none(json_obj, 'name'):
             self.name = str(json_obj['name'])
         else:
             raise ValueError('Missing Headers name value')
 
         # Set id, it should exist
-        if json_obj.has_key('id') and json_obj['id'] != None:
+        if contains_not_none(json_obj, 'id'):
             self.id = int(json_obj['id'])
         else:
             raise ValueError('Missing Headers id value')
 
         # Set initial header_type, it should exist
-        if json_obj.has_key(
-                'header_type') and json_obj['header_type'] != None:
+        if contains_not_none(json_obj, 'header_type'):
             self.header_type_name = str(json_obj['header_type'])
         else:
             raise ValueError('Missing Headers header_type value')
@@ -136,13 +137,13 @@ class HLIR_Headers(object):
         self.header_type = None
 
         # Set metadata, it should exist
-        if json_obj.has_key('metadata') and json_obj['metadata'] != None:
+        if contains_not_none(json_obj, 'metadata'):
             self.metadata = bool(json_obj['metadata'])
         else:
             raise ValueError('Missing Headers metadata value')
 
         # Set pi_omit, it should exist
-        if json_obj.has_key('pi_omit') and json_obj['pi_omit'] != None:
+        if contains_not_none(json_obj, 'pi_omit'):
             self.pi_omit = bool(json_obj['pi_omit'])
         else:
             self.pi_omit = False
@@ -214,13 +215,13 @@ class HLIR_Parse_States(object):
     # Init for parse states class
     def __init__(self, json_obj):
         # Set name, it should exist
-        if json_obj.has_key('name') and json_obj['name'] != None:
+        if contains_not_none(json_obj, 'name'):
             self.name = str(json_obj['name'])
         else:
             raise ValueError('Missing Parser_States name value')
 
         # Set id, it should exist
-        if json_obj.has_key('id') and json_obj['id'] != None:
+        if contains_not_none(json_obj, 'id'):
             self.id = int(json_obj['id'])
         else:
             raise ValueError('Missing Parser_States id value')
@@ -254,20 +255,19 @@ class HLIR_Parser(object):
     # Init for parser class
     def __init__(self, json_obj):
         # Set name, it should exist
-        if json_obj.has_key('name') and json_obj['name'] != None:
+        if contains_not_none(json_obj, 'name'):
             self.name = str(json_obj['name'])
         else:
             raise ValueError('Missing Parser name value')
 
         # Set id, it should exist
-        if json_obj.has_key('id') and json_obj['id'] != None:
+        if contains_not_none(json_obj, 'id'):
             self.id = int(json_obj['id'])
         else:
             raise ValueError('Missing Parser id value')
 
         # Set name, it should exist
-        if json_obj.has_key(
-                'init_state') and json_obj['init_state'] != None:
+        if contains_not_none(json_obj, 'init_state'):
             self.init_state = str(json_obj['init_state'])
         else:
             raise ValueError('Missing Parser init_state value')
@@ -317,7 +317,7 @@ class P4_HLIR(object):
 
         # Build the IR objects as class members variables.
         # Get the program field
-        if json_obj.has_key('program') and json_obj['program'] != None:
+        if contains_not_none(json_obj, 'program'):
             self.program = str(json_obj['program'])
         else:
             self.program = None
