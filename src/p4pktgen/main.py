@@ -212,6 +212,14 @@ def main():
         """With this option given, randomize the generated test-case data where possible."""
     )
     parser.add_argument(
+        '-ed', '--extern-definition',
+        dest='extern_definitions',
+        type=str,
+        action='append',
+        help=
+        """Assign backend implementation source files for externs.  Must be in the form: '<extern-instance-name>:<backend-definition-source>'"""
+    )
+    parser.add_argument(
         dest='input_file', type=str, help='Provide the path to the input file')
 
     # Parse the input arguments
@@ -299,11 +307,12 @@ def generate_test_cases(input_file):
     top.load_json_file(input_file)
 
     top.build_graph()
+    top.load_extern_backends()
     Statistics().init()
 
     # XXX: move
     labels = defaultdict(lambda: EdgeLabels.UNVISITED)
-    path_solver = PathSolver(input_file, top.hlir, top.in_pipeline)
+    path_solver = PathSolver(input_file, top, top.in_pipeline)
     results = OrderedDict()
 
     # TBD: Make this filename specifiable via command line option

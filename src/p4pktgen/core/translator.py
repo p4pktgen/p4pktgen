@@ -60,15 +60,28 @@ def p4_value_to_bv(value, size):
             value.__class__))
 
 
+def assert_bv_same_size(lhs, rhs):
+    assert z3.is_bv(lhs) and z3.is_bv(rhs)
+    assert lhs.size() == rhs.size()
+
+
+def assert_bv_list_same_size(lhs_list, rhs_list):
+    assert isinstance(lhs_list, list) and isinstance(rhs_list, list)
+    assert len(lhs_list) == len(rhs_list)
+    for lhs, rhs in zip(lhs_list, rhs_list):
+        assert_bv_same_size(lhs, rhs)
+
+
 class Translator(object):
     """Translates p4pktgen path objects into z3 representations.  Should have a
     fixed state after instantiation with the HLIR and pipeline it's translating
     for."""
 
-    def __init__(self, hlir, pipeline):
+    def __init__(self, p4top, pipeline):
         # These are used for necessary lookups and should be unchanged by any
         # operation on instances of this class.
-        self.hlir = hlir
+        self.hlir = p4top.hlir
+        self.externs = p4top.externs
         self.pipeline = pipeline
 
     def value_header_name_and_type(self, value):
@@ -529,13 +542,37 @@ class Translator(object):
                         context.set_field_value(dst_name, '$valid$', BitVecVal(0, 1))
                         context.remove_header_fields(dst_name)
 
-                elif (primitive.op in [
+                elif len(primitive.parameters) > 0 \
+                        and isinstance(primitive.parameters[0], TypeValueExtern):
+                    # extern action primitives have following layout
+                    # {'op': "_<extern-instance-type>_<function-name>",
+                    #  'parameters': [
+                    #    {'type': "extern", 'value': <extern-instance-name>},
+                    #    {<argument-1>}, {<argument-2>}, ...
+                    #  ],
+                    # 'source_info': ... }
+                    extern_instance = \
+                        self.hlir.get_extern_instance(primitive.parameters[0].extern_instance_name)
+                    op_prefix = '_{}_'.format(extern_instance.type)
+                    assert primitive.op.startswith(op_prefix), \
+                        "Unexpected op {} for extern call to instance of type {}".format(
+                            primitive.op, extern_instance.type
+                        )
+
+                    func_name = primitive.op[len(op_prefix):]
+                    func = self.externs.get_func(extern_instance, func_name)
+                    params = primitive.parameters[1:]
+                    self.extern_to_smt(context, func, params)
+
+                elif primitive.op in [
                         'modify_field_rng_uniform',
                         'modify_field_with_hash_based_offset',
                         'clone_ingress_pkt_to_egress',
-                        'clone_egress_pkt_to_egress', 'count', 'execute_meter',
-                        'generate_digest'
-                ] and Config().get_allow_unimplemented_primitives()):
+                        'clone_egress_pkt_to_egress', 'count',
+                        'execute_meter', 'generate_digest']:
+                    if not Config().get_allow_unimplemented_primitives():
+                        raise Exception('Primitive op {} only allowed with'
+                                        '--allow-unimplemented-primitives option')
                     logging.warning('Primitive op {} allowed but treated as no-op'.
                                     format(primitive.op))
                 else:
@@ -543,6 +580,69 @@ class Translator(object):
                         'Primitive op {} not supported'.format(primitive.op))
 
                 context.unset_source_info()
+
+    def get_header_field_vars(self, header_name):
+        hlir_header = self.hlir.headers[header_name]
+        return [(header_name, field)
+                for field in hlir_header.fields.keys() if field != '$valid$']
+
+    def extern_to_smt(self, context, extern_func, params):
+        def get_var_wrapper(var_name):
+            # Out only params will typically not be initialised before the call.
+            # However, we don't know which params are in/out, so allow all to be
+            # uninitialised.
+            if var_name not in context.var_to_smt_val:
+                field = context.fields[var_name]
+                if field.hdr.metadata and Config().get_solve_for_metadata():
+                    # Will not cause uninitialized read, let get_var handle it.
+                    pass
+                else:
+                    return BitVecVal(0, field.size)
+            return context.get_var(var_name)
+
+        # Python backends model fields as BitVecs and headers as lists of
+        # BitVecs.  We need to convert the headers and fields to this format.
+        args = []
+        for param in params:
+            if isinstance(param, TypeValueField):
+                args.append(get_var_wrapper((param.header_name, param.header_field)))
+            else:
+                assert isinstance(param, TypeValueHeader)
+                field_var_names = self.get_header_field_vars(param.header_name)
+                args.append([get_var_wrapper(var_name)
+                            for var_name in field_var_names])
+        args_input = list(args)
+
+        # Call function.  Extern return value assignments cannot currently be
+        # converted into json, so ignore return value of extern function.
+        extern_func(args)
+
+        # Check that the args list still matches schema
+        assert len(args) == len(args_input)
+        for before, after in zip(args_input, args):
+            if isinstance(before, list):
+                assert_bv_list_same_size(before, after)
+            else:
+                assert_bv_same_size(before, after)
+
+        # Set output fields.  The json representation of a program doesn't
+        # record whether a parameter is in/out, so set all params whose args
+        # have changed.  "is" pointer comparison detects changes.
+        for i, param in enumerate(params):
+            if isinstance(param, TypeValueField):
+                if args[i] is args_input[i]:
+                    continue
+                context.set_field_value(param.header_name, param.header_field,
+                                        args[i])
+            else:
+                field_var_names = self.get_header_field_vars(param.header_name)
+                context.set_valid_field(param.header_name)
+                for j, var_name in enumerate(field_var_names):
+                    if args[i][j] is args_input[i][j]:
+                        continue
+                    context.set_field_value(var_name[0], var_name[1],
+                                            args[i][j])
+
 
     @staticmethod
     def parser_transition_key_constraint(sym_transition_keys, value,

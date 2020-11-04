@@ -32,6 +32,7 @@ class Config:
         self.extract_vl_variation = args.extract_vl_variation
         self.consolidate_tables = args.consolidate_tables
         self.randomize = args.randomize
+        self.extern_definitions = args.extern_definitions
 
     def get_debug(self):
         return self.debug
@@ -116,3 +117,8 @@ class Config:
 
     def get_randomize(self):
         return self.randomize
+
+    def get_extern_definitions(self):
+        if self.extern_definitions is None:
+            return {}
+        return dict(x.split(':', 1) for x in self.extern_definitions)

@@ -67,6 +67,7 @@ def load_test_config(no_packet_length_errs=True,
     config.extract_vl_variation = None
     config.consolidate_tables = None
     config.randomize = randomize
+    config.extern_definitions = None
 
 
 def run_test(json_filename):
@@ -714,6 +715,55 @@ class CheckSystem:
         assert len(test_cases) == 6
         assert len(table_configs) == 2
         assert len(table_configs[0][0]) > 0, "Config has no commands"
+
+    def check_custom_extern_fields(self, config):
+        # This test checks that when the extern program operating on fields is
+        # provided with a model of an rshift function it is recognised and
+        # implemented correctly.
+        load_test_config(run_simple_switch=False, **config)
+        extern_name = 'ingress.anexterninstance'
+        extern_file = 'examples/externs/rshift_extern.py'
+        Config().extern_definitions = ['{}:{}'.format(extern_name, extern_file)]
+        results = run_test('examples/extern_custom_fields.json')
+        expected_results = {
+            ('start', 'sink', (u'tbl_extern_custom_fields48', u'extern_custom_fields48'), (u'node_3', (True, (u'extern_custom_fields.p4', 49, u'tmp == 0'))), (u'tbl_extern_custom_fields50', u'extern_custom_fields50')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'tbl_extern_custom_fields48', u'extern_custom_fields48'), (u'node_3', (False, (u'extern_custom_fields.p4', 49, u'tmp == 0')))):
+                TestPathResult.SUCCESS
+        }
+        assert results == expected_results
+
+        # Payloads are 1-byte.  Program rshifts the byte by 5 bits using the
+        # extern, then switches on whether result == 0 or not.
+        payloads = get_packet_payloads(read_test_cases())
+        vals = sorted([int(p, 16) for p in payloads])
+        assert vals[0] < 0x20
+        assert vals[1] >= 0x20
+
+    def check_custom_extern_headers(self, config):
+        # This test checks that when the extern program operating on headers is
+        # provided with a model of an rshift function it is recognised and
+        # implemented correctly.
+        load_test_config(run_simple_switch=False, **config)
+        extern_name = 'ingress.anexterninstance'
+        extern_file = 'examples/externs/rshift_extern.py'
+        Config().extern_definitions = ['{}:{}'.format(extern_name, extern_file)]
+        results = run_test('examples/extern_custom_headers.json')
+        expected_results = {
+            ('start', 'sink', (u'tbl_extern_custom_headers48', u'extern_custom_headers48'), (u'node_3', (True, (u'extern_custom_headers.p4', 49, u'tmp.data == 0'))), (u'tbl_extern_custom_headers50', u'extern_custom_headers50')):
+                TestPathResult.SUCCESS,
+            ('start', 'sink', (u'tbl_extern_custom_headers48', u'extern_custom_headers48'), (u'node_3', (False, (u'extern_custom_headers.p4', 49, u'tmp.data == 0')))):
+                TestPathResult.SUCCESS
+        }
+
+        assert results == expected_results
+
+        # Payloads are 1-byte.  Program rshifts the byte by 5 bits using the
+        # extern, then switches on whether result == 0 or not.
+        payloads = get_packet_payloads(read_test_cases())
+        vals = sorted([int(p, 16) for p in payloads])
+        assert vals[0] < 0x20
+        assert vals[1] >= 0x20
 
 
     def check_parser_error(self, config):
