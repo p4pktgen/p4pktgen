@@ -60,6 +60,10 @@ def table_add_cmd_string(table, action, values, params, priority):
                                       priority_str))
 
 
+def str_list(objs):
+    return list(map(str, objs))
+
+
 class TestCaseBuilder(object):
     def __init__(self, json_file, pipeline):
         if Config().get_run_simple_switch():
@@ -302,7 +306,7 @@ class TestCaseBuilder(object):
         test_case = OrderedDict([
             ("log_file_id", path.id),
             ("result", result.name),
-            ("expected_path", map(str, path.expected_path)),
+            ("expected_path", str_list(path.expected_path)),
             ("complete_path", path.is_complete),
             ("ss_cli_setup_cmds", ss_cli_setup_cmds),
             ("input_packets", input_packets),
@@ -315,7 +319,7 @@ class TestCaseBuilder(object):
         if invalid_header_write_data:
             test_case["invalid_header_write_data"] = invalid_header_write_data
         if actual_path_data:
-            test_case["actual_path"] = map(str, actual_path_data)
+            test_case["actual_path"] = str_list(actual_path_data)
 
         # Put details like these later in OrderedDict test_case,
         # especialy long ones.  This makes the shorter and/or more
@@ -327,8 +331,8 @@ class TestCaseBuilder(object):
         test_case["time_sec_solve"] = None
         test_case["time_sec_simulate_packet"] = None
 
-        test_case["parser_path"] = map(str, path.parser_path)
-        test_case["ingress_path"] = map(str, path.control_path)
+        test_case["parser_path"] = str_list(path.parser_path)
+        test_case["ingress_path"] = str_list(path.control_path)
         test_case["table_setup_cmd_data"] = table_setup_cmd_data
 
         payloads = []
