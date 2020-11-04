@@ -39,11 +39,14 @@ class ParserTransition(Edge):
         self.value = value
 
     def __eq__(self, other):
-        return isinstance(
-            other,
-            ParserTransition) and (self.type_ == other.type_) and (
-                self.next_state_name == other.next_state_name) and (
-                    self.mask == other.mask) and (self.value == other.value)
+        return isinstance(other, ParserTransition) and \
+            self.type_ == other.type_ and \
+            self.next_state_name == other.next_state_name and \
+            self.mask == other.mask and \
+            self.value == other.value
+
+    def __hash__(self):
+        return hash((self.type_, self.next_state_name, self.mask, self.value))
 
 
 class ParserCompositeTransition(Edge):
@@ -66,6 +69,9 @@ class ParserCompositeTransition(Edge):
             return other in self.component_edges
         return super(ParserCompositeTransition, self).__eq__(other)
 
+    def __hash__(self):
+        return hash(tuple(self.components))
+
 
 class ParserErrorTransition(Transition):
     def __init__(self, state_name, op, op_idx, next_state, error_str):
@@ -78,6 +84,7 @@ class ParserErrorTransition(Transition):
 
     def __repr__(self):
         return '{} -({})-> {}'.format(self.src, self.error_str, self.dst)
+
 
 class ActionTransition(Transition):
     def __init__(self, src, dest, action, default_entry, action_data):
@@ -135,7 +142,7 @@ class BoolTransition(Transition):
                          self.source_info.source_fragment)) == other
             else:
                 # XXX: hack
-                return (self.val == other[0])
+                return self.val == other[0]
 
     def __hash__(self):
         # XXX: hack for test cases

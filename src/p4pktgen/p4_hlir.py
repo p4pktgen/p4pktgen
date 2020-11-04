@@ -1118,12 +1118,12 @@ class SourceInfo:
         return hash((self.filename, self.line, self.source_fragment))
 
     def __eq__(self, other):
-        return isinstance(
-            other, SourceInfo
-        ) and self.filename == other.filename and self.line == other.line and (
-            self.column is None or other.column is None
-            or self.column == other.column
-        ) and self.source_fragment == other.source_fragment
+        return isinstance(other, SourceInfo) and \
+            self.filename == other.filename and \
+            self.line == other.line and \
+            (self.column is None or other.column is None or
+             self.column == other.column) \
+            and self.source_fragment == other.source_fragment
 
 
 class HeaderStack:
