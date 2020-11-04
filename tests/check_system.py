@@ -91,7 +91,7 @@ def run_test(json_filename, results_as_list=False):
             ) for ((parser_path, control_path), result) in results
         ]
         # Sort only based on path, not on result.
-        return sorted(const_results, key=lambda x: x[0])
+        return sorted(const_results, key=lambda x: hash(x[0]))
     else:
         const_results = {
             tuple(Translator.expected_path(parser_path, control_path,
