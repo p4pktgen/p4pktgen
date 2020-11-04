@@ -188,7 +188,7 @@ class TestCaseGenerator(object):
 
         while solution_generators:
             try:
-                path_solution = solution_generators[0].next()
+                path_solution = next(solution_generators[0])
             except StopIteration:
                 solution_generators.popleft()
                 continue
