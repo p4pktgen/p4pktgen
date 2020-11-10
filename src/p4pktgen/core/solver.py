@@ -337,11 +337,13 @@ class PathSolver(object):
         if not Config().get_incremental():
             # Add constraints from each previous path node
             for cs in self.constraints:
-                self.solver.add(And(cs))
+                if len(cs) > 0:
+                    self.solver.add(And(cs))
         self.constraints[-1].extend(constraints)
 
         # logging.debug(And(constraints))
-        self.solver.add(And(constraints))
+        if len(constraints) > 0:
+            self.solver.add(And(constraints))
         self.solver_result = None
 
     def try_quick_solve(self, control_path, is_complete_control_path):
