@@ -393,7 +393,7 @@ class TableConsolidatedSolver(ConsolidatedSolver):
         new_constraints = list(constraints)
         for table_name, (action_name, path_sym_key, path_sym_params) \
                 in table_data.iteritems():
-            new_constraints.extend(self.consolidated_constraints(
+            new_constraints.append(self.consolidated_constraints(
                 table_name, action_name,
                 path_sym_key, path_sym_params))
 
