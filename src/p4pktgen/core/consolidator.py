@@ -164,7 +164,8 @@ class ConsolidatedSolver(object):
         self.paths_data.append((path_id, path_data))
         self.solver.push()
         for cs in constraints:
-            self.solver.add(z3.And(cs))
+            if len(cs) > 0:
+                self.solver.add(z3.And(cs))
 
         result = self.solve()
         if result != z3.sat:
