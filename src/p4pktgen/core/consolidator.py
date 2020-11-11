@@ -102,10 +102,8 @@ class ConsolidatedSolver(object):
         self.test_case_writer = test_case_writer
 
         self.solver = z3.SolverFor('QF_UFBV')
-        self.solver.push()
 
-        # TODO: A push/pop model for ConsolidatedSolvers would make it easier to
-        #  address complicated use-cases and help with "pending" constraints.
+        # Each item in list corresponds to an added path and a solver increment.
         # path_data is a data structure containing whatever is needed by the
         # child class' build_test_case implementation.
         self.paths_data = []  # [ (path_id, path_data), ... ]
@@ -114,8 +112,16 @@ class ConsolidatedSolver(object):
         self.solver.reset()
         self.paths_data = []
 
+    def push(self, path_id, paths_data):
+        self.solver.push()
+        self.paths_data.append((path_id, paths_data))
+
+    def pop(self):
+        self.solver.pop()
+        self.paths_data.pop()
+
     def build_test_case(self, model, path_id, path_data):
-        raise NotImplementedError("Overwrite in child class.")
+        raise NotImplementedError("Override in child class.")
 
     def add_final_constraints(self):
         """This method is called when flushing.  Child classes can override it
@@ -161,18 +167,13 @@ class ConsolidatedSolver(object):
         self.reset()
 
     def _try_add_path(self, path_id, constraints, path_data):
-        self.paths_data.append((path_id, path_data))
-        self.solver.push()
+        # Child classes may need to override this function.  This function may
+        # alter class members managed by push/pop or similar mechanism.
         for cs in constraints:
             if len(cs) > 0:
                 self.solver.add(z3.And(cs))
 
-        result = self.solve()
-        if result != z3.sat:
-            self.paths_data.pop()
-            self.solver.pop()
-
-        return result == z3.sat
+        return self.solve() == z3.sat
 
     def _add_path(self, path_id, constraints, path_data):
         max_n_paths = Config().get_consolidate_tables()
@@ -180,11 +181,14 @@ class ConsolidatedSolver(object):
             logging.info("Too many paths-per-solve")
             self.flush()
 
+        self.push(path_id, path_data)
         if not self._try_add_path(path_id, constraints, path_data):
             logging.info("Failed to add path %d"
                          % (path_id,))
+            self.pop()
             self.flush()
             self.reset()
+            self.push(path_id, path_data)
             logging.info("Flushed existing paths, re-adding path %d"
                          % (path_id,))
             assert self._try_add_path(path_id, constraints, path_data)
@@ -193,8 +197,10 @@ class ConsolidatedSolver(object):
                          % (path_id,))
 
     def add_path(self, *args, **kwargs):
-        # Child should package up path_data and call _add_path.
-        raise NotImplementedError("Overwrite in child class.")
+        # Child should package up path_data and call _add_path.  The
+        # implementation should not alter any class state, except for adding
+        # any pending state from _try_add_path implementation.
+        raise NotImplementedError("Override in child class.")
 
 
 class TableConsolidatedSolver(ConsolidatedSolver):
@@ -226,6 +232,8 @@ class TableConsolidatedSolver(ConsolidatedSolver):
             assert table.has_const_default_entry(), \
                 "Tables with non-const defaults are not currently supported"
 
+        # TODO: Consider implementing push/pop model for table_sym_vals and
+        #  table_vars.  Harder than in base class as they're not simple lists.
         # List of consolidated symbolic keys and symbolic action params for the
         # table to use across all paths.
         # Currently only allowing a single key per action.
