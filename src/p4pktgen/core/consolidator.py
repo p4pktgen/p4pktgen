@@ -97,9 +97,10 @@ def path_specific_packet(prefix, packet, var_mapping):
 
 
 class ConsolidatedSolver(object):
-    def __init__(self, json_file, pipeline, test_case_writer):
+    def __init__(self, json_file, pipeline, test_case_writer, solve_again):
         self.test_case_builder = TestCaseBuilder(json_file, pipeline)
         self.test_case_writer = test_case_writer
+        self.solve_again = solve_again
 
         self.solver = z3.SolverFor('QF_UFBV')
 
@@ -108,17 +109,23 @@ class ConsolidatedSolver(object):
         # child class' build_test_case implementation.
         self.paths_data = []  # [ (path_id, path_data), ... ]
 
+        # Constraints added with each path
+        self.constraint_lists = []  # [ [constraint, ...], ...]
+
     def reset(self):
         self.solver.reset()
         self.paths_data = []
+        self.constraint_lists = []
 
     def push(self, path_id, paths_data):
         self.solver.push()
         self.paths_data.append((path_id, paths_data))
+        self.constraint_lists.append([])
 
     def pop(self):
         self.solver.pop()
         self.paths_data.pop()
+        self.constraint_lists.pop()
 
     def build_test_case(self, model, path_id, path_data):
         raise NotImplementedError("Override in child class.")
@@ -128,7 +135,22 @@ class ConsolidatedSolver(object):
         to add any additional constraints (which must be satisfiable)
         immediately before evaluating the solution.
         """
-        pass
+        if self.solve_again:
+            # Reset solver and re-add constraints.  Solver should be left in
+            # same logical state as before, but avoid certain optimisations that
+            # can affect results (particularly affecting randomness).
+            self.solver.reset()
+            for constraint_list in self.constraint_lists:
+                for constraint in constraint_list:
+                    self.solver.add(constraint)
+
+    def add_constraints(self, constraints):
+        # constraints is a list of z3 expressions representing the constraints
+        # of a transition on the path.
+        # Collapsing them here should increase performance for large solves.
+        constraint = z3.And(constraints)
+        self.constraint_lists[-1].append(constraint)
+        self.solver.add(constraint)
 
     def solve(self):
         start_time = time.time()
@@ -171,11 +193,13 @@ class ConsolidatedSolver(object):
         # alter class members managed by push/pop or similar mechanism.
         for cs in constraints:
             if len(cs) > 0:
-                self.solver.add(z3.And(cs))
+                self.add_constraints(cs)
 
         return self.solve() == z3.sat
 
     def _add_path(self, path_id, constraints, path_data):
+        # note: constraints is a list of lists, each sub-list represents the
+        # constraints added by a single transition.
         max_n_paths = Config().get_consolidate_tables()
         if len(self.paths_data) == max_n_paths:
             logging.info("Too many paths-per-solve")
@@ -224,8 +248,10 @@ class TableConsolidatedSolver(ConsolidatedSolver):
     #   and generate hit-entry paths with that action, so there will be two
     #   default paths for each table (both hitting it via a MISS).
     def __init__(self, json_file, pipeline, test_case_writer):
+        # Only need to solve again on flush if randomizing.
+        solve_again = Config().get_randomize()
         super(TableConsolidatedSolver, self).__init__(
-            json_file, pipeline, test_case_writer)
+            json_file, pipeline, test_case_writer, solve_again)
 
         self.pipeline = pipeline
         for table in self.pipeline.tables.values():
@@ -451,5 +477,4 @@ class TableConsolidatedSolver(ConsolidatedSolver):
 
     def add_final_constraints(self):
         super(TableConsolidatedSolver, self).add_final_constraints()
-        for constraint in self.table_vars.random_displacement_constraints():
-            self.solver.add(constraint)
+        self.add_constraints(list(self.table_vars.random_displacement_constraints()))
