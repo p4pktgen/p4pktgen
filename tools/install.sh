@@ -70,6 +70,7 @@ set -ex
 sudo apt-get install --yes virtualenv python-tk graphviz
 virtualenv my-venv --system-site-packages
 source my-venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt
 python setup.py develop
 set +ex
