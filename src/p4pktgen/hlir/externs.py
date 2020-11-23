@@ -1,5 +1,5 @@
 import os
-import imp
+import importlib.util
 import inspect
 
 from p4pktgen.config import Config
@@ -12,7 +12,10 @@ class Externs(object):
     @staticmethod
     def load_external_module(src_path):
         module_name = os.path.basename(src_path)
-        return imp.load_source(module_name, src_path)
+        spec = importlib.util.spec_from_file_location(module_name, src_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
     def load_external_class(self, src_path):
         external_module = self.load_external_module(src_path)
