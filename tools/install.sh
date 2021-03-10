@@ -38,11 +38,14 @@ then
 fi
 
 warning() {
-    1>&2 echo "This software has only been tested on Ubuntu 16.04 and 18.04 so far."
+    1>&2 echo "This software has only been tested on these systems so far:"
+    1>&2 echo "    Ubuntu 16.04"
+    1>&2 echo "    Ubuntu 18.04"
+    1>&2 echo "    Ubuntu 20.04"
     1>&2 echo "Proceed installing manually at your own risk of"
     1>&2 echo "significant time spent figuring out how to make it all work, or"
-    1>&2 echo "consider getting VirtualBox and creating an Ubuntu 16.04 or 18.04 virtual"
-    1>&2 echo "machine."
+    1>&2 echo "consider getting VirtualBox and creating a virtual machine with"
+    1>&2 echo "a supported operating system."
 }
 
 lsb_release >& /dev/null
@@ -55,7 +58,7 @@ fi
 
 distributor_id=`lsb_release -si`
 release=`lsb_release -sr`
-if [ "${distributor_id}" = "Ubuntu" -a \( "${release}" = "16.04" -o "${release}" = "18.04" \) ]
+if [ "${distributor_id}" = "Ubuntu" -a \( "${release}" = "16.04" -o "${release}" = "18.04" -o "${release}" = "20.04" \) ]
 then
     echo "Found distributor '${distributor_id}' release '${release}'.  Continuing with installation."
 else
@@ -67,7 +70,7 @@ else
 fi
 
 set -ex
-sudo apt-get install --yes virtualenv python-tk graphviz
+sudo apt-get install --yes virtualenv graphviz
 virtualenv my-venv --python=python3 --system-site-packages
 source my-venv/bin/activate
 pip install --upgrade pip
