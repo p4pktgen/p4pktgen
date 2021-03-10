@@ -86,7 +86,7 @@ control ingress(inout headers hdr,
     }
     action my_drop() {
         meta.fwd_metadata.dropped = true;
-        mark_to_drop();
+        mark_to_drop(standard_metadata);
     }
     table ipv4_da_lpm {
         key = {
@@ -135,7 +135,7 @@ control egress(inout headers hdr,
         hdr.ethernet.srcAddr = smac;
     }
     action my_drop() {
-        mark_to_drop();
+        mark_to_drop(standard_metadata);
     }
     table send_frame {
         key = {

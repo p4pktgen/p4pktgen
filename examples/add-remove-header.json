@@ -15,10 +15,7 @@
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
         ["egress_port", 9, false],
-        ["clone_spec", 32, false],
         ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
         ["packet_length", 32, false],
         ["enq_timestamp", 32, false],
         ["enq_qdepth", 19, false],
@@ -26,14 +23,12 @@
         ["deq_qdepth", 19, false],
         ["ingress_global_timestamp", 48, false],
         ["egress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
         ["mcast_grp", 16, false],
-        ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
         ["checksum_error", 1, false],
-        ["recirculate_flag", 32, false],
         ["parser_error", 32, false],
-        ["_padding", 5, false]
+        ["priority", 3, false],
+        ["_padding", 3, false]
       ]
     },
     {
@@ -107,12 +102,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["ParserInvalidArgument", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -188,11 +184,12 @@
       "id" : 0,
       "source_info" : {
         "filename" : "add-remove-header.p4",
-        "line" : 176,
+        "line" : 171,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
-      "order" : ["ethernet", "outer_ipv4", "ipv4"]
+      "order" : ["ethernet", "outer_ipv4", "ipv4"],
+      "primitives" : []
     }
   ],
   "meter_arrays" : [],
@@ -202,42 +199,8 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "my_drop",
-      "id" : 0,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "add-remove-header.p4",
-            "line" : 65,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "my_drop",
-      "id" : 1,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "add-remove-header.p4",
-            "line" : 65,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
       "name" : "ingress.set_l2ptr",
-      "id" : 2,
+      "id" : 0,
       "runtime_data" : [
         {
           "name" : "l2ptr",
@@ -259,7 +222,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 96,
+            "line" : 85,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
           }
@@ -268,7 +231,7 @@
     },
     {
       "name" : "ingress.add_outer_ipv4",
-      "id" : 3,
+      "id" : 1,
       "runtime_data" : [
         {
           "name" : "l2ptr",
@@ -298,7 +261,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 99,
+            "line" : 88,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = l2ptr"
           }
@@ -313,7 +276,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 100,
+            "line" : 89,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.setValid()"
           }
@@ -332,7 +295,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 101,
+            "line" : 90,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.version = 4"
           }
@@ -351,7 +314,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 102,
+            "line" : 91,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.ihl = 5"
           }
@@ -370,7 +333,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 103,
+            "line" : 92,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.diffserv = 0"
           }
@@ -389,7 +352,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 104,
+            "line" : 93,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.totalLen = 20"
           }
@@ -408,7 +371,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 105,
+            "line" : 94,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.identification = 0"
           }
@@ -427,7 +390,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 106,
+            "line" : 95,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.flags = 0"
           }
@@ -446,7 +409,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 107,
+            "line" : 96,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.fragOffset = 0"
           }
@@ -465,7 +428,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 108,
+            "line" : 97,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.ttl = 64"
           }
@@ -484,7 +447,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 109,
+            "line" : 98,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.protocol = 4"
           }
@@ -503,7 +466,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 110,
+            "line" : 99,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.hdrChecksum = 0"
           }
@@ -522,7 +485,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 111,
+            "line" : 100,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.srcAddr = sa"
           }
@@ -541,9 +504,53 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 112,
+            "line" : 101,
             "column" : 8,
             "source_fragment" : "hdr.outer_ipv4.dstAddr = da"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "ingress.my_drop",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "add-remove-header.p4",
+            "line" : 104,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "ingress.my_drop",
+      "id" : 3,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "add-remove-header.p4",
+            "line" : 104,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
           }
         }
       ]
@@ -580,7 +587,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 127,
+            "line" : 119,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
           }
@@ -599,7 +606,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 128,
+            "line" : 120,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
           }
@@ -618,7 +625,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 129,
+            "line" : 121,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
           }
@@ -660,7 +667,7 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 130,
+            "line" : 122,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -668,25 +675,8 @@
       ]
     },
     {
-      "name" : "my_drop",
-      "id" : 5,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "add-remove-header.p4",
-            "line" : 65,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
       "name" : "egress.rewrite_mac",
-      "id" : 6,
+      "id" : 5,
       "runtime_data" : [
         {
           "name" : "smac",
@@ -708,9 +698,31 @@
           ],
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 158,
+            "line" : 150,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = smac"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "egress.my_drop",
+      "id" : 6,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "add-remove-header.p4",
+            "line" : 153,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
           }
         }
       ]
@@ -722,7 +734,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "add-remove-header.p4",
-        "line" : 91,
+        "line" : 80,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -733,7 +745,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 114,
+            "line" : 106,
             "column" : 10,
             "source_fragment" : "ipv4_da_lpm"
           },
@@ -751,16 +763,16 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2, 3, 0],
-          "actions" : ["ingress.set_l2ptr", "ingress.add_outer_ipv4", "my_drop"],
+          "action_ids" : [0, 1, 2],
+          "actions" : ["ingress.set_l2ptr", "ingress.add_outer_ipv4", "ingress.my_drop"],
           "base_default_next" : "node_4",
           "next_tables" : {
             "ingress.set_l2ptr" : "node_4",
             "ingress.add_outer_ipv4" : "node_4",
-            "my_drop" : "node_4"
+            "ingress.my_drop" : "node_4"
           },
           "default_entry" : {
-            "action_id" : 0,
+            "action_id" : 2,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -771,7 +783,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 132,
+            "line" : 124,
             "column" : 10,
             "source_fragment" : "mac_da"
           },
@@ -789,15 +801,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4, 1],
-          "actions" : ["ingress.set_bd_dmac_intf", "my_drop"],
+          "action_ids" : [4, 3],
+          "actions" : ["ingress.set_bd_dmac_intf", "ingress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
             "ingress.set_bd_dmac_intf" : null,
-            "my_drop" : null
+            "ingress.my_drop" : null
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 3,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -811,7 +823,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 144,
+            "line" : 136,
             "column" : 12,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -834,7 +846,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 146,
+            "line" : 138,
             "column" : 16,
             "source_fragment" : "!hdr.outer_ipv4.isValid()"
           },
@@ -866,7 +878,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "add-remove-header.p4",
-        "line" : 153,
+        "line" : 145,
         "column" : 8,
         "source_fragment" : "egress"
       },
@@ -877,7 +889,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "add-remove-header.p4",
-            "line" : 160,
+            "line" : 155,
             "column" : 10,
             "source_fragment" : "send_frame"
           },
@@ -895,15 +907,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [6, 5],
-          "actions" : ["egress.rewrite_mac", "my_drop"],
+          "action_ids" : [5, 6],
+          "actions" : ["egress.rewrite_mac", "egress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
             "egress.rewrite_mac" : null,
-            "my_drop" : null
+            "egress.my_drop" : null
           },
           "default_entry" : {
-            "action_id" : 5,
+            "action_id" : 6,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -943,24 +955,16 @@
       ["standard_metadata", "egress_global_timestamp"]
     ],
     [
-      "intrinsic_metadata.lf_field_list",
-      ["standard_metadata", "lf_field_list"]
-    ],
-    [
       "intrinsic_metadata.mcast_grp",
       ["standard_metadata", "mcast_grp"]
-    ],
-    [
-      "intrinsic_metadata.resubmit_flag",
-      ["standard_metadata", "resubmit_flag"]
     ],
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
     ],
     [
-      "intrinsic_metadata.recirculate_flag",
-      ["standard_metadata", "recirculate_flag"]
+      "intrinsic_metadata.priority",
+      ["standard_metadata", "priority"]
     ]
   ],
   "program" : "./add-remove-header.p4i",

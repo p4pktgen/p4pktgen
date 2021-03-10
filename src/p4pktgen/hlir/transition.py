@@ -3,7 +3,8 @@ from p4pktgen.util.graph import Edge
 
 TransitionType = Enum(
     'TransitionType',
-    'PARSER_OP_TRANSITION ACTION_TRANSITION CONST_ACTION_TRANSITION BOOL_TRANSITION'
+    'PARSER_ERROR_TRANSITION ACTION_TRANSITION CONST_ACTION_TRANSITION'
+    ' BOOL_TRANSITION NOOP_TRANSITION'
 )
 
 
@@ -38,21 +39,51 @@ class ParserTransition(Edge):
         self.value = value
 
     def __eq__(self, other):
-        return isinstance(
-            other,
-            HLIR_Parser_Transition) and (self.type_ == other.type_) and (
-                self.next_state_name == other.next_state_name) and (
-                    self.mask == other.mask) and (self.value == other.value)
+        return isinstance(other, ParserTransition) and \
+            self.type_ == other.type_ and \
+            self.next_state_name == other.next_state_name and \
+            self.mask == other.mask and \
+            self.value == other.value
+
+    def __hash__(self):
+        return hash((self.type_, self.next_state_name, self.mask, self.value))
 
 
-class ParserOpTransition(Transition):
+class ParserCompositeTransition(Edge):
+    """
+    Class representing parallel P4 parser transitions that have been merged.
+    """
+    def __init__(self, components):
+        # Check that edges are parallel parser transitions
+        assert all(isinstance(t, ParserTransition) for t in components)
+        assert len(components) > 0
+        src = components[0].src
+        dst = components[0].dst
+        for c in components[1:]:
+            assert c.src == src and c.dst == dst
+        self.components = components
+        super(ParserCompositeTransition, self).__init__(src, dst)
+
+    def __eq__(self, other):
+        if isinstance(other, ParserTransition):
+            return other in self.component_edges
+        return super(ParserCompositeTransition, self).__eq__(other)
+
+    def __hash__(self):
+        return hash(tuple(self.components))
+
+
+class ParserErrorTransition(Transition):
     def __init__(self, state_name, op, op_idx, next_state, error_str):
-        super(ParserOpTransition, self).__init__(
-            TransitionType.PARSER_OP_TRANSITION, state_name, next_state)
+        super(ParserErrorTransition, self).__init__(
+            TransitionType.PARSER_ERROR_TRANSITION, state_name, next_state)
         self.op = op
         self.op_idx = op_idx
         self.next_state = next_state
         self.error_str = error_str
+
+    def __repr__(self):
+        return '{} -({})-> {}'.format(self.src, self.error_str, self.dst)
 
 
 class ActionTransition(Transition):
@@ -111,8 +142,27 @@ class BoolTransition(Transition):
                          self.source_info.source_fragment)) == other
             else:
                 # XXX: hack
-                return (self.val == other[0])
+                return self.val == other[0]
 
     def __hash__(self):
         # XXX: hack for test cases
         return hash((self.val, self.source_info))
+
+
+class NoopTransition(Transition):
+    """Used to represent empty control graphs.  Does not represent a real
+    node or transition."""
+    def __init__(self, src, dest):
+        super(NoopTransition, self).__init__(TransitionType.NOOP_TRANSITION,
+                                             src, dest)
+
+    def __repr__(self):
+        return u'\'No-Op\''
+
+    def __eq__(self, other):
+        if isinstance(other, NoopTransition):
+            return True
+        return other == 'No-Op'
+
+    def __hash__(self):
+        return hash('No-Op')

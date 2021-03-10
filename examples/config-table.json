@@ -15,10 +15,7 @@
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
         ["egress_port", 9, false],
-        ["clone_spec", 32, false],
         ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
         ["packet_length", 32, false],
         ["enq_timestamp", 32, false],
         ["enq_qdepth", 19, false],
@@ -26,14 +23,12 @@
         ["deq_qdepth", 19, false],
         ["ingress_global_timestamp", 48, false],
         ["egress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
         ["mcast_grp", 16, false],
-        ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
         ["checksum_error", 1, false],
-        ["recirculate_flag", 32, false],
         ["parser_error", 32, false],
-        ["_padding", 5, false]
+        ["priority", 3, false],
+        ["_padding", 3, false]
       ]
     },
     {
@@ -100,12 +95,13 @@
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["ParserInvalidArgument", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -181,11 +177,12 @@
       "id" : 0,
       "source_info" : {
         "filename" : "config-table.p4",
-        "line" : 157,
+        "line" : 160,
         "column" : 8,
         "source_fragment" : "DeparserImpl"
       },
-      "order" : ["ethernet", "ipv4"]
+      "order" : ["ethernet", "ipv4"],
+      "primitives" : []
     }
   ],
   "meter_arrays" : [],
@@ -197,7 +194,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "config-table.p4",
-        "line" : 184,
+        "line" : 187,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -254,7 +251,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "config-table.p4",
-        "line" : 166,
+        "line" : 169,
         "column" : 8,
         "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -316,25 +313,8 @@
       "primitives" : []
     },
     {
-      "name" : "my_drop",
-      "id" : 1,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "drop",
-          "parameters" : [],
-          "source_info" : {
-            "filename" : "config-table.p4",
-            "line" : 71,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
-          }
-        }
-      ]
-    },
-    {
       "name" : "ingress.set_config_parameters",
-      "id" : 2,
+      "id" : 1,
       "runtime_data" : [
         {
           "name" : "default_l2ptr",
@@ -356,7 +336,7 @@
           ],
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 102,
+            "line" : 99,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.l2ptr = default_l2ptr"
           }
@@ -365,7 +345,7 @@
     },
     {
       "name" : "ingress.set_bd_dmac_intf",
-      "id" : 3,
+      "id" : 2,
       "runtime_data" : [
         {
           "name" : "bd",
@@ -395,7 +375,7 @@
           ],
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 112,
+            "line" : 109,
             "column" : 8,
             "source_fragment" : "meta.fwd_metadata.out_bd = bd"
           }
@@ -414,7 +394,7 @@
           ],
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 113,
+            "line" : 110,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = dmac"
           }
@@ -433,7 +413,7 @@
           ],
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 114,
+            "line" : 111,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = intf"
           }
@@ -475,7 +455,7 @@
           ],
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 115,
+            "line" : 112,
             "column" : 8,
             "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
@@ -483,25 +463,30 @@
       ]
     },
     {
-      "name" : "my_drop",
-      "id" : 4,
+      "name" : "ingress.my_drop",
+      "id" : 3,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "drop",
-          "parameters" : [],
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 71,
-            "column" : 4,
-            "source_fragment" : "mark_to_drop()"
+            "line" : 115,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
           }
         }
       ]
     },
     {
       "name" : "egress.rewrite_mac",
-      "id" : 5,
+      "id" : 4,
       "runtime_data" : [
         {
           "name" : "smac",
@@ -529,6 +514,28 @@
           }
         }
       ]
+    },
+    {
+      "name" : "egress.my_drop",
+      "id" : 5,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "mark_to_drop",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "standard_metadata"
+            }
+          ],
+          "source_info" : {
+            "filename" : "config-table.p4",
+            "line" : 142,
+            "column" : 8,
+            "source_fragment" : "mark_to_drop(standard_metadata)"
+          }
+        }
+      ]
     }
   ],
   "pipelines" : [
@@ -537,7 +544,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "config-table.p4",
-        "line" : 97,
+        "line" : 94,
         "column" : 8,
         "source_fragment" : "ingress"
       },
@@ -548,7 +555,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 104,
+            "line" : 101,
             "column" : 10,
             "source_fragment" : "switch_config_params"
           },
@@ -559,7 +566,7 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2, 0],
+          "action_ids" : [1, 0],
           "actions" : ["ingress.set_config_parameters", "NoAction"],
           "base_default_next" : "ingress.mac_da",
           "next_tables" : {
@@ -596,15 +603,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [3, 1],
-          "actions" : ["ingress.set_bd_dmac_intf", "my_drop"],
+          "action_ids" : [2, 3],
+          "actions" : ["ingress.set_bd_dmac_intf", "ingress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
             "ingress.set_bd_dmac_intf" : null,
-            "my_drop" : null
+            "ingress.my_drop" : null
           },
           "default_entry" : {
-            "action_id" : 1,
+            "action_id" : 3,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -630,7 +637,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "config-table.p4",
-            "line" : 141,
+            "line" : 144,
             "column" : 10,
             "source_fragment" : "send_frame"
           },
@@ -648,15 +655,15 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [5, 4],
-          "actions" : ["egress.rewrite_mac", "my_drop"],
+          "action_ids" : [4, 5],
+          "actions" : ["egress.rewrite_mac", "egress.my_drop"],
           "base_default_next" : null,
           "next_tables" : {
             "egress.rewrite_mac" : null,
-            "my_drop" : null
+            "egress.my_drop" : null
           },
           "default_entry" : {
-            "action_id" : 4,
+            "action_id" : 5,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
@@ -673,7 +680,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "config-table.p4",
-        "line" : 184,
+        "line" : 187,
         "column" : 8,
         "source_fragment" : "update_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -702,7 +709,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "config-table.p4",
-        "line" : 166,
+        "line" : 169,
         "column" : 8,
         "source_fragment" : "verify_checksum(hdr.ipv4.ihl == 5, ..."
       },
@@ -755,24 +762,16 @@
       ["standard_metadata", "egress_global_timestamp"]
     ],
     [
-      "intrinsic_metadata.lf_field_list",
-      ["standard_metadata", "lf_field_list"]
-    ],
-    [
       "intrinsic_metadata.mcast_grp",
       ["standard_metadata", "mcast_grp"]
-    ],
-    [
-      "intrinsic_metadata.resubmit_flag",
-      ["standard_metadata", "resubmit_flag"]
     ],
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
     ],
     [
-      "intrinsic_metadata.recirculate_flag",
-      ["standard_metadata", "recirculate_flag"]
+      "intrinsic_metadata.priority",
+      ["standard_metadata", "priority"]
     ]
   ],
   "program" : "./config-table.p4i",

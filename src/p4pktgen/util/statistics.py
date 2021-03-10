@@ -88,7 +88,7 @@ class Statistics:
         self.num_covered_edges = 0
         self.num_done = 0
 
-    def record(self, result, record_path, translator):
+    def record(self, result, record_path, path_solver):
         self.record_count += 1
 
         current_time = time.time()
@@ -101,7 +101,7 @@ class Statistics:
         if self.record_count % 100 == 0:
             self.breakdown_file.write('{},{},{},{},{},{}\n'.format(
                 current_time - self.start_time,
-                self.num_solver_calls, translator.total_switch_time,
+                self.num_solver_calls, path_solver.total_switch_time,
                 Statistics().solver_time,
                 self.avg_full_path_len.get_avg(),
                 self.avg_unsat_path_len.get_avg(),
@@ -115,7 +115,7 @@ class Statistics:
             " in a SUCCESS test case:", num_control_path_edges)
         num_edges_with_count = defaultdict(int)
         num_edges_with_counts = 0
-        for e in sorted(stats_per_control_path_edge.keys()):
+        for e in sorted(stats_per_control_path_edge.keys(), key=id):
             num_edges_with_counts += 1
             cnt = stats_per_control_path_edge[e]
             num_edges_with_count[cnt] += 1

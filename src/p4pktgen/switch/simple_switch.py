@@ -2,6 +2,7 @@ import logging
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 from scapy.all import *
@@ -131,7 +132,7 @@ def logf_append(s):
 
 
 class SimpleSwitch:
-    def __init__(self, json_file, folder, num_ports=8):
+    def __init__(self, json_file, folder=None, num_ports=8):
         self.modified_tables = []
 
         self.json_file = json_file
@@ -139,15 +140,24 @@ class SimpleSwitch:
         self.num_ports = num_ports
         self.pcap_filename_prefix = 'pcap'
 
+        self.folder = folder
+        self.tmpdir = None
+        self.thrift_port_num = 9090
+
+        self.intf_info = {}
+
+        self.proc = None
+        self.api = None
+
+    def _start(self):
         # TBD: See bmv2stf.py for ideas on running multiple
         # simple_switch processes in parallel on the same machine.
         # This code does not support that yet.
-        self.folder = folder
-        self.thrift_port_num = 9090
+        if self.folder is None:
+            self.folder = self.tmpdir = tempfile.mkdtemp(dir=".")
 
         # See step (1) above
         intf_args = []
-        self.intf_info = {}
         for i in range(self.num_ports):
             intf_args.append('-i')
             intf_args.append(self.intf_num_to_simple_switch_arg(i))
@@ -249,6 +259,14 @@ class SimpleSwitch:
         load_json_config(standard_client)
         self.api = RuntimeAPI(pre, standard_client, mc_client)
 
+    def __enter__(self):
+        try:
+            self._start()
+        except:
+            self.shutdown()
+            raise
+        return self
+
     def intf_num_to_simple_switch_name(self, intf_num):
         return "%s%d" % (self.pcap_filename_prefix, intf_num)
 
@@ -303,19 +321,17 @@ class SimpleSwitch:
         logging.debug("Calling fp.flush() after _writer_header(None)")
         self.intf_info[intf_num]['pcap_in_fp'] = fp
 
-    def table_add(self, table, action, values, params, priority):
-        self.modified_tables.append(table)
-        priority_str = ""
-        if priority:
-            priority_str = " %d" % (priority)
-        self.api.do_table_add(
-            '{} {} {} => {}{}'.format(table, action, ' '.join(
-                values), ' '.join([str(x) for x in params]), priority_str))
-
-    def table_set_default(self, table, action, params):
-        self.modified_tables.append(table)
-        self.api.do_table_set_default('{} {} {}'.format(
-            table, action, ' '.join([str(x) for x in params])))
+    def table_cmd(self, cmd):
+        clis = {'default': 'table_set_default ',
+                'add': 'table_add '}
+        if cmd.startswith(clis['default']):
+            body = cmd[len(clis['default']):]
+            self.api.do_table_set_default(body)
+        elif cmd.startswith(clis['add']):
+            body = cmd[len(clis['add']):]
+            self.api.do_table_add(body)
+        else:
+            raise Exception('Unknown table cmd: %s' % cmd)
 
     def clear_tables(self):
         """Clears all modified tables."""
@@ -340,8 +356,9 @@ class SimpleSwitch:
         extracted_path = []
         prev_match = None
         table_name = None
+        logging.debug("Starting to scan simple_switch log for lines indicating actual execution path taken while processing the packet")
         for b_line in iter(self.proc.stdout.readline, b''):
-            line = str(b_line)
+            line = b_line.decode('utf-8')
             logging.debug("Line from simple_switch log: %s", line.strip())
             m = re.search(r'Parser state \'(.*)\'', line)
             if m is not None:
@@ -470,10 +487,17 @@ class SimpleSwitch:
 
     def shutdown(self):
         logging.debug("Killing simple_switch process")
-        self.proc.kill()
+        if self.proc is not None:
+            self.proc.kill()
         for i in sorted(self.intf_info):
             self.remove_file_if_exists(self.intf_info[i]['pcap_in_fname'])
             self.remove_file_if_exists(self.intf_info[i]['pcap_out_fname'])
+        # Don't remove "." !!!
+        if self.tmpdir is not None and self.tmpdir != ".":
+            os.removedirs(self.tmpdir)
+
+    def __exit__(self, *args):
+        self.shutdown()
 
 
 # TBD: bmv2stf.py removes /tmp/bmv2-%d-notifications.ipc file when

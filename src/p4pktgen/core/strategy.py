@@ -1,24 +1,31 @@
-from collections import OrderedDict, defaultdict
-import json
+from collections import defaultdict
 import time
 import logging
-from random import shuffle
-import operator
-import random
-
-from enum import Enum
 
 from p4pktgen.config import Config
-from p4pktgen.core.translator import TestPathResult
+from p4pktgen.core.path import Path, PathModel
+from p4pktgen.core.test_cases import TestPathResult, record_test_case
 from p4pktgen.util.graph import GraphVisitor, VisitResult
 from p4pktgen.util.statistics import Statistics
-from p4pktgen.hlir.transition import ActionTransition, ParserTransition
+from p4pktgen.hlir.transition import ParserTransition, ParserCompositeTransition, ParserErrorTransition
+
+
+def record_path_result(result, is_complete_control_path):
+    if result != TestPathResult.SUCCESS or is_complete_control_path:
+        return True
+    return False
+
+
+def ge_than_not_none(lhs, rhs):
+    if rhs is None or lhs is None:
+        return False
+    return lhs >= rhs
+
 
 class ParserGraphVisitor(GraphVisitor):
     def __init__(self, hlir):
         super(ParserGraphVisitor, self).__init__()
         self.hlir = hlir
-        self.all_paths = []
 
     def count(self, stack_counts, state_name):
         if state_name != 'sink':
@@ -26,103 +33,136 @@ class ParserGraphVisitor(GraphVisitor):
             for extract in state.header_stack_extracts:
                 stack_counts[extract] += 1
 
-    def preprocess_edges(self, path, edges):
-        filtered_edges = []
-        for edge in edges:
-            if edge.dst != 'sink' and isinstance(edge, ParserTransition):
-                state = self.hlir.get_parser_state(edge.dst)
-                if state.has_header_stack_extracts():
-                    stack_counts = defaultdict(int)
+    def preprocess_edges(self, path_prefix, onward_edges):
+        # Count the number of extractions for each header stack in the path so
+        # far.
+        stack_counts = defaultdict(int)
+        if len(path_prefix) > 0:
+            self.count(stack_counts, path_prefix[0].src)
+            for e in path_prefix:
+                self.count(stack_counts, e.dst)
 
-                    if len(path) > 0:
-                        self.count(stack_counts, path[0].src)
-                        for e in path:
-                            self.count(stack_counts, e.dst)
-                        self.count(stack_counts, edge.dst)
+        edges = onward_edges
 
-                        # If one of the header stacks is overful, remove the edge
-                        valid = True
-                        for stack, count in stack_counts.items():
-                            if self.hlir.get_header_stack(stack).size < count:
-                                valid = False
-                                break
-                        if not valid:
-                            continue
+        if any(self.hlir.get_header_stack(stack).size < count
+               for stack, count in stack_counts.items()):
+            # If the path so far involves an extraction beyond the end of a
+            # header stack, the only legal onward transitions are error
+            # transitions.  If there are no such transitions, the returned list
+            # will be empty, which will cause the caller to drop the current
+            # path-prefix entirely.
+            edges = [edge for edge in edges
+                     if isinstance(edge, ParserErrorTransition)]
+        elif Config().get_collapse_parser_paths():
+            # Collapse any parallel transitions into a single edge with merged
+            # constraints.  Note that although the nodes on either side of the
+            # new edge are part of the graph, the edge itself is not.
+            good_edges = [edge for edge in edges
+                          if isinstance(edge, ParserTransition)]
+            other_edges = [edge for edge in edges
+                          if not isinstance(edge, ParserTransition)]
 
-            filtered_edges.append(edge)
+            good_edges_by_next_state = defaultdict(list)
+            for edge in good_edges:
+                good_edges_by_next_state[edge.next_state_name].append(edge)
 
-        return filtered_edges
+            edges = other_edges
+            for grouped_edges in good_edges_by_next_state.values():
+                if len(grouped_edges) == 1:
+                    edges.append(grouped_edges[0])
+                else:
+                    assert len(grouped_edges) > 1
+                    edges.append(ParserCompositeTransition(grouped_edges))
+
+        return edges
 
     def visit(self, path, is_complete_path):
         if is_complete_path:
-            self.all_paths.append(path)
-        return VisitResult.CONTINUE
+            return VisitResult.CONTINUE, path
+        else:
+            return VisitResult.CONTINUE, None
 
     def backtrack(self):
         pass
 
-class PathCoverageGraphVisitor(GraphVisitor):
-    def __init__(self, translator, parser_path, source_info_to_node_name,
-                 results, test_case_writer):
-        super(PathCoverageGraphVisitor, self).__init__()
-        self.translator = translator
+
+class ControlGraphVisitor(GraphVisitor):
+    def __init__(self, path_solver, parser_path, results):
+        super(ControlGraphVisitor, self).__init__()
+        self.path_solver = path_solver
         self.parser_path = parser_path
-        self.source_info_to_node_name = source_info_to_node_name
-        self.path_count = 0
         self.results = results
-        self.test_case_writer = test_case_writer
-        self.stats_per_traversal = defaultdict(int)
+        self.success_path_count = 0
 
-    def preprocess_edges(self, path, edges):
-        return edges
+    def solve_path(self, control_path, is_complete_control_path):
+        expected_path = list(
+            self.path_solver.translator.expected_path(self.parser_path,
+                                                      control_path)
+        )
 
-    def visit(self, control_path, is_complete_control_path):
-        self.path_count += 1
-        self.translator.push()
-        expected_path, result, test_case, packet_lst = \
-            self.translator.generate_constraints(
-                self.parser_path, control_path,
-                self.source_info_to_node_name, self.path_count, is_complete_control_path)
+        path = Path(self.path_solver.path_id, expected_path,
+                    self.parser_path, control_path, is_complete_control_path)
 
+        logging.info("")
+        logging.info("BEGIN %s" % str(path))
+
+        if not Config().get_incremental():
+            self.path_solver.solver.reset()
+
+        time1 = time.time()
+        self.path_solver.add_path_constraints(control_path)
+        time2 = time.time()
+
+        result = self.path_solver.try_quick_solve(control_path, is_complete_control_path)
+        if result == TestPathResult.SUCCESS:
+            assert not (record_path_result(result, is_complete_control_path)
+                        or record_test_case(result, is_complete_control_path))
+            # Path trivially found to be satisfiable and not complete.
+            # No test cases required.
+            logging.info("Path trivially found to be satisfiable and not complete.")
+            logging.info("END   %s" % str(path))
+            return result, None
+
+        result = self.path_solver.solve_path()
+        time3 = time.time()
+
+        logging.info("END   %s: %s" % (str(path), result) )
+        path_model = PathModel(
+            path, result, self.path_solver,
+            time_sec_generate_ingress_constraints=time2 - time1,
+            time_sec_initial_solve=time3-time2
+        )
+        return result, path_model
+
+    def record_stats(self, control_path, is_complete_control_path, result):
         if result == TestPathResult.SUCCESS and is_complete_control_path:
             Statistics().avg_full_path_len.record(
                 len(self.parser_path + control_path))
-            if not Config().get_try_least_used_branches_first():
-                for e in control_path:
-                    if Statistics().stats_per_control_path_edge[e] == 0:
-                        Statistics().num_covered_edges += 1
-                    Statistics().stats_per_control_path_edge[e] += 1
+            for e in control_path:
+                if Statistics().stats_per_control_path_edge[e] == 0:
+                    Statistics().num_covered_edges += 1
+                Statistics().stats_per_control_path_edge[e] += 1
         if result == TestPathResult.NO_PACKET_FOUND:
             Statistics().avg_unsat_path_len.record(
                 len(self.parser_path + control_path))
             Statistics().count_unsat_paths.inc()
 
         if Config().get_record_statistics():
-            Statistics().record(result, is_complete_control_path, self.translator)
+            Statistics().record(result, is_complete_control_path, self.path_solver)
 
-        record_result = (is_complete_control_path
-                         or (result != TestPathResult.SUCCESS))
-        if record_result:
-            # Doing file writing here enables getting at least
-            # some test case output data for p4pktgen runs that
-            # the user kills before it completes, e.g. because it
-            # takes too long to complete.
-            self.test_case_writer.write(test_case, packet_lst)
-            result_path = [n.src for n in self.parser_path
-                           ] + ['sink'] + [(n.src, n) for n in control_path]
-            result_path_tuple = tuple(expected_path)
-            if result_path_tuple in self.results and self.results[result_path_tuple] != result:
+        if record_path_result(result, is_complete_control_path):
+            path = (tuple(self.parser_path), tuple(control_path))
+            if path in self.results and self.results[path] != result:
                 logging.error("result_path %s with result %s"
                               " is already recorded in results"
                               " while trying to record different result %s"
-                              "" % (result_path,
-                                    self.results[result_path_tuple], result))
+                              "" % (path,
+                                    self.results[path], result))
                 #assert False
-            self.results[tuple(result_path)] = result
+            self.results[path] = result
             if result == TestPathResult.SUCCESS and is_complete_control_path:
-                for x in control_path:
-                    Statistics().stats_per_control_path_edge[x] += 1
                 now = time.time()
+                self.success_path_count += 1
                 # Use real time to avoid printing these details
                 # too often in the output log.
                 if now - Statistics(
@@ -133,222 +173,92 @@ class PathCoverageGraphVisitor(GraphVisitor):
                     Statistics(
                     ).last_time_printed_stats_per_control_path_edge = now
             Statistics().stats[result] += 1
-            self.stats_per_traversal[result] += 1
 
-        visit_result = None
-        tmp_num = Config().get_max_paths_per_parser_path()
-        if (tmp_num
-                and self.stats_per_traversal[TestPathResult.SUCCESS] >= tmp_num):
-            # logging.info("Already found %d packets for parser path %d of %d."
-            #              "  Backing off so we can get to next parser path ASAP"
-            #              "" % (self.stats_per_traversal[TestPathResult.SUCCESS],
-            #                    parser_path_num, len(parser_paths)))
-            visit_result = VisitResult.BACKTRACK
-        else:
-            visit_result = VisitResult.CONTINUE if result == TestPathResult.SUCCESS else VisitResult.BACKTRACK
 
-        if is_complete_control_path and result == TestPathResult.SUCCESS:
-            Statistics().num_test_cases += 1
-            if Statistics().num_test_cases == Config().get_num_test_cases():
-                visit_result = VisitResult.ABORT
+    def visit_result(self, result):
+        # TODO: Fix this option.
+        if ge_than_not_none(self.success_path_count,
+                            Config().get_max_paths_per_parser_path()):
+           return VisitResult.BACKTRACK
 
-        return visit_result
+        if result != TestPathResult.SUCCESS:
+            return VisitResult.BACKTRACK
 
-    def backtrack(self):
-        self.translator.pop()
+        return VisitResult.CONTINUE
 
-EdgeLabels = Enum('EdgeLabels', 'UNVISITED VISITED DONE')
 
-class EdgeCoverageGraphVisitor(PathCoverageGraphVisitor):
-    def __init__(self, graph, labels, translator, parser_path, source_info_to_node_name,
-                 results, test_case_writer):
-        super(EdgeCoverageGraphVisitor, self).__init__(translator, parser_path, source_info_to_node_name, results, test_case_writer)
-
-        self.graph = graph
-        self.labels = labels
-        self.ccc = 0
-
-    def preprocess_edges(self, path, edges):
-        if Config().get_random_tlubf():
-            shuffle(edges)
-            return edges
-
-        custom_order = sorted(
-                edges, key=lambda t: Statistics().stats_per_control_path_edge[t])
-        return reversed(custom_order)
-
-        visited_es = []
-        unvisited_es = []
-
-        path_has_new_edges = False
-        for e in path:
-            if self.labels[e] == EdgeLabels.UNVISITED:
-                path_has_new_edges = True
-                break
-
-        for e in edges:
-            label = self.labels[e] 
-            if label == EdgeLabels.UNVISITED:
-                unvisited_es.append(e)
-            elif label == EdgeLabels.VISITED:
-                visited_es.append(e)
-            else:
-                assert label == EdgeLabels.DONE
-                if path_has_new_edges:
-                    visited_es.append(e)
-
-        # shuffle(visited_es)
-        #shuffle(unvisited_es)
-        return list(reversed(visited_es)) + list(reversed(unvisited_es))
+class PathCoverageGraphVisitor(ControlGraphVisitor):
+    def preprocess_edges(self, _path, edges):
+        return edges
 
     def visit(self, control_path, is_complete_control_path):
-        visit_result = super(EdgeCoverageGraphVisitor, self).visit(control_path, is_complete_control_path)
+        self.path_solver.push()
+        path_result, path_model = self.solve_path(control_path, is_complete_control_path)
+        self.record_stats(control_path, is_complete_control_path, path_result)
+        return self.visit_result(path_result), path_model
 
-        if visit_result == VisitResult.CONTINUE and is_complete_control_path:
-            is_done = True
-            for e in reversed(control_path):
-                label = self.labels[e]
-                if label == EdgeLabels.UNVISITED:
-                    Statistics().num_covered_edges += 1
-                    self.labels[e] = EdgeLabels.VISITED
+    def backtrack(self):
+        self.path_solver.pop()
 
-                if is_done and label != EdgeLabels.DONE:
-                    all_out_es_done = True
-                    for oe in self.graph.get_neighbors(e.dst):
-                        if self.labels[oe] != EdgeLabels.DONE:
-                            all_out_es_done = False
-                            break
 
-                    if all_out_es_done:
-                        for ie in self.graph.get_in_edges(e.dst):
-                            if self.labels[ie] == EdgeLabels.VISITED:
-                                Statistics().num_done += 1
-                                self.labels[ie] = EdgeLabels.DONE
-                    else:
-                        is_done = False
 
-            Statistics().dump()
-            print(len(set(self.labels.keys())))
-            visit_result = VisitResult.ABORT
-
-            """
-            c = 0
-            for k, v in self.labels.items():
-                if v == EdgeLabels.UNVISITED:
-                    print(k)
-                    c += 1
-                if c == 10:
-                    break
-
-            self.ccc = 0
-            """
-
-        """
-        if visit_result == VisitResult.CONTINUE and not is_complete_control_path:
-            path_has_new_edges = False
-            for e in control_path:
-                if self.labels[e] == EdgeLabels.UNVISITED:
-                    path_has_new_edges = True
-                    break
-
-            if path_has_new_edges:
-                self.ccc = 0
-
-        if visit_result == VisitResult.BACKTRACK:
-            self.ccc += 1
-        if self.ccc == 100:
-            visit_result = VisitResult.ABORT
-        """
-
-        return visit_result
-
-class LeastUsedPaths:
-    def __init__(self, hlir, graph, start, visitor):
+class EdgeCoverageGraphVisitor(ControlGraphVisitor):
+    def __init__(self, path_solver, parser_path, results, graph):
+        super(EdgeCoverageGraphVisitor, self).__init__(
+            path_solver, parser_path, results
+        )
         self.graph = graph
-        self.path_count = defaultdict(int)
-        self.start = start
-        self.visitor = visitor
-        self.hlir = hlir
+        self.done_edges = set()  # {edge}
+        self.edge_visits = defaultdict(int)  # {edge: visit_count}
 
-    def choose_edge(self, edges):
-        if Config().get_random_tlubf():
-            return random.choice(edges)
+    def preprocess_edges(self, _path, edges):
+        # List non-done edges first, then done edges, with each group sorted by
+        # absolute visit count.
+        done_edges = []
+        non_done_edges = []
+        for e in edges:
+            l = done_edges if e in self.done_edges else non_done_edges
+            l.append(e)
+        least_visits_order = \
+            sorted(non_done_edges, key=lambda e: self.edge_visits[e]) + \
+            sorted(done_edges, key=lambda e: self.edge_visits[e])
 
-        edge_counts = [self.path_count[e] for e in edges]
-        min_index, min_value = min(enumerate(edge_counts), key=operator.itemgetter(1))
-        return edges[min_index]
+        # List is added to a LIFO stack, so reverse the list.
+        return reversed(least_visits_order)
 
-    def count(self, stack_counts, state_name):
-        if state_name != 'sink':
-            state = self.hlir.get_parser_state(state_name)
-            for extract in state.header_stack_extracts:
-                stack_counts[extract] += 1
+    def visit(self, control_path, is_complete_control_path):
+        self.path_solver.push()
 
-    def preprocess_edges(self, path, edges):
-        filtered_edges = []
-        for edge in edges:
-            if edge.dst != 'sink' and isinstance(edge, ParserTransition):
-                state = self.hlir.get_parser_state(edge.dst)
-                if state.has_header_stack_extracts():
-                    stack_counts = defaultdict(int)
+        # Skip any path that leads to a done branch and who's edges have already
+        # all been visited.
+        if control_path[-1] in self.done_edges \
+                and all(self.edge_visits[e] > 0 for e in control_path):
+            return VisitResult.BACKTRACK, None
 
-                    if len(path) > 0:
-                        self.count(stack_counts, path[0].src)
-                        for e in path:
-                            self.count(stack_counts, e.dst)
-                        self.count(stack_counts, edge.dst)
+        path_result, path_model = self.solve_path(control_path, is_complete_control_path)
+        self.record_stats(control_path, is_complete_control_path, path_result)
 
-                        # If one of the header stacks is overful, remove the edge
-                        valid = True
-                        for stack, count in stack_counts.items():
-                            if self.hlir.get_header_stack(stack).size < count:
-                                valid = False
-                                break
-                        if not valid:
-                            continue
+        # Only increment counts and done edges if a non-error test case was
+        # generated.  We want successful test cases in order to consider an edge
+        # visited, or done.
+        if record_test_case(path_result, is_complete_control_path) \
+                and path_result == TestPathResult.SUCCESS:
+            assert is_complete_control_path
+            # Increment visit counts
+            for edge in control_path:
+                self.edge_visits[edge] += 1
 
-            filtered_edges.append(edge)
+            # Mark final edge as done
+            self.done_edges.add(control_path[-1])
 
-        return filtered_edges
+            # Mark all edges along graph with all child edges done as done.
+            for edge in reversed(control_path[:-1]):
+                child_edges = self.graph.get_neighbors(edge.dst)
+                if all(ce in self.done_edges for ce in child_edges):
+                    self.done_edges.add(edge)
 
-    def visit(self):
-        while Statistics().num_covered_edges < Statistics().num_control_path_edges:
-            path = []
-            next_node = self.start
-            while self.graph.get_neighbors(next_node):
-                edges = self.graph.get_neighbors(next_node)
-                if len(edges) == 0:
-                    break
+        return self.visit_result(path_result), path_model
 
-                edges = self.preprocess_edges(path, edges)
-                edge = self.choose_edge(edges)
-                path.append(edge)
-                next_node = edge.dst
+    def backtrack(self):
+        self.path_solver.pop()
 
-            for e in path:
-                if self.path_count[e] == 0:
-                    Statistics().num_covered_edges += 1
-                self.path_count[e] += 1
-            self.visitor.visit(path)
-
-class TLUBFParserVisitor:
-    def __init__(self, graph, labels, translator, source_info_to_node_name, results, test_case_writer, in_pipeline):
-        self.graph = graph
-        self.labels = labels
-        self.translator = translator
-        self.source_info_to_node_name = source_info_to_node_name
-        self.results = results
-        self.test_case_writer = test_case_writer
-        self.in_pipeline = in_pipeline
-
-    def visit(self, parser_path):
-        print("VISIT", parser_path)
-        if not self.translator.generate_parser_constraints(parser_path):
-            # Skip unsatisfiable parser paths
-            return
-
-        graph_visitor = EdgeCoverageGraphVisitor(self.graph, self.labels, self.translator, parser_path,
-                                                 self.source_info_to_node_name,
-                                                 self.results, self.test_case_writer)
-
-        self.graph.visit_all_paths(self.in_pipeline.init_table_name, None, graph_visitor)

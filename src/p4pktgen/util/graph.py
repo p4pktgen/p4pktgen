@@ -17,34 +17,14 @@ class Edge(object):
 
 
 class GraphVisitor(object):
-    def __init__(self):
-        self.all_paths = []
-
     def preprocess_edges(self, path, edges):
-        return edges
+        raise NotImplementedError()
 
     def visit(self, path, is_complete_path):
-        return VisitResult.CONTINUE
+        raise NotImplementedError()
 
     def backtrack(self):
-        pass
-
-
-class AllPathsGraphVisitor(GraphVisitor):
-    def __init__(self):
-        super(AllPathsGraphVisitor, self).__init__()
-        self.all_paths = []
-
-    def preprocess_edges(self, path, edges):
-        return edges
-
-    def visit(self, path, is_complete_path):
-        if is_complete_path:
-            self.all_paths.append(path)
-        return VisitResult.CONTINUE
-
-    def backtrack(self):
-        pass
+        raise NotImplementedError()
 
 
 class Graph:
@@ -410,10 +390,8 @@ class Graph:
         return e.src[0]
 
     def visit_all_paths(self, v_start, v_end, graph_visitor):
-        if v_start is None:
-            print("p4pktgen does not handle empty ingress control blocks gracefully")
-            print("Consider making at least one statement or table apply operation in your ingress control block")
-            assert False
+        assert v_start is not None, \
+            "Empty control graphs must be handled specially."
         queue = [[
             n
         ] for n in graph_visitor.preprocess_edges([], self.get_neighbors(v_start))]
@@ -423,11 +401,19 @@ class Graph:
             last_node = current_path[-1].dst
             is_full_path = (last_node == v_end)
 
+            # Backtrack to common ancestor edge of last path.  Assumes that such
+            # an edge exists, and the current path is that ancestor, plus
+            # exactly one additional edge.
             for i in range(last_len - len(current_path) + 1):
                 graph_visitor.backtrack()
             last_len = len(current_path)
 
-            visit_result = graph_visitor.visit(current_path, is_full_path)
+            visit_result, path_data = graph_visitor.visit(current_path, is_full_path)
+            if path_data is not None:
+                # There can be no path to yield if it is unsatisfiable, or no
+                # state has been created to return (e.g. quick_solve).
+                yield path_data
+
             if visit_result == VisitResult.CONTINUE and not is_full_path:
                 for e in graph_visitor.preprocess_edges(current_path,
                         self.get_neighbors(last_node)):

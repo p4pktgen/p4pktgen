@@ -4,8 +4,7 @@
       "name" : "scalars_0",
       "id" : 0,
       "fields" : [
-        ["metadata._fwd_metadata_l2ptr0", 32, false],
-        ["metadata._fwd_metadata_out_bd1", 24, false]
+        ["tmp", 32, false]
       ]
     },
     {
@@ -15,10 +14,7 @@
         ["ingress_port", 9, false],
         ["egress_spec", 9, false],
         ["egress_port", 9, false],
-        ["clone_spec", 32, false],
         ["instance_type", 32, false],
-        ["drop", 1, false],
-        ["recirculate_port", 16, false],
         ["packet_length", 32, false],
         ["enq_timestamp", 32, false],
         ["enq_qdepth", 19, false],
@@ -26,42 +22,28 @@
         ["deq_qdepth", 19, false],
         ["ingress_global_timestamp", 48, false],
         ["egress_global_timestamp", 48, false],
-        ["lf_field_list", 32, false],
         ["mcast_grp", 16, false],
-        ["resubmit_flag", 32, false],
         ["egress_rid", 16, false],
         ["checksum_error", 1, false],
-        ["recirculate_flag", 32, false],
         ["parser_error", 32, false],
-        ["_padding", 5, false]
+        ["priority", 3, false],
+        ["_padding", 3, false]
       ]
     },
     {
-      "name" : "ethernet_t",
+      "name" : "length_hdr",
       "id" : 2,
       "fields" : [
-        ["dstAddr", 48, false],
-        ["srcAddr", 48, false],
-        ["etherType", 16, false]
+        ["length", 8, false]
       ]
     },
     {
-      "name" : "ipv4_t",
+      "name" : "variable_length_hdr",
       "id" : 3,
       "fields" : [
-        ["version", 4, false],
-        ["ihl", 4, false],
-        ["diffserv", 8, false],
-        ["totalLen", 16, false],
-        ["identification", 16, false],
-        ["flags", 3, false],
-        ["fragOffset", 13, false],
-        ["ttl", 8, false],
-        ["protocol", 8, false],
-        ["hdrChecksum", 16, false],
-        ["srcAddr", 32, false],
-        ["dstAddr", 32, false]
-      ]
+        ["content", "*"]
+      ],
+      "max_length" : 1
     }
   ],
   "headers" : [
@@ -80,32 +62,41 @@
       "pi_omit" : true
     },
     {
-      "name" : "ethernet",
+      "name" : "length",
       "id" : 2,
-      "header_type" : "ethernet_t",
+      "header_type" : "length_hdr",
       "metadata" : false,
       "pi_omit" : true
     },
     {
-      "name" : "ipv4",
+      "name" : "stack_vl[0]",
       "id" : 3,
-      "header_type" : "ipv4_t",
+      "header_type" : "variable_length_hdr",
       "metadata" : false,
       "pi_omit" : true
     }
   ],
-  "header_stacks" : [],
+  "header_stacks" : [
+    {
+      "name" : "stack_vl",
+      "id" : 0,
+      "header_type" : "variable_length_hdr",
+      "size" : 1,
+      "header_ids" : [3]
+    }
+  ],
   "header_union_types" : [],
   "header_unions" : [],
   "header_union_stacks" : [],
   "field_lists" : [],
   "errors" : [
-    ["NoError", 1],
-    ["PacketTooShort", 2],
-    ["NoMatch", 3],
-    ["StackOutOfBounds", 4],
-    ["HeaderTooShort", 5],
-    ["ParserTimeout", 6]
+    ["NoError", 0],
+    ["PacketTooShort", 1],
+    ["NoMatch", 2],
+    ["StackOutOfBounds", 3],
+    ["HeaderTooShort", 4],
+    ["ParserTimeout", 5],
+    ["ParserInvalidArgument", 6]
   ],
   "enums" : [],
   "parsers" : [
@@ -122,36 +113,60 @@
               "parameters" : [
                 {
                   "type" : "regular",
-                  "value" : "ethernet"
+                  "value" : "length"
                 }
               ],
               "op" : "extract"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "field",
+                  "value" : ["scalars", "tmp"]
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "expression",
+                    "value" : {
+                      "op" : "&",
+                      "left" : {
+                        "type" : "field",
+                        "value" : ["length", "length"]
+                      },
+                      "right" : {
+                        "type" : "hexstr",
+                        "value" : "0xffffffff"
+                      }
+                    }
+                  }
+                }
+              ],
+              "op" : "set"
+            },
+            {
+              "parameters" : [
+                {
+                  "type" : "stack",
+                  "value" : "stack_vl"
+                },
+                {
+                  "type" : "expression",
+                  "value" : {
+                    "type" : "field",
+                    "value" : ["scalars", "tmp"]
+                  }
+                }
+              ],
+              "op" : "extract_VL"
             }
           ],
           "transitions" : [
             {
               "type" : "hexstr",
-              "value" : "0x0800",
+              "value" : "0x08",
               "mask" : null,
-              "next_state" : "parse_ipv4"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x0900",
-              "mask" : null,
-              "next_state" : "parse_ipv4"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0xff00",
-              "mask" : "0xff00",
-              "next_state" : "parse_ipv4"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x0ff0",
-              "mask" : "0x0ff0",
-              "next_state" : "parse_ipv4"
+              "next_state" : "start"
             },
             {
               "value" : "default",
@@ -162,32 +177,9 @@
           "transition_key" : [
             {
               "type" : "field",
-              "value" : ["ethernet", "etherType"]
+              "value" : ["length", "length"]
             }
           ]
-        },
-        {
-          "name" : "parse_ipv4",
-          "id" : 1,
-          "parser_ops" : [
-            {
-              "parameters" : [
-                {
-                  "type" : "regular",
-                  "value" : "ipv4"
-                }
-              ],
-              "op" : "extract"
-            }
-          ],
-          "transitions" : [
-            {
-              "value" : "default",
-              "mask" : null,
-              "next_state" : null
-            }
-          ],
-          "transition_key" : []
         }
       ]
     }
@@ -198,12 +190,13 @@
       "name" : "deparser",
       "id" : 0,
       "source_info" : {
-        "filename" : "parser-parallel-transitions.p4",
-        "line" : 110,
+        "filename" : "parser-error.p4",
+        "line" : 38,
         "column" : 8,
-        "source_fragment" : "DeparserImpl"
+        "source_fragment" : "deparser"
       },
-      "order" : ["ethernet", "ipv4"]
+      "order" : [],
+      "primitives" : []
     }
   ],
   "meter_arrays" : [],
@@ -213,105 +206,89 @@
   "learn_lists" : [],
   "actions" : [
     {
-      "name" : "act",
+      "name" : "parsererror46",
       "id" : 0,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "assign",
+          "op" : "mark_to_drop",
           "parameters" : [
             {
-              "type" : "field",
-              "value" : ["scalars", "metadata._fwd_metadata_l2ptr0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000001"
+              "type" : "header",
+              "value" : "standard_metadata"
             }
           ],
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 91,
+            "filename" : "parser-error.p4",
+            "line" : 46,
             "column" : 12,
-            "source_fragment" : "meta.fwd_metadata.l2ptr = 1"
+            "source_fragment" : "mark_to_drop(standard_meta)"
           }
         }
       ]
     },
     {
-      "name" : "act_0",
+      "name" : "parsererror48",
       "id" : 1,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "assign",
+          "op" : "mark_to_drop",
           "parameters" : [
             {
-              "type" : "field",
-              "value" : ["scalars", "metadata._fwd_metadata_l2ptr0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000002"
+              "type" : "header",
+              "value" : "standard_metadata"
             }
           ],
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 93,
+            "filename" : "parser-error.p4",
+            "line" : 48,
             "column" : 12,
-            "source_fragment" : "meta.fwd_metadata.l2ptr = 2"
+            "source_fragment" : "mark_to_drop(standard_meta)"
           }
         }
       ]
     },
     {
-      "name" : "act_1",
+      "name" : "parsererror50",
       "id" : 2,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "assign",
+          "op" : "mark_to_drop",
           "parameters" : [
             {
-              "type" : "field",
-              "value" : ["scalars", "metadata._fwd_metadata_l2ptr0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000003"
+              "type" : "header",
+              "value" : "standard_metadata"
             }
           ],
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 95,
+            "filename" : "parser-error.p4",
+            "line" : 50,
             "column" : 12,
-            "source_fragment" : "meta.fwd_metadata.l2ptr = 3"
+            "source_fragment" : "mark_to_drop(standard_meta)"
           }
         }
       ]
     },
     {
-      "name" : "act_2",
+      "name" : "parsererror52",
       "id" : 3,
       "runtime_data" : [],
       "primitives" : [
         {
-          "op" : "assign",
+          "op" : "mark_to_drop",
           "parameters" : [
             {
-              "type" : "field",
-              "value" : ["scalars", "metadata._fwd_metadata_l2ptr0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000004"
+              "type" : "header",
+              "value" : "standard_metadata"
             }
           ],
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 97,
+            "filename" : "parser-error.p4",
+            "line" : 52,
             "column" : 12,
-            "source_fragment" : "meta.fwd_metadata.l2ptr = 4"
+            "source_fragment" : "mark_to_drop(standard_meta)"
           }
         }
       ]
@@ -322,16 +299,22 @@
       "name" : "ingress",
       "id" : 0,
       "source_info" : {
-        "filename" : "parser-parallel-transitions.p4",
-        "line" : 85,
+        "filename" : "parser-error.p4",
+        "line" : 39,
         "column" : 8,
         "source_fragment" : "ingress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_act",
+          "name" : "tbl_parsererror46",
           "id" : 0,
+          "source_info" : {
+            "filename" : "parser-error.p4",
+            "line" : 46,
+            "column" : 12,
+            "source_fragment" : "mark_to_drop(standard_meta)"
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -340,10 +323,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [0],
-          "actions" : ["act"],
+          "actions" : ["parsererror46"],
           "base_default_next" : null,
           "next_tables" : {
-            "act" : null
+            "parsererror46" : null
           },
           "default_entry" : {
             "action_id" : 0,
@@ -353,8 +336,14 @@
           }
         },
         {
-          "name" : "tbl_act_0",
+          "name" : "tbl_parsererror48",
           "id" : 1,
+          "source_info" : {
+            "filename" : "parser-error.p4",
+            "line" : 48,
+            "column" : 12,
+            "source_fragment" : "mark_to_drop(standard_meta)"
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -363,10 +352,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [1],
-          "actions" : ["act_0"],
+          "actions" : ["parsererror48"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_0" : null
+            "parsererror48" : null
           },
           "default_entry" : {
             "action_id" : 1,
@@ -376,8 +365,14 @@
           }
         },
         {
-          "name" : "tbl_act_1",
+          "name" : "tbl_parsererror50",
           "id" : 2,
+          "source_info" : {
+            "filename" : "parser-error.p4",
+            "line" : 50,
+            "column" : 12,
+            "source_fragment" : "mark_to_drop(standard_meta)"
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -386,10 +381,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [2],
-          "actions" : ["act_1"],
+          "actions" : ["parsererror50"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_1" : null
+            "parsererror50" : null
           },
           "default_entry" : {
             "action_id" : 2,
@@ -399,8 +394,14 @@
           }
         },
         {
-          "name" : "tbl_act_2",
+          "name" : "tbl_parsererror52",
           "id" : 3,
+          "source_info" : {
+            "filename" : "parser-error.p4",
+            "line" : 52,
+            "column" : 12,
+            "source_fragment" : "mark_to_drop(standard_meta)"
+          },
           "key" : [],
           "match_type" : "exact",
           "type" : "simple",
@@ -409,10 +410,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [3],
-          "actions" : ["act_2"],
+          "actions" : ["parsererror52"],
           "base_default_next" : null,
           "next_tables" : {
-            "act_2" : null
+            "parsererror52" : null
           },
           "default_entry" : {
             "action_id" : 3,
@@ -428,10 +429,10 @@
           "name" : "node_2",
           "id" : 0,
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 90,
+            "filename" : "parser-error.p4",
+            "line" : 45,
             "column" : 12,
-            "source_fragment" : "hdr.ethernet.etherType == 0x0800"
+            "source_fragment" : "standard_meta.parser_error == error.NoError"
           },
           "expression" : {
             "type" : "expression",
@@ -439,25 +440,25 @@
               "op" : "==",
               "left" : {
                 "type" : "field",
-                "value" : ["ethernet", "etherType"]
+                "value" : ["standard_metadata", "parser_error"]
               },
               "right" : {
                 "type" : "hexstr",
-                "value" : "0x0800"
+                "value" : "0x0"
               }
             }
           },
-          "true_next" : "tbl_act",
+          "true_next" : "tbl_parsererror46",
           "false_next" : "node_4"
         },
         {
           "name" : "node_4",
           "id" : 1,
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 92,
-            "column" : 19,
-            "source_fragment" : "hdr.ethernet.etherType == 0x0900"
+            "filename" : "parser-error.p4",
+            "line" : 47,
+            "column" : 17,
+            "source_fragment" : "standard_meta.parser_error == error.PacketTooShort"
           },
           "expression" : {
             "type" : "expression",
@@ -465,72 +466,68 @@
               "op" : "==",
               "left" : {
                 "type" : "field",
-                "value" : ["ethernet", "etherType"]
+                "value" : ["standard_metadata", "parser_error"]
               },
               "right" : {
                 "type" : "hexstr",
-                "value" : "0x0900"
+                "value" : "0x1"
               }
             }
           },
-          "true_next" : "tbl_act_0",
+          "true_next" : "tbl_parsererror48",
           "false_next" : "node_6"
         },
         {
           "name" : "node_6",
           "id" : 2,
           "source_info" : {
-            "filename" : "parser-parallel-transitions.p4",
-            "line" : 94,
-            "column" : 19,
-            "source_fragment" : "hdr.ethernet.etherType[11:8] == 0xf"
+            "filename" : "parser-error.p4",
+            "line" : 49,
+            "column" : 17,
+            "source_fragment" : "standard_meta.parser_error == error.HeaderTooShort"
           },
           "expression" : {
             "type" : "expression",
             "value" : {
               "op" : "==",
               "left" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "&",
-                  "left" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "&",
-                      "left" : {
-                        "type" : "expression",
-                        "value" : {
-                          "op" : ">>",
-                          "left" : {
-                            "type" : "field",
-                            "value" : ["ethernet", "etherType"]
-                          },
-                          "right" : {
-                            "type" : "hexstr",
-                            "value" : "0x8"
-                          }
-                        }
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0xffff"
-                      }
-                    }
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0x0f"
-                  }
-                }
+                "type" : "field",
+                "value" : ["standard_metadata", "parser_error"]
               },
               "right" : {
                 "type" : "hexstr",
-                "value" : "0x0f"
+                "value" : "0x4"
               }
             }
           },
-          "true_next" : "tbl_act_1",
-          "false_next" : "tbl_act_2"
+          "true_next" : "tbl_parsererror50",
+          "false_next" : "node_8"
+        },
+        {
+          "name" : "node_8",
+          "id" : 3,
+          "source_info" : {
+            "filename" : "parser-error.p4",
+            "line" : 51,
+            "column" : 17,
+            "source_fragment" : "standard_meta.parser_error == error.StackOutOfBounds"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "==",
+              "left" : {
+                "type" : "field",
+                "value" : ["standard_metadata", "parser_error"]
+              },
+              "right" : {
+                "type" : "hexstr",
+                "value" : "0x3"
+              }
+            }
+          },
+          "false_next" : null,
+          "true_next" : "tbl_parsererror52"
         }
       ]
     },
@@ -538,8 +535,8 @@
       "name" : "egress",
       "id" : 1,
       "source_info" : {
-        "filename" : "parser-parallel-transitions.p4",
-        "line" : 102,
+        "filename" : "parser-error.p4",
+        "line" : 36,
         "column" : 8,
         "source_fragment" : "egress"
       },
@@ -578,27 +575,19 @@
       ["standard_metadata", "egress_global_timestamp"]
     ],
     [
-      "intrinsic_metadata.lf_field_list",
-      ["standard_metadata", "lf_field_list"]
-    ],
-    [
       "intrinsic_metadata.mcast_grp",
       ["standard_metadata", "mcast_grp"]
-    ],
-    [
-      "intrinsic_metadata.resubmit_flag",
-      ["standard_metadata", "resubmit_flag"]
     ],
     [
       "intrinsic_metadata.egress_rid",
       ["standard_metadata", "egress_rid"]
     ],
     [
-      "intrinsic_metadata.recirculate_flag",
-      ["standard_metadata", "recirculate_flag"]
+      "intrinsic_metadata.priority",
+      ["standard_metadata", "priority"]
     ]
   ],
-  "program" : "./parser-parallel-transitions.p4i",
+  "program" : "./parser-error.p4i",
   "__meta__" : {
     "version" : [2, 18],
     "compiler" : "https://github.com/p4lang/p4c"

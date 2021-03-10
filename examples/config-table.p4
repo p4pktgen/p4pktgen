@@ -67,9 +67,6 @@ struct headers {
 // You must use 'compound actions', i.e. ones explicitly defined with
 // the 'action' keyword like below.
 
-action my_drop() {
-    mark_to_drop();
-}
 
 parser ParserImpl(packet_in packet,
                   out headers hdr,
@@ -114,6 +111,9 @@ control ingress(inout headers hdr,
         standard_metadata.egress_spec = intf;
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
+    action my_drop() {
+        mark_to_drop(standard_metadata);
+    }
     table mac_da {
         key = {
             meta.fwd_metadata.l2ptr: exact;
@@ -137,6 +137,9 @@ control egress(inout headers hdr,
 {
     action rewrite_mac(bit<48> smac) {
         hdr.ethernet.srcAddr = smac;
+    }
+    action my_drop() {
+        mark_to_drop(standard_metadata);
     }
     table send_frame {
         key = {

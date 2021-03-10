@@ -10,6 +10,9 @@ class TypeValueExpression(TypeValue):
         # cond only exists for the ternary operator '?'
         if 'cond' in json_obj:
             self.cond = parse_type_value(json_obj['cond'])
+            assert self.cond is not None
+        else:
+            self.cond = None
         if json_obj['left'] is None:
             self.left = None
         else:
@@ -17,7 +20,7 @@ class TypeValueExpression(TypeValue):
         self.right = parse_type_value(json_obj['right'])
 
     def __repr__(self):
-        if hasattr(self, 'cond'):
+        if self.cond is not None:
             return '({} {} : {})'.format(self.cond, self.op, self.left,
                                          self.right)
         else:
@@ -133,6 +136,11 @@ class TypeValueLookahead(TypeValue):
         self.size = json_obj[1]
 
 
+class TypeValueExtern(TypeValue):
+    def __init__(self, json_obj):
+        self.extern_instance_name = json_obj
+
+
 def parse_type_value(json_obj):
     p4_type_str = json_obj['type']
     value = json_obj['value']
@@ -177,5 +185,7 @@ def parse_type_value(json_obj):
         return TypeValueRegular(value)
     elif p4_type_str == 'lookahead':
         return TypeValueLookahead(value)
+    elif p4_type_str == 'extern':
+        return TypeValueExtern(value)
     else:
         raise Exception('{} not supported'.format(p4_type_str))
