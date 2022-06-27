@@ -1,6 +1,6 @@
 enum34==1.1.6
 graphviz==0.8
-pytest==7.1.2
+pytest==7.0.1
 scapy==2.4.5
 subprocess32==3.5.3
 thrift==0.11.0
