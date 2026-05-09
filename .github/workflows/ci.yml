@@ -1,0 +1,54 @@
+name: CI
+
+'on':
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        compiler:
+          - gcc
+    env:
+      CC: ${{ matrix.compiler }}
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache
+
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake curl git libjudy-dev libgmp-dev libpcap-dev libboost-all-dev libevent-dev libtool flex bison pkg-config libssl-dev libgmp10 libjudydebian1 libpcap0.8 python3 python3-pip python3-dev python3-tk graphviz
+
+      - run: ccache -M 1G
+      - run: ccache -z
+      - run: bash tools/install-thrift.sh
+      - run: git clone https://github.com/p4lang/behavioral-model.git
+      - run: cd behavioral-model
+      - run: bash travis/install-nanomsg.sh
+        working-directory: behavioral-model
+      - run: ./autogen.sh
+        working-directory: behavioral-model
+      - run: ./configure 'CXXFLAGS=-Wno-sign-compare'
+        working-directory: behavioral-model
+      - run: make && sudo make install
+        working-directory: behavioral-model
+      - run: cd ..
+        working-directory: behavioral-model
+      - run: sudo ldconfig
+      - run: simple_switch --version
+      - run: ./tools/install.sh
+      - run: source my-venv/bin/activate
+      - run: pytest
+      - run: ccache -s
